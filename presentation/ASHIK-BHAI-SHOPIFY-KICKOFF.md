@@ -2,7 +2,7 @@
 
 **Project:** UK Men's & Women's Fashion E-commerce (Internal Test Store)  
 **Date:** September 2026  
-**Presenter:** Ashik Bhai  
+**Presenter:** Showrav Karmakar  
 **Audience:** Product & Engineering Team  
 **Status:** Planning → Build
 
