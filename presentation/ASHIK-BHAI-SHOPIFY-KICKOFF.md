@@ -6,6 +6,8 @@
 **Audience:** Product & Engineering Team  
 **Status:** Planning → Build
 
+> **Interactive HTML presentation:** Open [index.html](./index.html) in a browser for animated slides with motion, responsive UI, and the full analysis-first section.
+
 ---
 
 ## Slide 1 — Title
@@ -16,7 +18,53 @@
 
 ---
 
-## Slide 2 — Ashik Bhai's Plan (Call Summary)
+## Slide 2 — Why Analysis First (Client, Location, Customer)
+
+Before building in Shopify, we must complete **Phase 0 analysis**. This is what makes the UI look professional and work on mobile, laptop, and every screen size.
+
+### Client analysis
+- Business goals (internal product testing)
+- Brand personality and tone
+- Budget and timeline
+- Success criteria and decision makers
+
+### Location analysis
+- UK market — GBP, VAT, shipping zones, consumer law
+- No physical store (online only)
+- UK payment methods (Visa, Apple Pay, Klarna)
+- Seasonal fashion trends
+
+### Customer analysis
+- UK shoppers aged 22–45
+- Men's and women's fashion buyers
+- Mobile-first browsing (70%+ traffic)
+- Expect fast checkout, clear sizing, trust signals
+
+### Analysis → UI decisions
+
+| Analysis input | UI output in Shopify |
+|----------------|---------------------|
+| UK fashion customer | Clean neutrals + one bold accent colour |
+| Mobile-first shopper | Dawn theme, large tap targets, stacked sections |
+| Men + Women catalog | Split navigation: Men / Women / Accessories |
+| UK trust expectations | Shipping policy, 14-day returns, GDPR privacy in footer |
+| Mid-range pricing (£15–£80) | Professional photography, not discount-store layout |
+
+### Responsive testing matrix
+
+| Device | Browser | Test |
+|--------|---------|------|
+| iPhone | Safari | Homepage, cart, checkout |
+| Android | Chrome | Collections, product page |
+| iPad | Safari | Navigation, filters |
+| MacBook | Chrome | Full store walkthrough |
+| Windows | Edge/Chrome | Checkout, account |
+
+**Rule:** Design and test on mobile first. Log results in Excel Sheet 4.
+
+---
+
+## Slide 3 — Ashik Bhai's Plan (Call Summary)
 
 ### What we agreed on the call
 
