@@ -6,7 +6,7 @@
 **Audience:** Product & Engineering Team  
 **Status:** Planning → Build
 
-> **Interactive HTML presentation:** Open [index.html](./index.html) in a browser for animated slides with motion, responsive UI, and the full analysis-first section.
+> **Open the presentation:** Double-click [presentation.html](./presentation.html) — one file, no install needed.
 
 ---
 
