@@ -7,7 +7,7 @@ Internal test store for **men's and women's clothing and accessories** targeting
 | Resource | Path |
 |----------|------|
 | **Build Kit** (prompts + setup guide) | [shopify-uk-build-kit/](./shopify-uk-build-kit/) |
-| **Kickoff Presentation (HTML)** — animated slides, analysis-first UI section | [presentation/index.html](./presentation/index.html) |
+| **Presentation (single HTML file)** — open in browser, no setup needed | [presentation/presentation.html](./presentation/presentation.html) |
 | **Kickoff Presentation (Markdown)** — Ashik Bhai call, pricing, Jira/Excel | [presentation/ASHIK-BHAI-SHOPIFY-KICKOFF.md](./presentation/ASHIK-BHAI-SHOPIFY-KICKOFF.md) |
 
 ## Start Here
