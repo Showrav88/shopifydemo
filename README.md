@@ -11,6 +11,7 @@ Internal test store for **men's and women's clothing and accessories** targeting
 | **Kickoff Presentation (Markdown)** — Ashik Bhai call, pricing, Jira/Excel | [presentation/ASHIK-BHAI-SHOPIFY-KICKOFF.md](./presentation/ASHIK-BHAI-SHOPIFY-KICKOFF.md) |
 | **CSV Agent Spec** — scrape → CSV pipeline | [fashion-shopify-csv-agent-spec.md](./fashion-shopify-csv-agent-spec.md) |
 | **Master Project Plan** — gaps, images, n8n comparison | [PROJECT-PLAN.md](./PROJECT-PLAN.md) |
+| **Image + stack FAQ** — hosted URLs, Gemini, MongoDB, JS/Next.js | [docs/IMAGE-AND-STACK-FAQ.md](./docs/IMAGE-AND-STACK-FAQ.md) |
 
 ## Start Here
 
