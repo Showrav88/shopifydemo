@@ -82,12 +82,59 @@ IF user wants more → generate up to (4 - scrapedCount) extra shots
 
 ---
 
-### Copyright warning
+### Copyright warning + brand logos on images
 
-| Store type | Scraped competitor images |
-|------------|----------------------------|
-| Internal test (password on) | Usually OK for testing |
-| Public UK store | Risk — use AI-generated or owned photos |
+| Problem | Reality |
+|---------|---------|
+| Competitor images have **brand logo / watermark** | Very common — cannot use in your store |
+| Scraped URL in Shopify CSV | Shows their branding on your product |
+| **Your decision (v1)** | **Always AI-generate clean images** — do not put scraped URLs in CSV |
+
+**Scraped images are still useful** — but only as **reference input** to Gemini (multimodal), not as final `Image Src`:
+
+```
+Scrape imageUrl (has logo)  →  send to Gemini as reference only
+                            →  Gemini generates NEW clean image (no logo)
+                            →  upload to YOUR CDN
+                            →  put YOUR URL in Shopify CSV
+```
+
+**Per product:** generate **1–4 new images** from metadata (+ optional reference for color/style).  
+**Never** ship scraped competitor URLs to Shopify.
+
+---
+
+## 1b. Always-generate image flow (your v1 policy)
+
+```
+For each product:
+  1. Scrape metadata (name, color, description, variants)     ← algorithm, 0 tokens
+  2. Scrape imageUrls (may have logos)                          ← reference only, NOT for CSV
+  3. Build prompt from: title, gender, category, color, material
+  4. Optional: pass 1 reference URL to Gemini multimodal        ← small text tokens
+  5. Generate 1–4 clean shots (flat lay, front, detail, lifestyle)
+  6. Upload to CDN (S3 / Cloudinary / local folder for dev)
+  7. CSV Image Src = YOUR hosted URLs only
+```
+
+### Shot types to generate (pick 1–4)
+
+| # | Shot | Prompt idea |
+|---|------|-------------|
+| 1 | Front flat lay | Product on white, no text, no logo, e-commerce |
+| 2 | Worn / lifestyle | Model or mannequin, neutral background |
+| 3 | Detail | Fabric texture, buttons, stitching close-up |
+| 4 | Angle / back | Side or back view |
+
+### Cost when always generating (100 products)
+
+| Item | Estimate |
+|------|----------|
+| Text tokens (metadata + optional reference look) | 30k – 80k (same as before) |
+| **Image API calls** | **100 – 400** (1–4 images × 100 products) |
+| Scraped URLs used in CSV | **0** (never) |
+
+Still cheaper on **text** than n8n. Image cost is higher than “use scraped URLs” but **legally and visually correct** for your store.
 
 ---
 
@@ -157,45 +204,80 @@ Port `ProductComparison/*.cs` logic to JavaScript — same algorithm, different 
 | Team reviews products over days before export | **Yes** |
 | Production agent with history | **Yes** |
 
-### v1 recommendation (simplest path)
+### v1 recommendation: **SQLite only** (no MongoDB)
 
-**No MongoDB for first version.**
+SQLite is enough for this project. One file on disk, zero server setup, works on laptop and cloud.
 
 ```
-User pastes URL → scrape in memory → process → download CSV
+fashion-agent.db   ← single SQLite file
 ```
 
-Session ends. No cache. Fastest to build.
+**Why SQLite fits:**
+- Scraped product JSON fits in TEXT/JSON columns
+- Generated image URLs + job status per product
+- Re-run export without re-scraping or re-generating images
+- No MongoDB install, no Atlas account, no extra cost
 
-### v2 when cache makes sense
+**You do NOT need MongoDB** unless you scale to multiple servers writing cache at the same time (not v1).
 
-Store each scrape as a document:
+### SQLite tables (minimal)
 
-```json
-{
-  "sourceUrl": "https://brand.com",
-  "platform": "shopify",
-  "scrapedAt": "2026-09-09T08:00:00Z",
-  "expiresAt": "2026-09-16T08:00:00Z",
-  "products": [
-    {
-      "externalId": "123",
-      "name": "Navy Oxford Shirt",
-      "imageUrls": ["https://cdn.../1.jpg", "https://cdn.../2.jpg"],
-      "variants": [...],
-      "fieldConfidence": { "category": 0.95 }
-    }
-  ]
-}
+```sql
+-- One row per scrape job (user pastes shop URL)
+CREATE TABLE scrape_jobs (
+  id            TEXT PRIMARY KEY,
+  source_url    TEXT NOT NULL,
+  platform      TEXT,
+  status        TEXT,          -- pending | scraped | images_done | exported
+  created_at    TEXT,
+  updated_at    TEXT
+);
+
+-- Parsed products (metadata from scrape — NOT final images)
+CREATE TABLE products (
+  id              TEXT PRIMARY KEY,
+  job_id          TEXT REFERENCES scrape_jobs(id),
+  external_id     TEXT,
+  name            TEXT,
+  description     TEXT,
+  gender          TEXT,
+  category        TEXT,
+  colors          TEXT,          -- JSON array
+  variants_json   TEXT,          -- JSON
+  reference_urls  TEXT,          -- scraped URLs (logo — reference only)
+  field_confidence TEXT,         -- JSON
+  created_at      TEXT
+);
+
+-- AI-generated images (YOUR clean URLs for CSV)
+CREATE TABLE generated_images (
+  id           TEXT PRIMARY KEY,
+  product_id   TEXT REFERENCES products(id),
+  shot_index   INTEGER,          -- 1–4
+  shot_type    TEXT,             -- flat_lay | lifestyle | detail | angle
+  cdn_url      TEXT NOT NULL,    -- goes in Shopify CSV
+  prompt_used  TEXT,
+  created_at   TEXT
+);
+
+-- Optional: cache raw HTTP response to skip re-fetch
+CREATE TABLE fetch_cache (
+  url          TEXT PRIMARY KEY,
+  body         TEXT,
+  fetched_at   TEXT,
+  expires_at   TEXT
+);
 ```
 
-| Database | Good for |
-|----------|----------|
-| **SQLite** | Solo dev, file on disk, zero setup |
-| **MongoDB** | Flexible JSON, same shape as scraped products |
-| **PostgreSQL** | Same as JewelryMS, strong if you already use it |
+### When each table is used
 
-**MongoDB is optional, not required.** Use it when you re-run imports and want to skip re-scraping unchanged products.
+| Step | SQLite |
+|------|--------|
+| User pastes URL | Insert `scrape_jobs` |
+| Parser runs | Insert `products` + `reference_urls` |
+| Gemini generates images | Insert `generated_images` with `cdn_url` |
+| User exports CSV | Read `products` + `generated_images` |
+| User re-opens tomorrow | Skip scrape if `fetch_cache` still valid |
 
 ---
 

@@ -17,7 +17,7 @@
 **Track B feeds Track A.** The agent is not a replacement for the store — it automates catalog creation.
 
 ```
-Competitor URL → Algorithm parse (85%) → AI gap-fill (15%) → Images (hosted + optional AI) → Shopify CSV → UK test store
+Competitor URL → Algorithm parse (85%) → AI gap-fill (15%) → **Always AI-generate clean images (1–4)** → Shopify CSV → UK test store
 ```
 
 ---
@@ -44,53 +44,51 @@ Competitor URL → Algorithm parse (85%) → AI gap-fill (15%) → Images (hoste
 - [ ] `ShopifyCsvBuilder` + `CsvValidator`
 - [ ] CLI: `url in → csv out`
 
-### Phase 3 — Image pipeline (hosted + rules) — no generative AI yet
-- [ ] `ImageUrlSelector` — pick 1–4 images from scraped `imageUrls`
-- [ ] Dedupe, HTTPS-only, min resolution filter, remove placeholders
-- [ ] Map images to variant rows in CSV (first image on row 1, extras on following rows)
+### Phase 3 — SQLite cache (from day 1)
+- [ ] `fashion-agent.db` — tables: `scrape_jobs`, `products`, `generated_images`, `fetch_cache`
+- [ ] Do not re-scrape or re-generate images on every page load
+- [ ] See [docs/BUILD-SCOPE-SQLITE.md](./docs/BUILD-SCOPE-SQLITE.md)
+
+### Phase 4 — AI image pipeline (always generate — v1 policy)
+- [ ] Scraped `imageUrls` = **reference only** (competitor logos — never in CSV)
+- [ ] Generate **1–4 clean images** per product via Gemini Imagen
+- [ ] Prompt: metadata + "no logo, no watermark, no text"
+- [ ] Optional reference URL for color/style match only
+- [ ] Upload to CDN → store URL in SQLite → `Image Src` in CSV
 - [ ] Template alt text: `{Color} {Category} for {Gender}`
 
-### Phase 4 — AI text enrichment (minimal tokens)
+### Phase 5 — AI text enrichment (minimal tokens)
 - [ ] `ConfidenceScorer` — only call AI when field confidence < 0.7
 - [ ] `AiEnrichmentService` — batched, 20 products per call, JSON response
 - [ ] Fields: description, category, gender, tags, SEO (only if needed)
 - [ ] Token budget cap per run + logging
 
-### Phase 5 — AI image generation (optional, metadata-driven)
-- [ ] `ImageGenerationGate` — only when hosted images < 1 OR user enables "enhance images"
-- [ ] Input: product metadata (title, gender, category, color, material) + optional reference hosted URL
-- [ ] Output: 1–4 images per product (min 1, max 4)
-- [ ] Re-host generated images (S3 / Shopify Files / Cloudinary) — CSV needs stable URLs
-- [ ] Never send full HTML pages to image model — metadata JSON only
-
-### Phase 6 — UI + team workflow
+### Phase 6 — Next.js UI + team workflow
 - [ ] Preview table, edit before export
 - [ ] Jira `SHOP` tickets for agent features
 - [ ] Excel tracker: source URLs, image counts, token usage per run
 
 ---
 
-## 3. Image strategy (1 minimum, 4 maximum)
+## 3. Image strategy (1 minimum, 4 maximum) — **always AI-generate**
 
-### Priority order (cheapest first)
+**Problem:** Scraped images usually have **competitor brand logos / watermarks** — cannot use in your store.
 
-| Step | Method | Cost | When |
-|------|--------|------|------|
-| 1 | Use scraped hosted `imageUrls` from source site | **Free** | Source has ≥1 valid image |
-| 2 | Pick best 1–4 via rules (size, not logo/banner, dedupe) | **Free** | Multiple URLs available |
-| 3 | Template alt text from metadata | **Free** | Always |
-| 4 | AI alt text | **Low tokens** | Template confidence < 0.7 |
-| 5 | AI image generation from metadata + optional reference image | **Image API cost** | Hosted images = 0, or user wants lifestyle shots |
+**v1 policy:** Never put scraped URLs in Shopify CSV. Always generate clean images.
 
-### Rules for 1–4 images
+| Step | What | Cost |
+|------|------|------|
+| 1 | Scrape metadata (name, color, description, variants) | Free (algorithm) |
+| 2 | Scrape `imageUrls` | **Reference only** — sent to Gemini, not CSV |
+| 3 | AI generate 1–4 clean shots (no logo, no text) | Image API per shot |
+| 4 | Upload to your CDN → SQLite → CSV `Image Src` | Storage cost |
+| 5 | Alt text from template | Free |
 
 ```
-hostedCount = valid scraped URLs after filter
-
-IF hostedCount >= 4  → use top 4 (hero, angle, detail, lifestyle if available)
-IF hostedCount 2-3   → use all + optionally AI-generate up to 4 total
-IF hostedCount == 1  → use 1 + optionally AI-generate 1-3 more (max 4 total)
-IF hostedCount == 0  → AI generate minimum 1, up to 4 if user requests
+FOR each product:
+  referenceUrl = first scraped image (optional, for color/style)
+  generate 1–4 new images from metadata + reference
+  CSV uses ONLY your CDN URLs
 ```
 
 ### What goes into AI image prompt (metadata only — not full page)
