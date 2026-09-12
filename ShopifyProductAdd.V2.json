@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. OpenAI: gpt-4o (vision) + gpt-4o-mini (text) via n8n Gateway\n4. Trigger watches **Price** on sheet **product_template**\n5. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n6. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n7. Set price and SKU node: replace YOUR_STORE with your subdomain (e.g. 8kqexi-2j)"
+        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. OpenAI: gpt-4o vision uses binary from Photoroom (not URL)\n4. Trigger watches **Price** on sheet **product_template**\n5. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n6. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n7. Set price and SKU node: replace YOUR_STORE with your subdomain (e.g. 8kqexi-2j)"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -173,8 +173,8 @@
         "resource": "image",
         "operation": "analyze",
         "text": "Analyze this fashion product image. Extract ONLY what you can visibly verify. Do NOT invent specifications.\n\nReturn JSON only:\n{\n  \"verified_facts\": [],\n  \"color\": \"\",\n  \"material\": \"\",\n  \"product_type\": \"\",\n  \"gender\": \"\"\n}",
-        "inputType": "url",
-        "imageUrls": "={{ $('HTTP Request1').item.json.data?.url || $('HTTP Request1').item.json.image?.url || $('Code in JavaScript').item.json.validated_image_url }}",
+        "inputType": "binary",
+        "binaryPropertyName": "data",
         "options": {
           "simplify": true
         }
@@ -577,17 +577,6 @@
       "main": [
         [
           {
-            "node": "HTTP Request1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTTP Request1": {
-      "main": [
-        [
-          {
             "node": "Analyze image",
             "type": "main",
             "index": 0
@@ -596,6 +585,17 @@
       ]
     },
     "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
       "main": [
         [
           {
