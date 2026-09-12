@@ -264,7 +264,7 @@
           "mappingMode": "defineBelow",
           "value": {
             "Title": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).title }}",
-            "Product category": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).collection || $('Google Sheets Trigger').item.json['Product category'] }}",
+            "Product category": "={{ $('Google Sheets Trigger').item.json['Product category'] || JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).collection }}",
             "Description": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).description_html }}",
             "Tags": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).tags }}",
             "SEO title": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).seo_title }}",
