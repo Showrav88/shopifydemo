@@ -44,15 +44,15 @@ These come from Shopify CSV export but this workflow ignores them:
 
 ---
 
-## Analyze image — why binary not URL?
-
-If you see: `Unable to download content from the provided URL before the timeout` — OpenAI cannot fetch ImgBB links in time. V2 uses:
+## Analyze image flow (working V2)
 
 ```
-Photoroom → Analyze image (Binary File "data") → Restore image binary → ImgBB
+Photoroom → ImgBB → Analyze image (Image URL from ImgBB) → Message a model
 ```
 
-Do **not** use Image URL mode with ImgBB for Analyze image.
+Analyze image URL: `={{ $('HTTP Request1').item.json.data.url }}`
+
+If URL times out, re-run once or check ImgBB key — do not reorder nodes unless Analyze fails consistently.
 
 ---
 
