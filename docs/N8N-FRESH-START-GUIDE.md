@@ -51,27 +51,17 @@ You only need **ONE sheet**: `product_template`. No second spreadsheet required.
 
 **Alternative column names** the workflow also accepts: `Image Src`, `Image URL`, `Brand`, `Type`, `Variant Price`, `Variant SKU`, `Variant Inventory Qty`.
 
-**Leave these blank** — the workflow fills them after AI runs:
+**Add 2 new column headers** at the end of row 1 (if not already there):
 
-- Tags, SEO title, SEO description, Image alt text (and Title/Description get overwritten with AI output)
+| QA Status | AI Score |
+|-----------|----------|
+| (leave empty) | (leave empty) |
 
----
-
-### Sheet 2: `Products` tab (tracking sheet — `AI Shopify Product Automation`)
-
-For **each product row** in `product_template`, add a matching row here:
-
-| Column | Required? | What to type |
-|--------|-----------|--------------|
-| **SKU** | **Yes** | Must match `product_template` SKU exactly (e.g. `TEST-BLOUSE-001`) |
-| QA Status | Optional | Start with `NEW` |
-| Brand, Category, Raw Product Info, Price | Optional | Copy from product_template for your own reference |
-
-**Workflow writes these** (leave blank initially): AI Score, SEO Title, Meta Description, Image Alt Text, Generated Image URL, Shopify Product ID, Shopify Product URL, QA Status (`SCORED` / `PENDING_REVIEW` / `NEEDS_HUMAN_QA`).
+Workflow fills: Tags, SEO title, SEO description, Image alt text, QA Status, AI Score (Title/Description get overwritten with AI output).
 
 ---
 
-### Example — row 2 in both sheets
+### Example — row 2
 
 **product_template row 2:**
 
@@ -87,19 +77,7 @@ For **each product row** in `product_template`, add a matching row here:
 | Inventory quantity | `10` |
 | Status | `draft` |
 
-**Products tab row 2:**
-
-| Column | Value |
-|--------|-------|
-| SKU | `TEST-BLOUSE-001` |
-| Brand | TestBrand |
-| Category | Women > Tops > Blouse |
-| Raw Product Info | Women's blue floral print blouse. Lightweight polyester blend. |
-| Price | `29.99` |
-| Inventory Qty | `10` |
-| QA Status | `NEW` |
-
-**Important:** The trigger watches the **Price** column on `product_template`. Enter or change Price to fire the workflow.
+**Important:** The trigger watches the **Price** column. Enter or change Price to fire the workflow. Column order does not matter — only header names.
 
 ---
 
@@ -116,6 +94,38 @@ For **each product row** in `product_template`, add a matching row here:
 Do the same on **Update row in sheet2**, **Update row in sheet1**, and **Update QA Failed** (tracking sheet must have matching SKU).
 
 **Also required:** Every product row must have a unique **SKU** filled in (e.g. `TEST-SHIRT-001`). Your sheet already has this — good.
+
+---
+
+## QA Status — what PASS and FAIL mean
+
+| QA Status | AI Score | What happened |
+|-----------|----------|---------------|
+| **PASS** | 90 or higher | Shopify draft product was created |
+| **FAIL** | below 90 | No Shopify product — human must fix listing |
+
+Old label `SCORED` was confusing — now replaced with **PASS** / **FAIL**.
+
+**Why false branch?** The AI QA score was **below 90**. Check **AI Score** column in your sheet. Open **Message a model1** node output to see `quality_score` and `issues`.
+
+To test Shopify while tuning QA, temporarily lower the **If** node threshold from `90` to `80`.
+
+---
+
+## Shopify credential — use Access Token (not OAuth2)
+
+OAuth2 needs a browser "Connect" click. For automation, use **Shopify Access Token API**:
+
+1. Shopify Admin → **Settings** → **Apps and sales channels** → **Develop apps**
+2. Create app → **Configure Admin API scopes**: `read_products`, `write_products`, `read_inventory`, `write_inventory`
+3. **Install app** → copy **Admin API access token** (`shpat_...`) — shown only once
+4. n8n → **Create a product** node → **Create New Credential**
+5. Change type (top right) from **OAuth2** → **Shopify Access Token API**
+6. **Access Token:** paste `shpat_...`
+7. **Shop Subdomain:** only the store name (e.g. `my-store` from `my-store.myshopify.com`)
+8. Save
+
+Gmail used for Shopify vs n8n does not matter for Access Token method.
 
 ---
 

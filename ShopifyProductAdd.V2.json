@@ -16,7 +16,7 @@
     },
     {
       "parameters": {
-        "content": "## ONE SHEET ONLY \u2014 product_template\n\nYou do NOT need a second spreadsheet.\n\n### YOU type (before run):\n| Column | Required? |\n| Product image URL | YES |\n| Description or Title | YES |\n| Price | YES (trigger) |\n| SKU | YES |\n| Vendor, Product category | recommended |\n\n### ADD 2 new column headers (row 1, end of sheet):\n| QA Status | AI Score |\n| (leave empty) | (leave empty) |\nWorkflow fills these automatically.\n\n### Workflow fills:\nTitle, Description, Tags, SEO title, SEO description, Image alt text, QA Status, AI Score\n\nColumn order does NOT matter. Header names matter."
+        "content": "## ONE SHEET ONLY \u2014 product_template\n\nYou do NOT need a second spreadsheet.\n\n### YOU type (before run):\n| Column | Required? |\n| Product image URL | YES |\n| Description or Title | YES |\n| Price | YES (trigger) |\n| SKU | YES |\n| Vendor, Product category | recommended |\n\n### ADD 2 new column headers (row 1, end of sheet):\n| QA Status | AI Score |\n| (leave empty) | (leave empty) |\nWorkflow fills these automatically.\n\n### QA Status values (workflow writes):\n| Value | Meaning |\n| PASS | Score >= 90, Shopify draft created |\n| FAIL | Score < 90, no Shopify product |\n\nColumn order does NOT matter. Header names matter."
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -291,7 +291,7 @@
         "responses": {
           "values": [
             {
-              "content": "=Compare ORIGINAL sheet data vs GENERATED listing. Score 0-100. Flag invented claims.\n\nOriginal Description: {{ $('Google Sheets Trigger').item.json.Description }}\nGenerated listing: {{ $('Message a model').item.json.output[0].content[0].text }}\n\nReturn JSON only:\n{\n  \"quality_score\": 85,\n  \"seo_title\": \"max 60 chars\",\n  \"meta_description\": \"max 160 chars\",\n  \"image_alt_text\": \"\",\n  \"issues\": []\n}"
+              "content": "=You are a strict QA reviewer. Compare ORIGINAL vs GENERATED listing.\n\nOriginal Description: {{ $('Google Sheets Trigger').item.json.Description }}\nGenerated listing: {{ $('Message a model').item.json.output[0].content[0].text }}\n\nRules:\n- Score 90-100 ONLY if accurate, no invented specs, good SEO\n- Score below 90 if anything is invented, wrong, or weak\n- Do NOT default to 85. Score honestly.\n\nReturn JSON only:\n{\n  \"quality_score\": 0,\n  \"seo_title\": \"max 60 chars\",\n  \"meta_description\": \"max 160 chars\",\n  \"image_alt_text\": \"\",\n  \"issues\": []\n}"
             }
           ]
         },
@@ -336,7 +336,7 @@
             "SEO title": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).seo_title }}",
             "SEO description": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).meta_description }}",
             "Image alt text": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).image_alt_text }}",
-            "QA Status": "SCORED",
+            "QA Status": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).quality_score >= 90 ? 'PASS' : 'FAIL' }}",
             "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"
           },
           "matchingColumns": [
@@ -372,7 +372,7 @@
           "conditions": [
             {
               "id": "a7026178-ca84-498d-b5ef-d2d92a4e650c",
-              "leftValue": "={{ $json['AI Score'] || JSON.parse($('Message a model1').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).quality_score }}",
+              "leftValue": "={{ Number(JSON.parse($('Message a model1').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).quality_score) }}",
               "rightValue": 90,
               "operator": {
                 "type": "number",
@@ -444,7 +444,7 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "QA Status": "PENDING_REVIEW",
+            "QA Status": "PASS",
             "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"
           },
           "matchingColumns": [
@@ -486,8 +486,8 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "QA Status": "NEEDS_HUMAN_QA",
-            "AI Score": "={{ $json['AI Score'] || JSON.parse($('Message a model1').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).quality_score }}",
+            "QA Status": "FAIL",
+            "AI Score": "={{ Number(JSON.parse($('Message a model1').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).quality_score) }}",
             "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"
           },
           "matchingColumns": [
