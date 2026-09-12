@@ -19,24 +19,62 @@ Download **`ShopifyProductAdd.V2.json`** from the repo root, then in n8n:
 
 ---
 
-## Part A — Clean your Google Sheet (keep headers only)
+## Part A — Google Sheet input data (what YOU type first)
 
-### Sheet: `product_template` (trigger sheet)
+You need **two sheets** set up before the workflow runs.
 
-**Keep row 1 headers exactly as Shopify export.** Minimum columns you need:
+### Quick import (copy-paste templates)
 
-| Column name (header) | Required for test? |
-|---------------------|-------------------|
-| Title | Optional (AI can generate) |
-| Description | **Yes** |
-| Vendor | **Yes** (brand) |
-| Product category | **Yes** |
-| Product image URL | **Yes** (or Image Src) |
-| Price | **Yes** — trigger watches this column |
-| SKU | Optional |
-| Inventory quantity | Optional |
+| File | Use for |
+|------|---------|
+| [`sheet-input-template.csv`](../sheet-input-template.csv) | Import into **product_template** tab (row 1 = headers, row 2 = example product) |
+| [`products-tracking-template.csv`](../products-tracking-template.csv) | Import into **Products** tab in tracking spreadsheet |
 
-### Test row (row 2) — paste this data
+---
+
+### Sheet 1: `product_template` (trigger sheet)
+
+**Row 1 = column headers. Row 2+ = your product data.**
+
+| Column (header) | Required? | What to type | Example |
+|-----------------|-----------|--------------|---------|
+| **Product image URL** | **Yes** | Direct public image link | `https://...image.jpg` |
+| **Description** | **Yes*** | Raw product facts/text | `Women's blue floral blouse. Polyester blend. V-neck.` |
+| **Price** | **Yes** | **Trigger column** — workflow fires when you enter or change this | `29.99` |
+| Title | Optional | Working title (AI will improve) | `Blue Floral Blouse` |
+| Vendor | Recommended | Brand / supplier name | `TestBrand` |
+| Product category | Recommended | Category path | `Women > Tops > Blouse` |
+| SKU | Optional | Product code | `TEST-BLOUSE-001` |
+| Inventory quantity | Optional | Stock count | `10` |
+| Status | Optional | Leave as `draft` | `draft` |
+
+\*You need **Description** OR **Title** at minimum (validation checks both).
+
+**Alternative column names** the workflow also accepts: `Image Src`, `Image URL`, `Brand`, `Type`, `Variant Price`, `Variant SKU`, `Variant Inventory Qty`.
+
+**Leave these blank** — the workflow fills them after AI runs:
+
+- Tags, SEO title, SEO description, Image alt text (and Title/Description get overwritten with AI output)
+
+---
+
+### Sheet 2: `Products` tab (tracking sheet — `AI Shopify Product Automation`)
+
+For **each product row** in `product_template`, add a matching row here:
+
+| Column | Required? | What to type |
+|--------|-----------|--------------|
+| **row_number** | **Yes** | Must match the row in product_template (row 2 → `2`, row 3 → `3`) |
+| QA Status | Optional | Start with `NEW` |
+| Brand, Category, Raw Product Info, Price, SKU | Optional | Copy from product_template for your own reference |
+
+**Workflow writes these** (leave blank initially): AI Score, SEO Title, Meta Description, Image Alt Text, Generated Image URL, Shopify Product ID, Shopify Product URL, QA Status (`SCORED` / `PENDING_REVIEW` / `NEEDS_HUMAN_QA`).
+
+---
+
+### Example — row 2 in both sheets
+
+**product_template row 2:**
 
 | Column | Value |
 |--------|-------|
@@ -50,7 +88,20 @@ Download **`ShopifyProductAdd.V2.json`** from the repo root, then in n8n:
 | Inventory quantity | `10` |
 | Status | `draft` |
 
-**Important:** Your trigger watches **Price** column. You must enter a price or change price to fire the workflow.
+**Products tab row 2:**
+
+| Column | Value |
+|--------|-------|
+| row_number | `2` |
+| Brand | TestBrand |
+| Category | Women > Tops > Blouse |
+| Raw Product Info | Women's blue floral print blouse. Lightweight polyester blend. |
+| Price | `29.99` |
+| SKU | TEST-BLOUSE-001 |
+| Inventory Qty | `10` |
+| QA Status | `NEW` |
+
+**Important:** The trigger watches the **Price** column on `product_template`. Enter or change Price to fire the workflow.
 
 ---
 

@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY with your key OR add Query Auth credential\n3. OpenAI nodes use n8n Gateway credits (gpt-4o for vision, gpt-4o-mini for text)\n4. Sheet trigger watches **Price** column on product_template\n5. Test row: Title, Description, Vendor, Product category, Product image URL, Price=29.99\n6. IF score < 90 \u2192 NEEDS_HUMAN_QA (no Shopify create)\n7. IF score >= 90 \u2192 Shopify draft + PENDING_REVIEW"
+        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY with your key\n3. OpenAI: gpt-4o (vision) + gpt-4o-mini (text) via n8n Gateway\n4. Trigger watches **Price** on sheet **product_template**\n5. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n6. IF score < 90 \u2192 NEEDS_HUMAN_QA | score >= 90 \u2192 Shopify draft"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -13,6 +13,19 @@
       ],
       "id": "cb2d4243-c189-4def-880f-1af89b44aaa6",
       "name": "Setup Instructions"
+    },
+    {
+      "parameters": {
+        "content": "## SHEET INPUT DATA \u2014 you type this BEFORE running\n\n### Sheet 1: product_template (trigger sheet)\n\n| Column | Required? | You type | Example |\n|--------|-----------|----------|--------|\n| **Product image URL** | YES | Direct image link | https://...jpg |\n| **Description** | YES* | Raw product text | Women's blue floral blouse... |\n| **Price** | YES | **Trigger column** \u2014 enter or change to start | 29.99 |\n| Title | Optional | Working title (AI improves) | Blue Floral Blouse |\n| Vendor | Recommended | Brand name | TestBrand |\n| Product category | Recommended | Shopify category path | Women > Tops > Blouse |\n| SKU | Optional | Product code | TEST-BLOUSE-001 |\n| Inventory quantity | Optional | Stock count | 10 |\n\n*Minimum: **Description** OR **Title** (need at least one)\n\n**Also accepted column names:** Image Src, Image URL, Brand, Type, Variant Price, Variant SKU\n\n**Leave blank** (workflow fills): Tags, SEO title, SEO description, Image alt text\n\n### Sheet 2: Products tab (AI Shopify Product Automation)\n\nAdd a **matching row** for each product row:\n\n| Column | Required? | You type |\n|--------|-----------|----------|\n| **row_number** | YES | Same row number as product_template (row 2 \u2192 2) |\n| QA Status | Optional | NEW |\n| Brand, Category, Raw Product Info, Price, SKU | Optional | Copy from product_template for reference |\n\nWorkflow writes: AI Score, SEO Title, Meta Description, Generated Image URL, Shopify Product ID, QA Status\n\n### Example row 2 (product_template)\nTitle: Blue Floral Blouse\nDescription: Women's blue floral blouse. Polyester blend. V-neck.\nVendor: TestBrand | Category: Women > Tops > Blouse\nImage URL: https://img.drz.lazcdn.com/...webp | Price: 29.99 | SKU: TEST-BLOUSE-001"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1800,
+        200
+      ],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Sheet Input Data"
     },
     {
       "parameters": {
