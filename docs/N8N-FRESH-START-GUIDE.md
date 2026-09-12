@@ -44,7 +44,7 @@ You need **two sheets** set up before the workflow runs.
 | Title | Optional | Working title (AI will improve) | `Blue Floral Blouse` |
 | Vendor | Recommended | Brand / supplier name | `TestBrand` |
 | Product category | Recommended | Category path | `Women > Tops > Blouse` |
-| SKU | Optional | Product code | `TEST-BLOUSE-001` |
+| **SKU** | **Yes** | Unique product code — **used to find the row** when updating | `TEST-BLOUSE-001` |
 | Inventory quantity | Optional | Stock count | `10` |
 | Status | Optional | Leave as `draft` | `draft` |
 
@@ -64,9 +64,9 @@ For **each product row** in `product_template`, add a matching row here:
 
 | Column | Required? | What to type |
 |--------|-----------|--------------|
-| **row_number** | **Yes** | Must match the row in product_template (row 2 → `2`, row 3 → `3`) |
+| **SKU** | **Yes** | Must match `product_template` SKU exactly (e.g. `TEST-BLOUSE-001`) |
 | QA Status | Optional | Start with `NEW` |
-| Brand, Category, Raw Product Info, Price, SKU | Optional | Copy from product_template for your own reference |
+| Brand, Category, Raw Product Info, Price | Optional | Copy from product_template for your own reference |
 
 **Workflow writes these** (leave blank initially): AI Score, SEO Title, Meta Description, Image Alt Text, Generated Image URL, Shopify Product ID, Shopify Product URL, QA Status (`SCORED` / `PENDING_REVIEW` / `NEEDS_HUMAN_QA`).
 
@@ -92,16 +92,31 @@ For **each product row** in `product_template`, add a matching row here:
 
 | Column | Value |
 |--------|-------|
-| row_number | `2` |
+| SKU | `TEST-BLOUSE-001` |
 | Brand | TestBrand |
 | Category | Women > Tops > Blouse |
 | Raw Product Info | Women's blue floral print blouse. Lightweight polyester blend. |
 | Price | `29.99` |
-| SKU | TEST-BLOUSE-001 |
 | Inventory Qty | `10` |
 | QA Status | `NEW` |
 
 **Important:** The trigger watches the **Price** column on `product_template`. Enter or change Price to fire the workflow.
+
+---
+
+## Troubleshooting — `row_number is null or undefined`
+
+**Cause:** Your Shopify export sheet has no `row_number` column, and the trigger does not always pass one.
+
+**Fix (no re-import):** Open **Update row in sheet** → change **Column to match on** from `row_number` to **SKU** → add SKU field:
+
+```
+={{ $('Google Sheets Trigger').item.json.SKU }}
+```
+
+Do the same on **Update row in sheet2**, **Update row in sheet1**, and **Update QA Failed** (tracking sheet must have matching SKU).
+
+**Also required:** Every product row must have a unique **SKU** filled in (e.g. `TEST-SHIRT-001`). Your sheet already has this — good.
 
 ---
 

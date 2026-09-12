@@ -16,7 +16,7 @@
     },
     {
       "parameters": {
-        "content": "## SHEET INPUT DATA \u2014 you type this BEFORE running\n\n### Sheet 1: product_template (trigger sheet)\n\n| Column | Required? | You type | Example |\n|--------|-----------|----------|--------|\n| **Product image URL** | YES | Direct image link | https://...jpg |\n| **Description** | YES* | Raw product text | Women's blue floral blouse... |\n| **Price** | YES | **Trigger column** \u2014 enter or change to start | 29.99 |\n| Title | Optional | Working title (AI improves) | Blue Floral Blouse |\n| Vendor | Recommended | Brand name | TestBrand |\n| Product category | Recommended | Shopify category path | Women > Tops > Blouse |\n| SKU | Optional | Product code | TEST-BLOUSE-001 |\n| Inventory quantity | Optional | Stock count | 10 |\n\n*Minimum: **Description** OR **Title** (need at least one)\n\n**Also accepted column names:** Image Src, Image URL, Brand, Type, Variant Price, Variant SKU\n\n**Leave blank** (workflow fills): Tags, SEO title, SEO description, Image alt text\n\n### Sheet 2: Products tab (AI Shopify Product Automation)\n\nAdd a **matching row** for each product row:\n\n| Column | Required? | You type |\n|--------|-----------|----------|\n| **row_number** | YES | Same row number as product_template (row 2 \u2192 2) |\n| QA Status | Optional | NEW |\n| Brand, Category, Raw Product Info, Price, SKU | Optional | Copy from product_template for reference |\n\nWorkflow writes: AI Score, SEO Title, Meta Description, Generated Image URL, Shopify Product ID, QA Status\n\n### Example row 2 (product_template)\nTitle: Blue Floral Blouse\nDescription: Women's blue floral blouse. Polyester blend. V-neck.\nVendor: TestBrand | Category: Women > Tops > Blouse\nImage URL: https://img.drz.lazcdn.com/...webp | Price: 29.99 | SKU: TEST-BLOUSE-001"
+        "content": "## SHEET INPUT DATA \u2014 you type this BEFORE running\n\n### Sheet 1: product_template (trigger sheet)\n\n| Column | Required? | You type | Example |\n|--------|-----------|----------|--------|\n| **Product image URL** | YES | Direct image link | https://...jpg |\n| **Description** | YES* | Raw product text | Women's blue floral blouse... |\n| **Price** | YES | **Trigger column** \u2014 enter or change to start | 29.99 |\n| Title | Optional | Working title (AI improves) | Blue Floral Blouse |\n| Vendor | Recommended | Brand name | TestBrand |\n| Product category | Recommended | Shopify category path | Women > Tops > Blouse |\n| **SKU** | **YES** | Unique product code (used to find row) | TEST-BLOUSE-001 |\n| Inventory quantity | Optional | Stock count | 10 |\n\n*Minimum: **Description** OR **Title** (need at least one)\n\n**Also accepted column names:** Image Src, Image URL, Brand, Type, Variant Price, Variant SKU\n\n**Leave blank** (workflow fills): Tags, SEO title, SEO description, Image alt text\n\n### Sheet 2: Products tab (AI Shopify Product Automation)\n\nAdd a **matching row** for each product row:\n\n| Column | Required? | You type |\n|--------|-----------|----------|\n| **SKU** | **YES** | Must match product_template SKU exactly |\n| QA Status | Optional | NEW |\n| Brand, Category, Raw Product Info, Price | Optional | Copy from product_template for reference |\n\nWorkflow writes: AI Score, SEO Title, Meta Description, Generated Image URL, Shopify Product ID, QA Status\n\n### Example row 2 (product_template)\nTitle: Blue Floral Blouse\nDescription: Women's blue floral blouse. Polyester blend. V-neck.\nVendor: TestBrand | Category: Women > Tops > Blouse\nImage URL: https://img.drz.lazcdn.com/...webp | Price: 29.99 | SKU: TEST-BLOUSE-001"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -71,7 +71,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\n\nconst imageUrl = item['Product image URL'] || item['Image Src'] || item['Image URL'] || '';\nconst rawInfo = item['Description'] || item['Title'] || '';\nconst category = item['Product category'] || item['Type'] || '';\nconst vendor = item['Vendor'] || item['Brand'] || '';\n\nif (!imageUrl) {\n  throw new Error('Validation Error: Missing Product image URL');\n}\nif (!rawInfo) {\n  throw new Error('Validation Error: Missing Description or Title');\n}\n\nreturn [{\n  json: {\n    ...item,\n    validated_image_url: imageUrl,\n    validated_raw_info: rawInfo,\n    validated_category: category,\n    validated_vendor: vendor,\n    validated_price: item['Price'] || item['Variant Price'] || null,\n    validated_sku: item['SKU'] || item['Variant SKU'] || null,\n    validated_inventory: item['Inventory quantity'] || item['Variant Inventory Qty'] || item['Inventory Qty'] || null\n  }\n}];"
+        "jsCode": "const item = $input.first().json;\n\nconst imageUrl = item['Product image URL'] || item['Image Src'] || item['Image URL'] || '';\nconst rawInfo = item['Description'] || item['Title'] || '';\nconst category = item['Product category'] || item['Type'] || '';\nconst vendor = item['Vendor'] || item['Brand'] || '';\nconst sku = item['SKU'] || item['Variant SKU'] || '';\nconst rowNumber = item.row_number ?? item.__rowNumber ?? item.__row ?? null;\n\nif (!imageUrl) {\n  throw new Error('Validation Error: Missing Product image URL');\n}\nif (!rawInfo) {\n  throw new Error('Validation Error: Missing Description or Title');\n}\nif (!sku) {\n  throw new Error('Validation Error: Missing SKU — required to find and update the correct sheet row');\n}\n\nreturn [{\n  json: {\n    ...item,\n    row_number: rowNumber,\n    validated_image_url: imageUrl,\n    validated_raw_info: rawInfo,\n    validated_category: category,\n    validated_vendor: vendor,\n    validated_sku: sku,\n    validated_price: item['Price'] || item['Variant Price'] || null,\n    validated_inventory: item['Inventory quantity'] || item['Variant Inventory Qty'] || item['Inventory Qty'] || null\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -257,10 +257,10 @@
             "SEO title": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).seo_title }}",
             "SEO description": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).meta_description }}",
             "Image alt text": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).image_alt_text }}",
-            "row_number": "={{ $('Google Sheets Trigger').item.json.row_number }}"
+            "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"
           },
           "matchingColumns": [
-            "row_number"
+            "SKU"
           ]
         },
         "options": {}
@@ -338,10 +338,10 @@
             "Image Alt Text": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).image_alt_text }}",
             "Generated Image URL": "={{ $('HTTP Request1').item.json.data.url }}",
             "QA Status": "SCORED",
-            "row_number": "={{ $('Google Sheets Trigger').item.json.row_number }}"
+            "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"
           },
           "matchingColumns": [
-            "row_number"
+            "SKU"
           ]
         },
         "options": {}
@@ -449,10 +449,10 @@
             "Shopify Product URL": "={{ $json.admin_graphql_api_id ? 'https://admin.shopify.com/store/YOUR_STORE/products/' + $json.id : '' }}",
             "QA Status": "PENDING_REVIEW",
             "Generated Image URL": "={{ $('HTTP Request1').item.json.data.url }}",
-            "row_number": "={{ $('Google Sheets Trigger').item.json.row_number }}"
+            "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"
           },
           "matchingColumns": [
-            "row_number"
+            "SKU"
           ]
         },
         "options": {}
@@ -492,10 +492,10 @@
           "value": {
             "QA Status": "NEEDS_HUMAN_QA",
             "AI Score": "={{ $json['AI Score'] || JSON.parse($('Message a model1').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).quality_score }}",
-            "row_number": "={{ $('Google Sheets Trigger').item.json.row_number }}"
+            "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"
           },
           "matchingColumns": [
-            "row_number"
+            "SKU"
           ]
         },
         "options": {}
