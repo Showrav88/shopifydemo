@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY with your key\n3. OpenAI: gpt-4o (vision) + gpt-4o-mini (text) via n8n Gateway\n4. Trigger watches **Price** on sheet **product_template**\n5. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n6. IF score < 90 \u2192 NEEDS_HUMAN_QA | score >= 90 \u2192 Shopify draft"
+        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY with your key\n3. OpenAI: gpt-4o (vision) + gpt-4o-mini (text) via n8n Gateway\n4. Trigger watches **Price** on sheet **product_template**\n5. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n6. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n7. Set price and SKU node: replace YOUR_STORE with your subdomain (e.g. 8kqexi-2j)"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -401,12 +401,21 @@
         "title": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).title }}",
         "additionalFields": {
           "body_html": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).description_html }}",
+          "vendor": "={{ $('Google Sheets Trigger').item.json.Vendor || $('Code in JavaScript').item.json.validated_vendor }}",
           "product_type": "={{ $('Google Sheets Trigger').item.json['Product category'] }}",
           "tags": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).tags }}",
           "status": "draft",
           "images": [
             {
               "src": "={{ $('HTTP Request1').item.json.data.url }}"
+            }
+          ],
+          "variants": [
+            {
+              "price": "={{ String($('Google Sheets Trigger').item.json.Price || $('Code in JavaScript').item.json.validated_price) }}",
+              "sku": "={{ $('Code in JavaScript').item.json.validated_sku }}",
+              "inventory_management": "shopify",
+              "inventory_quantity": "={{ Number($('Google Sheets Trigger').item.json['Inventory quantity'] || $('Code in JavaScript').item.json.validated_inventory || 0) }}"
             }
           ]
         }
@@ -419,6 +428,32 @@
       ],
       "id": "7b24de52-a012-45a7-bd47-c8e21538e3be",
       "name": "Create a product",
+      "credentials": {
+        "shopifyOAuth2Api": {
+          "id": "RECONNECT_ME",
+          "name": "Shopify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://YOUR_STORE.myshopify.com/admin/api/2025-01/variants/{{ $('Create a product').item.json.variants[0].id }}.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "shopifyOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"variant\": {\n    \"id\": {{ $('Create a product').item.json.variants[0].id }},\n    \"price\": \"{{ String($('Google Sheets Trigger').item.json.Price || $('Code in JavaScript').item.json.validated_price) }}\",\n    \"sku\": \"{{ $('Code in JavaScript').item.json.validated_sku }}\",\n    \"inventory_quantity\": {{ Number($('Google Sheets Trigger').item.json['Inventory quantity'] || $('Code in JavaScript').item.json.validated_inventory || 0) }}\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        90,
+        -120
+      ],
+      "id": "b8c9d0e1-f2a3-4567-89ab-cdef01234567",
+      "name": "Set price and SKU",
       "credentials": {
         "shopifyOAuth2Api": {
           "id": "RECONNECT_ME",
@@ -445,6 +480,9 @@
           "mappingMode": "defineBelow",
           "value": {
             "QA Status": "PASS",
+            "URL handle": "={{ $('Create a product').item.json.handle }}",
+            "Status": "draft",
+            "Vendor": "={{ $('Google Sheets Trigger').item.json.Vendor }}",
             "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"
           },
           "matchingColumns": [
@@ -456,7 +494,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        180,
+        270,
         -120
       ],
       "id": "98840805-68c6-4974-bdc6-93503f2ebf21",
@@ -631,6 +669,17 @@
       ]
     },
     "Create a product": {
+      "main": [
+        [
+          {
+            "node": "Set price and SKU",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set price and SKU": {
       "main": [
         [
           {
