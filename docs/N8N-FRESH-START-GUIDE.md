@@ -230,11 +230,14 @@ Return JSON only:
 **Best position** — BEFORE listing generation:
 
 ```
-ImgBB (HTTP Request1)
-  → Wait for CDN ready (poll until i.ibb.co responds)
-  → Analyze image (vision — sees photo)
+Photoroom (HTTP Request)
+  → Analyze image (Binary File — field name: data)
+  → Restore image binary
+  → ImgBB (HTTP Request1)
   → Message a model (uses verified_facts + sheet text to write listing)
 ```
+
+Do **not** use ImgBB URL in Analyze image — OpenAI cannot reliably fetch `i.ibb.co`.
 
 Currently you may have it after listing — that's OK for QA but client wants vision **before** generating specs.
 
