@@ -9,6 +9,8 @@ Internal test store for **men's and women's clothing and accessories** targeting
 | **Build Kit** (prompts + setup guide) | [shopify-uk-build-kit/](./shopify-uk-build-kit/) |
 | **Presentation (single HTML file)** — open in browser, no setup needed | [presentation/presentation.html](./presentation/presentation.html) |
 | **Kickoff Presentation (Markdown)** — Ashik Bhai call, pricing, Jira/Excel | [presentation/ASHIK-BHAI-SHOPIFY-KICKOFF.md](./presentation/ASHIK-BHAI-SHOPIFY-KICKOFF.md) |
+| **n8n workflow fixes** — ShopifyProductAdd.V1 | [docs/N8N-WORKFLOW-FIX-GUIDE.md](./docs/N8N-WORKFLOW-FIX-GUIDE.md) |
+| **n8n workflow JSON** | [ShopifyProductAdd.V1.json](./ShopifyProductAdd.V1.json) |
 
 ## Start Here
 
