@@ -162,7 +162,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const analysis = $input.first().json;\nconst binary = $('HTTP Request').first().binary;\n\nif (!binary?.data) {\n  throw new Error('No image binary from Photoroom (HTTP Request) — cannot upload to ImgBB');\n}\n\nreturn [{\n  json: analysis,\n  binary,\n}];"
+        "jsCode": "const inputItem = $input.first();\nlet payload = inputItem.json;\n\nif (payload === undefined || payload === null) {\n  payload = {};\n} else if (typeof payload === 'string') {\n  try {\n    payload = JSON.parse(payload);\n  } catch {\n    payload = { text: payload };\n  }\n} else if (Array.isArray(payload)) {\n  payload = { items: payload };\n} else if (typeof payload !== 'object') {\n  payload = { value: payload };\n}\n\nconst imageBinary = $('HTTP Request').first().binary?.data;\nif (!imageBinary) {\n  throw new Error('No image binary from Photoroom (HTTP Request) — cannot upload to ImgBB');\n}\n\nreturn [{\n  json: payload,\n  binary: {\n    data: imageBinary,\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
