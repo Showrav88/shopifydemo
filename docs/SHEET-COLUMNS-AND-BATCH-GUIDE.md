@@ -10,7 +10,7 @@ The workflow uses AI for columns that affect **search ranking and sales copy**. 
 |--------|------------|-----|
 | **Description** | High | Raw facts the AI must not invent |
 | **Product image URL** | High | Vision checks the real product |
-| **Product category** | Medium | Helps collection/type + taxonomy |
+| **Product category** | Medium | **You set this** — workflow keeps your value (AI only fills if empty) |
 | **Vendor** | Medium | Brand trust, filters |
 | **Title** | Medium | Starting point; AI improves it |
 | **Price** | Low for SEO | Required for Shopify + trigger |
