@@ -150,8 +150,8 @@ Your lazcdn link stays in **Product image URL** — that is correct. The workflo
 ```
 Create a product (sends ImgBB URL as image src, status draft)
   → Update price, SKU and image link
-  → Wait for Shopify CDN image (~8s hold, then poll up to ~60s)
-  → Update row in sheet1 (writes Shopify Image URL + product URL)
+  → Wait for Shopify CDN image (~2s hold, poll up to ~20s — never throws)
+  → Update row in sheet1 (Shopify Image URL, or ImgBB fallback if CDN not ready)
 ```
 
 ---
