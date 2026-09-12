@@ -21,18 +21,17 @@ Download **`ShopifyProductAdd.V2.json`** from the repo root, then in n8n:
 
 ## Part A — Google Sheet input data (what YOU type first)
 
-You need **two sheets** set up before the workflow runs.
+You only need **ONE sheet**: `product_template`. No second spreadsheet required.
 
-### Quick import (copy-paste templates)
+### Quick import (optional)
 
 | File | Use for |
 |------|---------|
-| [`sheet-input-template.csv`](../sheet-input-template.csv) | Import into **product_template** tab (row 1 = headers, row 2 = example product) |
-| [`products-tracking-template.csv`](../products-tracking-template.csv) | Import into **Products** tab in tracking spreadsheet |
+| [`sheet-input-template.csv`](../sheet-input-template.csv) | Example headers + test row |
 
 ---
 
-### Sheet 1: `product_template` (trigger sheet)
+### Your sheet: `product_template` (trigger + all updates)
 
 **Row 1 = column headers. Row 2+ = your product data.**
 
