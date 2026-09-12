@@ -337,6 +337,7 @@
             "SEO description": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).meta_description }}",
             "Image alt text": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).image_alt_text }}",
             "QA Status": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).quality_score >= 90 ? 'PASS' : 'FAIL' }}",
+            "Generated Image URL": "={{ $('HTTP Request1').item.json.data.url }}",
             "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"
           },
           "matchingColumns": [
@@ -481,6 +482,8 @@
           "value": {
             "QA Status": "PASS",
             "URL handle": "={{ $('Create a product').item.json.handle }}",
+            "Shopify Product URL": "=https://8kqexi-2j.myshopify.com/products/{{ $('Create a product').item.json.handle }}",
+            "Generated Image URL": "={{ $('HTTP Request1').item.json.data.url }}",
             "Status": "draft",
             "Vendor": "={{ $('Google Sheets Trigger').item.json.Vendor }}",
             "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"
