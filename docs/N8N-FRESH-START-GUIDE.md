@@ -1,6 +1,21 @@
-# n8n Fresh Start Guide — ShopifyProductAdd.V1
+# n8n Fresh Start Guide — ShopifyProductAdd.V2
 
 Use this when cleaning your Google Sheet and testing one blouse product for free.
+
+---
+
+## Part 0 — Import the updated workflow JSON
+
+Download **`ShopifyProductAdd.V2.json`** from the repo root, then in n8n:
+
+1. **Workflows** → **Import from File** (or **⋯** → **Import**)
+2. Select `ShopifyProductAdd.V2.json`
+3. After import, reconnect credentials on each node (Google Sheets, Shopify, Photoroom)
+4. **HTTP Request1 (ImgBB):** replace `REPLACE_IMGBB_KEY` in the URL with your ImgBB API key
+5. **Shopify URL in sheet update:** replace `YOUR_STORE` with your Shopify store slug
+6. Toggle workflow **Active** only after a successful manual test run
+
+**What V2 fixes vs V1:** vision (Analyze image), QA threshold 90, IF false → NEEDS_HUMAN_QA, Shopify `draft` status, fixed `={{` expressions, no hardcoded ImgBB key.
 
 ---
 
