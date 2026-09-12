@@ -47,12 +47,14 @@ These come from Shopify CSV export but this workflow ignores them:
 ## Analyze image flow (working V2)
 
 ```
-Photoroom → ImgBB → Analyze image (Image URL from ImgBB) → Message a model
+Photoroom → ImgBB → Wait for CDN ready → Analyze image → Message a model
 ```
 
-Analyze image URL: `={{ $('HTTP Request1').item.json.data.url }}`
+**Wait for CDN ready** polls the ImgBB URL (up to ~56s) until it responds — this prevents OpenAI `Unable to download content from the provided URL before the timeout`.
 
-If URL times out, re-run once or check ImgBB key — do not reorder nodes unless Analyze fails consistently.
+Analyze image URL: `={{ $('Wait for CDN ready').item.json.image_url }}`
+
+If it still fails after the wait, check ImgBB key and that `i.ibb.co` is reachable from your n8n instance.
 
 ---
 
@@ -132,13 +134,23 @@ Only delete if you will **never** import this sheet back to Shopify as a full CS
 | Column | Who fills it | Example |
 |--------|--------------|---------|
 | **Product image URL** | **You** (input) | `https://img.drz.lazcdn.com/...webp` (original CDN/scrape link) |
-| **Generated Image URL** | **Workflow** (after ImgBB) | `https://i.ibb.co/.../edit.png` (clean image used in Shopify) |
+| **Generated Image URL** | **Workflow** (after ImgBB) | `https://i.ibb.co/.../edit.png` (clean image sent to Shopify) |
+| **Shopify Image URL** | **Workflow** (after Shopify CDN ready) | `https://cdn.shopify.com/s/files/1/...` (image on Shopify servers) |
 | **URL handle** | **Workflow** (after Shopify create) | `royal-blue-cotton-long-sleeves-...` |
 | **Shopify Product URL** | **Workflow** (after Shopify create) | `https://8kqexi-2j.myshopify.com/products/royal-blue-...` |
 
-Your lazcdn link stays in **Product image URL** — that is correct. The workflow does not replace it; it adds **Generated Image URL** and **Shopify Product URL** in separate columns.
+Your lazcdn link stays in **Product image URL** — that is correct. The workflow does not replace it; it adds **Generated Image URL**, **Shopify Image URL**, and **Shopify Product URL** in separate columns.
 
-**Add these 2 column headers** to row 1 if missing: `Generated Image URL`, `Shopify Product URL`
+**Add these column headers** to row 1 if missing: `Generated Image URL`, `Shopify Image URL`, `Shopify Product URL`
+
+### Shopify PASS path (score ≥ 90)
+
+```
+Create a product (sends ImgBB URL as image src, status draft)
+  → Update price, SKU and image link
+  → Wait for Shopify CDN image (~8s hold, then poll up to ~60s)
+  → Update row in sheet1 (writes Shopify Image URL + product URL)
+```
 
 ---
 

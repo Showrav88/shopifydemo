@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. Flow: Photoroom \u2192 ImgBB \u2192 Analyze image (URL) \u2192 AI listing\n4. Trigger watches **Price** on sheet **product_template**\n5. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n6. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n7. Set price and SKU: store set to 8kqexi-2j (change if your store differs)"
+        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. Flow: Photoroom \u2192 ImgBB \u2192 **Wait for CDN ready** \u2192 Analyze image \u2192 AI listing\n4. **Wait for CDN ready** polls ImgBB URL until OpenAI can fetch it (fixes URL timeout)\n5. Trigger watches **Price** on sheet **product_template**\n6. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n7. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n8. After Shopify create: Update price, SKU and image link \u2192 Wait for Shopify CDN image \u2192 sheet\n9. Store subdomain 8kqexi-2j (change URLs if your store differs)"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -164,6 +164,19 @@
     },
     {
       "parameters": {
+        "jsCode": "const imgbb = $('HTTP Request1').first().json;\nconst imageUrl = imgbb?.data?.url;\n\nif (!imageUrl) {\n  throw new Error('ImgBB upload did not return data.url — check ImgBB API key and HTTP Request1 response');\n}\n\nconst maxAttempts = 15;\nconst delayMs = 4000;\nlet lastError = 'unknown';\n\nfor (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  try {\n    const response = await this.helpers.httpRequest({\n      method: 'GET',\n      url: imageUrl,\n      returnFullResponse: true,\n      timeout: 15000,\n      headers: {\n        Range: 'bytes=0-0',\n        'User-Agent': 'n8n-shopify-cdn-probe/1.0',\n      },\n      ignoreHttpStatusErrors: true,\n    });\n\n    const status = response.statusCode ?? response.status ?? 0;\n    if (status >= 200 && status < 400) {\n      return [{\n        json: {\n          image_url: imageUrl,\n          cdn_ready: true,\n          cdn_attempts: attempt,\n          cdn_checked_at: new Date().toISOString(),\n        },\n      }];\n    }\n\n    lastError = `HTTP ${status} on attempt ${attempt}`;\n  } catch (err) {\n    lastError = err.message || String(err);\n  }\n\n  if (attempt < maxAttempts) {\n    await new Promise((resolve) => setTimeout(resolve, delayMs));\n  }\n}\n\nthrow new Error(\n  `Image CDN not ready after ${maxAttempts} attempts (~${Math.round((maxAttempts - 1) * delayMs / 1000)}s). ` +\n  `OpenAI could not fetch: ${imageUrl}. Last error: ${lastError}`\n);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1170,
+        0
+      ],
+      "id": "a8f3c2d1-4e5b-6a7c-8d9e-0f1a2b3c4d5e",
+      "name": "Wait for CDN ready"
+    },
+    {
+      "parameters": {
         "modelId": {
           "__rl": true,
           "value": "gpt-4o",
@@ -174,7 +187,7 @@
         "operation": "analyze",
         "text": "Analyze this fashion product image. Extract ONLY what you can visibly verify. Do NOT invent specifications.\n\nReturn JSON only:\n{\n  \"verified_facts\": [],\n  \"color\": \"\",\n  \"material\": \"\",\n  \"product_type\": \"\",\n  \"gender\": \"\"\n}",
         "inputType": "url",
-        "imageUrls": "={{ $('HTTP Request1').item.json.data.url }}",
+        "imageUrls": "={{ $('Wait for CDN ready').item.json.image_url }}",
         "options": {
           "simplify": true
         }
@@ -454,7 +467,26 @@
         -120
       ],
       "id": "b8c9d0e1-f2a3-4567-89ab-cdef01234567",
-      "name": "Set price and SKU",
+      "name": "Update price, SKU and image link",
+      "credentials": {
+        "shopifyOAuth2Api": {
+          "id": "RECONNECT_ME",
+          "name": "Shopify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const productId = $('Create a product').first().json.id;\nconst shopHost = '8kqexi-2j.myshopify.com';\nconst maxAttempts = 12;\nconst delayMs = 5000;\nconst initialDelayMs = 8000;\n\nawait new Promise((resolve) => setTimeout(resolve, initialDelayMs));\n\nlet lastError = 'unknown';\n\nfor (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  try {\n    const response = await this.helpers.requestWithAuthentication.call(this, 'shopifyOAuth2Api', {\n      method: 'GET',\n      url: `https://${shopHost}/admin/api/2025-01/products/${productId}.json`,\n      json: true,\n    });\n\n    const product = response.product ?? response;\n    const images = product.images ?? [];\n    const src = images[0]?.src ?? '';\n\n    if (src && (src.includes('cdn.shopify.com') || src.includes('shopifycdn'))) {\n      return [{\n        json: {\n          shopify_image_url: src,\n          shopify_image_attempts: attempt,\n          shopify_product_id: productId,\n        },\n      }];\n    }\n\n    lastError = src\n      ? `Image not on Shopify CDN yet: ${src}`\n      : `No images on product yet (attempt ${attempt})`;\n  } catch (err) {\n    lastError = err.message || String(err);\n  }\n\n  if (attempt < maxAttempts) {\n    await new Promise((resolve) => setTimeout(resolve, delayMs));\n  }\n}\n\nconst fallback = $('Create a product').first().json.images?.[0]?.src ?? '';\nif (fallback) {\n  return [{\n    json: {\n      shopify_image_url: fallback,\n      shopify_image_attempts: maxAttempts,\n      shopify_image_warning: `Used fallback from create response. Last poll: ${lastError}`,\n      shopify_product_id: productId,\n    },\n  }];\n}\n\nthrow new Error(\n  `Shopify CDN image not ready after ~${Math.round((initialDelayMs + (maxAttempts - 1) * delayMs) / 1000)}s. Product ${productId}. Last: ${lastError}`\n);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        180,
+        -120
+      ],
+      "id": "c1d2e3f4-a5b6-7890-cdef-123456789abc",
+      "name": "Wait for Shopify CDN image",
       "credentials": {
         "shopifyOAuth2Api": {
           "id": "RECONNECT_ME",
@@ -483,6 +515,7 @@
             "QA Status": "PASS",
             "URL handle": "={{ $('Create a product').item.json.handle }}",
             "Shopify Product URL": "=https://8kqexi-2j.myshopify.com/products/{{ $('Create a product').item.json.handle }}",
+            "Shopify Image URL": "={{ $('Wait for Shopify CDN image').item.json.shopify_image_url }}",
             "Generated Image URL": "={{ $('HTTP Request1').item.json.data.url }}",
             "Status": "draft",
             "Vendor": "={{ $('Google Sheets Trigger').item.json.Vendor }}",
@@ -497,7 +530,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        270,
+        360,
         -120
       ],
       "id": "98840805-68c6-4974-bdc6-93503f2ebf21",
@@ -591,6 +624,17 @@
       "main": [
         [
           {
+            "node": "Wait for CDN ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for CDN ready": {
+      "main": [
+        [
+          {
             "node": "Analyze image",
             "type": "main",
             "index": 0
@@ -675,14 +719,25 @@
       "main": [
         [
           {
-            "node": "Set price and SKU",
+            "node": "Update price, SKU and image link",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Set price and SKU": {
+    "Update price, SKU and image link": {
+      "main": [
+        [
+          {
+            "node": "Wait for Shopify CDN image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Shopify CDN image": {
       "main": [
         [
           {
