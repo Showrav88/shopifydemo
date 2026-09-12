@@ -149,8 +149,8 @@ Your lazcdn link stays in **Product image URL** — that is correct. The workflo
 
 ```
 Create a product (draft, no image yet)
-  → Prepare Shopify image upload (ImgBB direct URL: i.ibb.co)
-  → Upload image to Shopify (HTTP POST with image.src — Shopify fetches from ImgBB)
+  → Prepare Shopify image upload (n8n downloads from ImgBB i.ibb.co)
+  → Upload image to Shopify (HTTP POST with base64 attachment — Shopify cannot fetch ImgBB)
   → Update price, SKU and image link
   → Update row in sheet1 (Shopify Image URL, or ImgBB fallback if CDN not ready)
 ```
