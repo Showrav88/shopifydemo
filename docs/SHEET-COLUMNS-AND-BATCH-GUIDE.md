@@ -115,10 +115,74 @@ Only delete if you will **never** import this sheet back to Shopify as a full CS
 - Option2, Option3 columns (if single-variant only)
 - Barcode, Compare-at price (until you need them)
 
+### URL columns — which link goes where?
+
+| Column | Who fills it | Example |
+|--------|--------------|---------|
+| **Product image URL** | **You** (input) | `https://img.drz.lazcdn.com/...webp` (original CDN/scrape link) |
+| **Generated Image URL** | **Workflow** (after ImgBB) | `https://i.ibb.co/.../edit.png` (clean image used in Shopify) |
+| **URL handle** | **Workflow** (after Shopify create) | `royal-blue-cotton-long-sleeves-...` |
+| **Shopify Product URL** | **Workflow** (after Shopify create) | `https://8kqexi-2j.myshopify.com/products/royal-blue-...` |
+
+Your lazcdn link stays in **Product image URL** — that is correct. The workflow does not replace it; it adds **Generated Image URL** and **Shopify Product URL** in separate columns.
+
+**Add these 2 column headers** to row 1 if missing: `Generated Image URL`, `Shopify Product URL`
+
+---
+
+## How to re-run a product (score below 90 = FAIL)
+
+| Step | What to do |
+|------|------------|
+| 1 | Find row where `QA Status` = **FAIL** or `AI Score` < 90 |
+| 2 | Clear **QA Status** and **AI Score** (empty cells) |
+| 3 | Optionally edit **Description** if QA failed quality |
+| 4 | Change **Price** slightly (e.g. `29.99` → `30.00`) — this triggers the workflow |
+| 5 | Workflow runs again from the start (Photoroom → AI → QA) |
+
+You do **not** pick a step in n8n — changing **Price** re-runs the **whole** workflow for that row.
+
+**Note:** If `QA Status` = PASS and score ≥ 90, the workflow **skips** that row (no duplicate Shopify product).
+
+---
+
+## Add products: all at once or one by one?
+
+### Recommended workflow
+
+**Phase 1 — Fill sheet (no trigger yet)**
+
+Add as many rows as you want. Fill everything **except** leave **Price empty** OR do not change Price yet:
+
+| Row | SKU | Product image URL | Description | Vendor | Category | Price |
+|-----|-----|-------------------|-------------|--------|----------|-------|
+| 2 | TEST-001 | https://... | ... | TestBrand | ... | *(empty)* |
+| 3 | TEST-002 | https://... | ... | TestBrand | ... | *(empty)* |
+| 4 | TEST-003 | https://... | ... | TestBrand | ... | *(empty)* |
+
+**Phase 2 — Run one by one**
+
+Enter **Price** on row 2 only → wait for run to finish (~2–5 min) → check QA Status.
+
+Then enter **Price** on row 3 → wait → row 4 → etc.
+
+### Why not all Prices at once?
+
+The trigger fires **once per Price change**. If you paste prices on 10 rows quickly, you get 10 runs queued (OK) but harder to debug failures and uses credits faster.
+
+### One product at a time (safest for learning)
+
+1. Add **one full row** including Price  
+2. Wait for PASS/FAIL  
+3. Fix if FAIL  
+4. Add next row  
+
+---
+
 ### Minimal sheet (copy-paste headers only)
 
 ```
-Title,Description,Vendor,Product category,Product image URL,Price,SKU,Inventory quantity,Status,Tags,SEO title,SEO description,Image alt text,QA Status,AI Score,URL handle
+Title,Description,Vendor,Product category,Product image URL,Price,SKU,Inventory quantity,Status,Tags,SEO title,SEO description,Image alt text,QA Status,AI Score,URL handle,Generated Image URL,Shopify Product URL
 ```
 
 Import as new tab or replace row 1 headers — keep one product per row.
