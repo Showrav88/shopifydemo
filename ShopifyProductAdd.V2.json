@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. OpenAI: gpt-4o vision uses binary from Photoroom (not URL)\n4. Trigger watches **Price** on sheet **product_template**\n5. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n6. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n7. Set price and SKU node: replace YOUR_STORE with your subdomain (e.g. 8kqexi-2j)"
+        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. Flow: Photoroom \u2192 ImgBB \u2192 Analyze image (URL) \u2192 AI listing\n4. Trigger watches **Price** on sheet **product_template**\n5. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n6. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n7. Set price and SKU: store set to 8kqexi-2j (change if your store differs)"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -173,8 +173,8 @@
         "resource": "image",
         "operation": "analyze",
         "text": "Analyze this fashion product image. Extract ONLY what you can visibly verify. Do NOT invent specifications.\n\nReturn JSON only:\n{\n  \"verified_facts\": [],\n  \"color\": \"\",\n  \"material\": \"\",\n  \"product_type\": \"\",\n  \"gender\": \"\"\n}",
-        "inputType": "binary",
-        "binaryPropertyName": "data",
+        "inputType": "url",
+        "imageUrls": "={{ $('HTTP Request1').item.json.data.url }}",
         "options": {
           "simplify": true
         }
@@ -194,19 +194,6 @@
           "__aiGatewayManaged": true
         }
       }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Analyze image returns text only — re-attach Photoroom PNG for ImgBB upload\nconst analyze = $input.first().json;\nconst photoroomBinary = $('HTTP Request').first().binary;\n\nif (!photoroomBinary || !photoroomBinary.data) {\n  throw new Error('Missing PNG from Photoroom (HTTP Request node). Run Photoroom first.');\n}\n\nreturn [{\n  json: analyze,\n  binary: photoroomBinary\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -990,
-        0
-      ],
-      "id": "c4d5e6f7-a8b9-0123-cdef-456789abcdef",
-      "name": "Restore image binary"
     },
     {
       "parameters": {
@@ -451,7 +438,7 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=https://YOUR_STORE.myshopify.com/admin/api/2025-01/variants/{{ $('Create a product').item.json.variants[0].id }}.json",
+        "url": "=https://8kqexi-2j.myshopify.com/admin/api/2025-01/variants/{{ $('Create a product').item.json.variants[0].id }}.json",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "shopifyOAuth2Api",
         "sendBody": true,
@@ -590,28 +577,6 @@
       "main": [
         [
           {
-            "node": "Analyze image",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Analyze image": {
-      "main": [
-        [
-          {
-            "node": "Restore image binary",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Restore image binary": {
-      "main": [
-        [
-          {
             "node": "HTTP Request1",
             "type": "main",
             "index": 0
@@ -620,6 +585,17 @@
       ]
     },
     "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image": {
       "main": [
         [
           {
