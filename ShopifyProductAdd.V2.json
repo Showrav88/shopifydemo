@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. Flow: Photoroom \u2192 **Analyze image (binary)** \u2192 Restore image binary \u2192 ImgBB \u2192 AI listing\n4. Analyze uses Photoroom file bytes \u2014 NOT ImgBB URL (OpenAI cannot fetch i.ibb.co reliably)\n5. Trigger watches **Price** on sheet **product_template**\n6. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n7. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n8. After Shopify create: Update price, SKU and image link \u2192 Wait for Shopify CDN image \u2192 sheet\n9. Store subdomain 8kqexi-2j (change URLs if your store differs)"
+        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. Flow: Photoroom \u2192 **Analyze image (binary)** \u2192 Restore image binary \u2192 ImgBB \u2192 AI listing\n4. Analyze uses Photoroom file bytes \u2014 NOT ImgBB URL (OpenAI cannot fetch i.ibb.co reliably)\n5. Trigger watches **Price** on sheet **product_template**\n6. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n7. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n8. Shopify: create draft \u2192 **Upload image to Shopify** (binary, not ImgBB URL) \u2192 price/SKU \u2192 sheet\n9. Product category: type plain text (Casual Wear) \u2014 never =Casual Wear (sheet formula error)\n10. Store subdomain 8kqexi-2j (change URLs if your store differs)"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -16,7 +16,7 @@
     },
     {
       "parameters": {
-        "content": "## ONE SHEET ONLY \u2014 product_template\n\nYou do NOT need a second spreadsheet.\n\n### YOU type (before run):\n| Column | Required? |\n| Product image URL | YES |\n| Description or Title | YES |\n| Price | YES (trigger) |\n| SKU | YES |\n| Vendor, Product category | recommended |\n\n### ADD 2 new column headers (row 1, end of sheet):\n| QA Status | AI Score |\n| (leave empty) | (leave empty) |\nWorkflow fills these automatically.\n\n### QA Status values (workflow writes):\n| Value | Meaning |\n| PASS | Score >= 90, Shopify draft created |\n| FAIL | Score < 90, no Shopify product |\n\nColumn order does NOT matter. Header names matter."
+        "content": "## ONE SHEET ONLY \u2014 product_template\n\nYou do NOT need a second spreadsheet.\n\n### YOU type (before run):\n| Column | Required? |\n| Product image URL | YES |\n| Description or Title | YES |\n| Price | YES (trigger) |\n| SKU | YES |\n| Vendor, Product category | recommended |\n\n### ADD 2 new column headers (row 1, end of sheet):\n| QA Status | AI Score |\n| (leave empty) | (leave empty) |\nWorkflow fills these automatically.\n\n### QA Status values (workflow writes):\n| Value | Meaning |\n| PASS | Score >= 90, draft + image on Shopify CDN |\n| PASS_NO_IMAGE | Score >= 90, draft but image missing |\n| FAIL | Score < 90, no Shopify product |\n\nColumn order does NOT matter. Header names matter."
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -71,7 +71,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\n\nconst imageUrl = item['Product image URL'] || item['Image Src'] || item['Image URL'] || '';\nconst rawInfo = item['Description'] || item['Title'] || '';\nconst category = item['Product category'] || item['Type'] || '';\nconst vendor = item['Vendor'] || item['Brand'] || '';\nconst sku = item['SKU'] || item['Variant SKU'] || '';\nconst rowNumber = item.row_number ?? item.__rowNumber ?? item.__row ?? null;\n\nif (!imageUrl) {\n  throw new Error('Validation Error: Missing Product image URL');\n}\nif (!rawInfo) {\n  throw new Error('Validation Error: Missing Description or Title');\n}\nif (!sku) {\n  throw new Error('Validation Error: Missing SKU — required to find and update the correct sheet row');\n}\n\nreturn [{\n  json: {\n    ...item,\n    row_number: rowNumber,\n    validated_image_url: imageUrl,\n    validated_raw_info: rawInfo,\n    validated_category: category,\n    validated_vendor: vendor,\n    validated_sku: sku,\n    validated_price: item['Price'] || item['Variant Price'] || null,\n    validated_inventory: item['Inventory quantity'] || item['Variant Inventory Qty'] || item['Inventory Qty'] || null\n  }\n}];"
+        "jsCode": "const item = $input.first().json;\n\nconst imageUrl = item['Product image URL'] || item['Image Src'] || item['Image URL'] || '';\nconst rawInfo = item['Description'] || item['Title'] || '';\nlet category = String(item['Product category'] || item['Type'] || '').trim();\nconst vendor = item['Vendor'] || item['Brand'] || '';\nconst sku = item['SKU'] || item['Variant SKU'] || '';\nconst rowNumber = item.row_number ?? item.__rowNumber ?? item.__row ?? null;\n\nif (category.startsWith('#') || /error/i.test(category)) {\n  category = '';\n}\n\nif (!imageUrl) {\n  throw new Error('Validation Error: Missing Product image URL');\n}\nif (!rawInfo) {\n  throw new Error('Validation Error: Missing Description or Title');\n}\nif (!sku) {\n  throw new Error('Validation Error: Missing SKU — required to find and update the correct sheet row');\n}\n\nreturn [{\n  json: {\n    ...item,\n    row_number: rowNumber,\n    validated_image_url: imageUrl,\n    validated_raw_info: rawInfo,\n    validated_category: category,\n    validated_vendor: vendor,\n    validated_sku: sku,\n    validated_price: item['Price'] || item['Variant Price'] || null,\n    validated_inventory: item['Inventory quantity'] || item['Variant Inventory Qty'] || item['Inventory Qty'] || null\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -264,7 +264,7 @@
           "mappingMode": "defineBelow",
           "value": {
             "Title": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).title }}",
-            "Product category": "={{ $('Google Sheets Trigger').item.json['Product category'] || JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).collection }}",
+            "Product category": "={{ $('Code in JavaScript').item.json.validated_category || JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).collection }}",
             "Description": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).description_html }}",
             "Tags": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).tags }}",
             "SEO title": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).seo_title }}",
@@ -416,14 +416,9 @@
         "additionalFields": {
           "body_html": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).description_html }}",
           "vendor": "={{ $('Google Sheets Trigger').item.json.Vendor || $('Code in JavaScript').item.json.validated_vendor }}",
-          "product_type": "={{ $('Google Sheets Trigger').item.json['Product category'] }}",
+          "product_type": "={{ $('Code in JavaScript').item.json.validated_category }}",
           "tags": "={{ JSON.parse($('Message a model').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).tags }}",
           "status": "draft",
-          "images": [
-            {
-              "src": "={{ $('HTTP Request1').item.json.data.url }}"
-            }
-          ],
           "variants": [
             {
               "price": "={{ String($('Google Sheets Trigger').item.json.Price || $('Code in JavaScript').item.json.validated_price) }}",
@@ -451,6 +446,45 @@
     },
     {
       "parameters": {
+        "jsCode": "const productId = $('Create a product').first().json.id;\nconst binary = $('HTTP Request').first().binary;\n\nif (!binary?.data) {\n  throw new Error('No Photoroom image binary — cannot upload to Shopify');\n}\n\nlet attachment = binary.data.data;\nif (typeof attachment !== 'string') {\n  attachment = Buffer.from(attachment).toString('base64');\n}\n\nconst filename = binary.data.fileName\n  || (binary.data.fileExtension ? `product.${binary.data.fileExtension}` : 'product.png');\n\nreturn [{\n  json: {\n    product_id: productId,\n    attachment,\n    filename,\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        45,
+        -120
+      ],
+      "id": "e5f6a7b8-c9d0-4123-e456-789abcdef012",
+      "name": "Prepare Shopify image upload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://8kqexi-2j.myshopify.com/admin/api/2025-01/products/{{ $json.product_id }}/images.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "shopifyOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"image\": {\n    \"attachment\": \"{{ $json.attachment }}\",\n    \"filename\": \"{{ $json.filename }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        90,
+        -120
+      ],
+      "id": "f6a7b8c9-d0e1-4234-f567-89abcdef0123",
+      "name": "Upload image to Shopify",
+      "credentials": {
+        "shopifyOAuth2Api": {
+          "id": "RECONNECT_ME",
+          "name": "Shopify account"
+        }
+      }
+    },
+    {
+      "parameters": {
         "method": "PUT",
         "url": "=https://8kqexi-2j.myshopify.com/admin/api/2025-01/variants/{{ $('Create a product').item.json.variants[0].id }}.json",
         "authentication": "predefinedCredentialType",
@@ -463,7 +497,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        90,
+        135,
         -120
       ],
       "id": "b8c9d0e1-f2a3-4567-89ab-cdef01234567",
@@ -482,7 +516,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        180,
+        225,
         -120
       ],
       "id": "c1d2e3f4-a5b6-7890-cdef-123456789abc",
@@ -512,7 +546,7 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "QA Status": "PASS",
+            "QA Status": "={{ $('Wait for Shopify CDN image').item.json.shopify_image_ready ? 'PASS' : 'PASS_NO_IMAGE' }}",
             "URL handle": "={{ $('Create a product').item.json.handle }}",
             "Shopify Product URL": "=https://8kqexi-2j.myshopify.com/products/{{ $('Create a product').item.json.handle }}",
             "Shopify Image URL": "={{ $('Wait for Shopify CDN image').item.json.shopify_image_url || $('HTTP Request1').item.json.data.url || '' }}",
@@ -530,7 +564,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        360,
+        405,
         -120
       ],
       "id": "98840805-68c6-4974-bdc6-93503f2ebf21",
@@ -716,6 +750,28 @@
       ]
     },
     "Create a product": {
+      "main": [
+        [
+          {
+            "node": "Prepare Shopify image upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Shopify image upload": {
+      "main": [
+        [
+          {
+            "node": "Upload image to Shopify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload image to Shopify": {
       "main": [
         [
           {

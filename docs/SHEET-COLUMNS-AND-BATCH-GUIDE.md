@@ -10,7 +10,7 @@ The workflow uses AI for columns that affect **search ranking and sales copy**. 
 |--------|------------|-----|
 | **Description** | High | Raw facts the AI must not invent |
 | **Product image URL** | High | Vision checks the real product |
-| **Product category** | Medium | **You set this** — workflow keeps your value (AI only fills if empty) |
+| **Product category** | Medium | **You set this** — type plain text e.g. `Casual Wear`. **Never** `=Casual Wear` (Google Sheets `#ERROR!`) |
 | **Vendor** | Medium | Brand trust, filters |
 | **Title** | Medium | Starting point; AI improves it |
 | **Price** | Low for SEO | Required for Shopify + trigger |
@@ -148,7 +148,8 @@ Your lazcdn link stays in **Product image URL** — that is correct. The workflo
 ### Shopify PASS path (score ≥ 90)
 
 ```
-Create a product (sends ImgBB URL as image src, status draft)
+Create a product (draft, no ImgBB URL — Shopify cannot fetch i.ibb.co)
+  → Upload image to Shopify (Photoroom binary as base64 attachment)
   → Update price, SKU and image link
   → Wait for Shopify CDN image (~2s hold, poll up to ~20s — never throws)
   → Update row in sheet1 (Shopify Image URL, or ImgBB fallback if CDN not ready)
