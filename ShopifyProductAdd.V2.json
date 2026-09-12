@@ -162,7 +162,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const inputItem = $input.first();\nlet payload = inputItem.json;\n\nif (payload === undefined || payload === null) {\n  payload = {};\n} else if (typeof payload === 'string') {\n  try {\n    payload = JSON.parse(payload);\n  } catch {\n    payload = { text: payload };\n  }\n} else if (Array.isArray(payload)) {\n  payload = { items: payload };\n} else if (typeof payload !== 'object') {\n  payload = { value: payload };\n}\n\nconst imageBinary = $('HTTP Request').first().binary?.data;\nif (!imageBinary) {\n  throw new Error('No image binary from Photoroom (HTTP Request) — cannot upload to ImgBB');\n}\n\nreturn [{\n  json: payload,\n  binary: {\n    data: imageBinary,\n  },\n}];"
+        "jsCode": "const inputItem = $input.first();\nlet payload = inputItem.json;\n\nif (payload === undefined || payload === null) {\n  payload = {};\n} else if (typeof payload === 'string') {\n  try {\n    payload = JSON.parse(payload);\n  } catch {\n    payload = { text: payload };\n  }\n} else if (Array.isArray(payload)) {\n  payload = { items: payload };\n} else if (typeof payload !== 'object') {\n  payload = { value: payload };\n}\n\nconst sourceItems = $('HTTP Request').all();\nif (!sourceItems[0]?.binary?.data) {\n  throw new Error('No image binary from Photoroom (HTTP Request) — cannot upload to ImgBB');\n}\n\nconst buffer = await this.helpers.getBinaryDataBuffer(0, 'data', sourceItems);\nconst binaryMeta = sourceItems[0].binary.data;\n\nreturn [{\n  json: payload,\n  binary: {\n    data: {\n      data: buffer.toString('base64'),\n      mimeType: binaryMeta.mimeType || 'image/png',\n      fileName: binaryMeta.fileName || 'product.png',\n      fileExtension: binaryMeta.fileExtension || 'png',\n    },\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -446,30 +446,10 @@
     },
     {
       "parameters": {
-        "jsCode": "const productId = $('Create a product').first().json.id;\nconst binary = $('HTTP Request').first().binary;\n\nif (!binary?.data) {\n  throw new Error('No Photoroom image binary — cannot upload to Shopify');\n}\n\nlet attachment = binary.data.data;\nif (typeof attachment !== 'string') {\n  attachment = Buffer.from(attachment).toString('base64');\n}\n\nconst filename = binary.data.fileName\n  || (binary.data.fileExtension ? `product.${binary.data.fileExtension}` : 'product.png');\n\nreturn [{\n  json: {\n    product_id: productId,\n    attachment,\n    filename,\n  },\n}];"
+        "jsCode": "const productId = $('Create a product').first().json.id;\nconst shopHost = '8kqexi-2j.myshopify.com';\nconst sourceItems = $('HTTP Request').all();\n\nif (!sourceItems[0]?.binary?.data) {\n  throw new Error('No Photoroom image binary — cannot upload to Shopify');\n}\n\nconst buffer = await this.helpers.getBinaryDataBuffer(0, 'data', sourceItems);\nconst attachment = buffer.toString('base64');\nconst binaryMeta = sourceItems[0].binary.data;\nconst filename = binaryMeta.fileName\n  || (binaryMeta.fileExtension ? `product.${binaryMeta.fileExtension}` : 'product.png');\n\nconst response = await this.helpers.requestWithAuthentication.call(this, 'shopifyOAuth2Api', {\n  method: 'POST',\n  url: `https://${shopHost}/admin/api/2025-01/products/${productId}/images.json`,\n  body: {\n    image: {\n      attachment,\n      filename,\n    },\n  },\n  json: true,\n});\n\nconst src = response?.image?.src ?? '';\n\nreturn [{\n  json: {\n    product_id: productId,\n    shopify_image_url: src,\n    shopify_image_ready: src.includes('cdn.shopify.com') || src.includes('shopifycdn.com'),\n    filename,\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        45,
-        -120
-      ],
-      "id": "e5f6a7b8-c9d0-4123-e456-789abcdef012",
-      "name": "Prepare Shopify image upload"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://8kqexi-2j.myshopify.com/admin/api/2025-01/products/{{ $json.product_id }}/images.json",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "shopifyOAuth2Api",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"image\": {\n    \"attachment\": \"{{ $json.attachment }}\",\n    \"filename\": \"{{ $json.filename }}\"\n  }\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
       "position": [
         90,
         -120
@@ -511,7 +491,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const createProduct = $('Create a product').first().json;\nconst productId = createProduct.id;\nconst shopHost = '8kqexi-2j.myshopify.com';\nconst imgbbUrl = $('HTTP Request1').first().json?.data?.url ?? '';\n\nconst maxAttempts = 6;\nconst delayMs = 3000;\nconst initialDelayMs = 2000;\n\nconst sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));\nawait sleep(initialDelayMs);\n\nlet lastError = 'unknown';\nlet lastSrc = '';\n\nfor (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  try {\n    const response = await this.helpers.requestWithAuthentication.call(this, 'shopifyOAuth2Api', {\n      method: 'GET',\n      url: `https://${shopHost}/admin/api/2025-01/products/${productId}.json`,\n      json: true,\n    });\n\n    const product = response.product ?? response;\n    const src = product.images?.[0]?.src ?? '';\n\n    if (src) {\n      lastSrc = src;\n      const onShopifyCdn = src.includes('cdn.shopify.com') || src.includes('shopifycdn.com');\n      if (onShopifyCdn) {\n        return [{\n          json: {\n            shopify_image_url: src,\n            shopify_image_ready: true,\n            shopify_image_attempts: attempt,\n            shopify_product_id: productId,\n          },\n        }];\n      }\n      lastError = `Image not on Shopify CDN yet: ${src}`;\n    } else {\n      lastError = `No images on product yet (attempt ${attempt})`;\n    }\n  } catch (err) {\n    lastError = err.message || String(err);\n  }\n\n  if (attempt < maxAttempts) {\n    await sleep(delayMs);\n  }\n}\n\nconst fallbackCreate = createProduct.images?.[0]?.src ?? '';\nconst shopifyImageUrl = lastSrc || fallbackCreate || imgbbUrl || '';\nconst onShopifyCdn = shopifyImageUrl.includes('cdn.shopify.com') || shopifyImageUrl.includes('shopifycdn.com');\n\nreturn [{\n  json: {\n    shopify_image_url: shopifyImageUrl,\n    shopify_image_ready: onShopifyCdn,\n    shopify_image_attempts: maxAttempts,\n    shopify_product_id: productId,\n    shopify_image_warning: onShopifyCdn\n      ? ''\n      : (shopifyImageUrl\n        ? `CDN not ready — using interim URL. ${lastError}`\n        : `No Shopify image — using ImgBB in sheet. ${lastError}`),\n  },\n}];"
+        "jsCode": "const createProduct = $('Create a product').first().json;\nconst productId = createProduct.id;\nconst shopHost = '8kqexi-2j.myshopify.com';\nconst imgbbUrl = $('HTTP Request1').first().json?.data?.url ?? '';\nconst uploadResult = $('Upload image to Shopify').first().json ?? {};\n\nif (uploadResult.shopify_image_ready && uploadResult.shopify_image_url) {\n  return [{\n    json: {\n      shopify_image_url: uploadResult.shopify_image_url,\n      shopify_image_ready: true,\n      shopify_image_attempts: 0,\n      shopify_product_id: productId,\n    },\n  }];\n}\n\nconst maxAttempts = 6;\nconst delayMs = 3000;\nconst initialDelayMs = 2000;\nconst sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));\nawait sleep(initialDelayMs);\n\nlet lastError = uploadResult.shopify_image_url\n  ? `Upload returned non-CDN URL: ${uploadResult.shopify_image_url}`\n  : 'unknown';\nlet lastSrc = uploadResult.shopify_image_url || '';\n\nfor (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  try {\n    const response = await this.helpers.requestWithAuthentication.call(this, 'shopifyOAuth2Api', {\n      method: 'GET',\n      url: `https://${shopHost}/admin/api/2025-01/products/${productId}.json`,\n      json: true,\n    });\n\n    const product = response.product ?? response;\n    const src = product.images?.[0]?.src ?? '';\n\n    if (src) {\n      lastSrc = src;\n      const onShopifyCdn = src.includes('cdn.shopify.com') || src.includes('shopifycdn.com');\n      if (onShopifyCdn) {\n        return [{\n          json: {\n            shopify_image_url: src,\n            shopify_image_ready: true,\n            shopify_image_attempts: attempt,\n            shopify_product_id: productId,\n          },\n        }];\n      }\n      lastError = `Image not on Shopify CDN yet: ${src}`;\n    } else {\n      lastError = `No images on product yet (attempt ${attempt})`;\n    }\n  } catch (err) {\n    lastError = err.message || String(err);\n  }\n\n  if (attempt < maxAttempts) {\n    await sleep(delayMs);\n  }\n}\n\nconst shopifyImageUrl = lastSrc || imgbbUrl || '';\nconst onShopifyCdn = shopifyImageUrl.includes('cdn.shopify.com') || shopifyImageUrl.includes('shopifycdn.com');\n\nreturn [{\n  json: {\n    shopify_image_url: shopifyImageUrl,\n    shopify_image_ready: onShopifyCdn,\n    shopify_image_attempts: maxAttempts,\n    shopify_product_id: productId,\n    shopify_image_warning: onShopifyCdn\n      ? ''\n      : (shopifyImageUrl\n        ? `CDN not ready — using interim URL. ${lastError}`\n        : `No Shopify image — using ImgBB in sheet. ${lastError}`),\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -750,17 +730,6 @@
       ]
     },
     "Create a product": {
-      "main": [
-        [
-          {
-            "node": "Prepare Shopify image upload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Shopify image upload": {
       "main": [
         [
           {
