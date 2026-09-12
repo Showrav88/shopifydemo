@@ -44,6 +44,18 @@ These come from Shopify CSV export but this workflow ignores them:
 
 ---
 
+## Analyze image — why binary not URL?
+
+If you see: `Unable to download content from the provided URL before the timeout` — OpenAI cannot fetch ImgBB links in time. V2 uses:
+
+```
+Photoroom → Analyze image (Binary File "data") → Restore image binary → ImgBB
+```
+
+Do **not** use Image URL mode with ImgBB for Analyze image.
+
+---
+
 ## Skip if already PASS (score ≥ 90)
 
 The workflow now **stops early** if a row already has:
