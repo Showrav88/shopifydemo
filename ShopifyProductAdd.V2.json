@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. Flow: Photoroom \u2192 ImgBB \u2192 **Wait for CDN ready** \u2192 Analyze image \u2192 AI listing\n4. **Wait for CDN ready** polls ImgBB URL until OpenAI can fetch it (fixes URL timeout)\n5. Trigger watches **Price** on sheet **product_template**\n6. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n7. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n8. After Shopify create: Update price, SKU and image link \u2192 Wait for Shopify CDN image \u2192 sheet\n9. Store subdomain 8kqexi-2j (change URLs if your store differs)"
+        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. Flow: Photoroom \u2192 **Analyze image (binary)** \u2192 Restore image binary \u2192 ImgBB \u2192 AI listing\n4. Analyze uses Photoroom file bytes \u2014 NOT ImgBB URL (OpenAI cannot fetch i.ibb.co reliably)\n5. Trigger watches **Price** on sheet **product_template**\n6. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n7. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n8. After Shopify create: Update price, SKU and image link \u2192 Wait for Shopify CDN image \u2192 sheet\n9. Store subdomain 8kqexi-2j (change URLs if your store differs)"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -129,6 +129,52 @@
     },
     {
       "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "resource": "image",
+        "operation": "analyze",
+        "text": "Analyze this fashion product image. Extract ONLY what you can visibly verify. Do NOT invent specifications.\n\nReturn JSON only:\n{\n  \"verified_facts\": [],\n  \"color\": \"\",\n  \"material\": \"\",\n  \"product_type\": \"\",\n  \"gender\": \"\"\n}",
+        "inputType": "base64",
+        "binaryPropertyName": "data",
+        "options": {
+          "simplify": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -1260,
+        0
+      ],
+      "id": "721acc70-9aeb-40cb-ba9a-5d95f7e698d1",
+      "name": "Analyze image",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const analysis = $input.first().json;\nconst binary = $('HTTP Request').first().binary;\n\nif (!binary?.data) {\n  throw new Error('No image binary from Photoroom (HTTP Request) — cannot upload to ImgBB');\n}\n\nreturn [{\n  json: analysis,\n  binary,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1080,
+        0
+      ],
+      "id": "d4e5f6a7-b8c9-4012-d345-6789abcdef01",
+      "name": "Restore image binary"
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://api.imgbb.com/1/upload",
         "sendQuery": true,
@@ -156,57 +202,11 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        -1260,
+        -900,
         0
       ],
       "id": "e913af49-9582-45dd-8d3a-1cb207524104",
       "name": "HTTP Request1"
-    },
-    {
-      "parameters": {
-        "jsCode": "const imgbb = $('HTTP Request1').first().json;\nconst imageUrl = imgbb?.data?.url;\n\nif (!imageUrl) {\n  throw new Error('ImgBB upload did not return data.url — check ImgBB API key and HTTP Request1 response');\n}\n\nconst maxAttempts = 15;\nconst delayMs = 4000;\nlet lastError = 'unknown';\n\nfor (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  try {\n    const response = await this.helpers.httpRequest({\n      method: 'GET',\n      url: imageUrl,\n      returnFullResponse: true,\n      timeout: 15000,\n      headers: {\n        Range: 'bytes=0-0',\n        'User-Agent': 'n8n-shopify-cdn-probe/1.0',\n      },\n      ignoreHttpStatusErrors: true,\n    });\n\n    const status = response.statusCode ?? response.status ?? 0;\n    if (status >= 200 && status < 400) {\n      return [{\n        json: {\n          image_url: imageUrl,\n          cdn_ready: true,\n          cdn_attempts: attempt,\n          cdn_checked_at: new Date().toISOString(),\n        },\n      }];\n    }\n\n    lastError = `HTTP ${status} on attempt ${attempt}`;\n  } catch (err) {\n    lastError = err.message || String(err);\n  }\n\n  if (attempt < maxAttempts) {\n    await new Promise((resolve) => setTimeout(resolve, delayMs));\n  }\n}\n\nthrow new Error(\n  `Image CDN not ready after ${maxAttempts} attempts (~${Math.round((maxAttempts - 1) * delayMs / 1000)}s). ` +\n  `OpenAI could not fetch: ${imageUrl}. Last error: ${lastError}`\n);"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1170,
-        0
-      ],
-      "id": "a8f3c2d1-4e5b-6a7c-8d9e-0f1a2b3c4d5e",
-      "name": "Wait for CDN ready"
-    },
-    {
-      "parameters": {
-        "modelId": {
-          "__rl": true,
-          "value": "gpt-4o",
-          "mode": "list",
-          "cachedResultName": "GPT-4O"
-        },
-        "resource": "image",
-        "operation": "analyze",
-        "text": "Analyze this fashion product image. Extract ONLY what you can visibly verify. Do NOT invent specifications.\n\nReturn JSON only:\n{\n  \"verified_facts\": [],\n  \"color\": \"\",\n  \"material\": \"\",\n  \"product_type\": \"\",\n  \"gender\": \"\"\n}",
-        "inputType": "url",
-        "imageUrls": "={{ $('Wait for CDN ready').item.json.image_url }}",
-        "options": {
-          "simplify": true
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.openAi",
-      "typeVersion": 2.3,
-      "position": [
-        -1080,
-        0
-      ],
-      "id": "721acc70-9aeb-40cb-ba9a-5d95f7e698d1",
-      "name": "Analyze image",
-      "credentials": {
-        "openAiApi": {
-          "id": null,
-          "name": "",
-          "__aiGatewayManaged": true
-        }
-      }
     },
     {
       "parameters": {
@@ -613,28 +613,6 @@
       "main": [
         [
           {
-            "node": "HTTP Request1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTTP Request1": {
-      "main": [
-        [
-          {
-            "node": "Wait for CDN ready",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait for CDN ready": {
-      "main": [
-        [
-          {
             "node": "Analyze image",
             "type": "main",
             "index": 0
@@ -643,6 +621,28 @@
       ]
     },
     "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "Restore image binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore image binary": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
       "main": [
         [
           {
