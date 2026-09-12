@@ -47,14 +47,16 @@ These come from Shopify CSV export but this workflow ignores them:
 ## Analyze image flow (working V2)
 
 ```
-Photoroom → ImgBB → Wait for CDN ready → Analyze image → Message a model
+Photoroom → Analyze image (binary) → Restore image binary → ImgBB → Message a model
 ```
 
-**Wait for CDN ready** polls the ImgBB URL (up to ~56s) until it responds — this prevents OpenAI `Unable to download content from the provided URL before the timeout`.
+**Why not ImgBB URL for vision?** n8n can reach `i.ibb.co`, but **OpenAI's servers often cannot** — you get `Unable to download content from the provided URL before the timeout` even when "Wait for CDN ready" passes.
 
-Analyze image URL: `={{ $('Wait for CDN ready').item.json.image_url }}`
+**Analyze image settings:**
+- Input Type: **Binary File(s)**
+- Input Data Field Name: `data` (from Photoroom HTTP Request)
 
-If it still fails after the wait, check ImgBB key and that `i.ibb.co` is reachable from your n8n instance.
+ImgBB still runs **after** analysis for Shopify upload and **Generated Image URL** in the sheet.
 
 ---
 
