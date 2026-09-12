@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. Flow: Photoroom \u2192 **Analyze image (binary)** \u2192 Restore image binary \u2192 ImgBB \u2192 AI listing\n4. Analyze uses Photoroom file bytes \u2014 NOT ImgBB URL (OpenAI cannot fetch i.ibb.co reliably)\n5. Trigger watches **Price** on sheet **product_template**\n6. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n7. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n8. Shopify: create draft \u2192 Prepare image \u2192 **Upload image to Shopify** (HTTP + OAuth) \u2192 price/SKU \u2192 sheet\n9. Product category: type plain text (Casual Wear) \u2014 never =Casual Wear (sheet formula error)\n10. Store subdomain 8kqexi-2j (change URLs if your store differs)"
+        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. Flow: Photoroom \u2192 **Analyze image (binary)** \u2192 Restore image binary \u2192 ImgBB \u2192 AI listing\n4. Analyze uses Photoroom file bytes \u2014 NOT ImgBB URL (OpenAI cannot fetch i.ibb.co reliably)\n5. Trigger watches **Price** on sheet **product_template**\n6. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n7. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n8. Shopify: create draft \u2192 Prepare image \u2192 **Upload image to Shopify** (ImgBB src URL, HTTP + OAuth) \u2192 price/SKU \u2192 sheet\n9. Product category: type plain text (Casual Wear) \u2014 never =Casual Wear (sheet formula error)\n10. Store subdomain 8kqexi-2j (change URLs if your store differs)"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -350,7 +350,7 @@
             "SEO description": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).meta_description }}",
             "Image alt text": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).image_alt_text }}",
             "QA Status": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).quality_score >= 90 ? 'PASS' : 'FAIL' }}",
-            "Generated Image URL": "={{ $('HTTP Request1').item.json.data.url }}",
+            "Generated Image URL": "={{ $('HTTP Request1').item.json.data.image.url || $('HTTP Request1').item.json.data.url || $('HTTP Request1').item.json.data.display_url || '' }}",
             "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"
           },
           "matchingColumns": [
@@ -446,7 +446,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const productId = $('Create a product').first().json.id;\nconst imgbbUrl = $('HTTP Request1').first().json?.data?.url;\n\nif (!imgbbUrl) {\n  throw new Error('No ImgBB URL from HTTP Request1 — cannot upload image to Shopify');\n}\n\nconst imageData = await this.helpers.httpRequest({\n  method: 'GET',\n  url: imgbbUrl,\n  encoding: null,\n  json: false,\n});\n\nconst buffer = Buffer.isBuffer(imageData) ? imageData : Buffer.from(imageData);\nif (!buffer?.length) {\n  throw new Error(`ImgBB download returned empty file: ${imgbbUrl}`);\n}\n\nreturn [{\n  json: {\n    product_id: productId,\n    attachment: buffer.toString('base64'),\n    filename: 'product.png',\n  },\n}];"
+        "jsCode": "const productId = $('Create a product').first().json.id;\nconst imgbb = $('HTTP Request1').first().json?.data;\n\nconst imageSrc = imgbb?.image?.url || imgbb?.url || imgbb?.display_url || '';\n\nif (!imageSrc) {\n  throw new Error('No ImgBB image URL from HTTP Request1 — cannot upload image to Shopify');\n}\n\nif (!/^https:\\/\\/i\\.ibb\\.co\\//i.test(imageSrc)) {\n  throw new Error(`ImgBB URL is not a direct image link (expected i.ibb.co): ${imageSrc}`);\n}\n\nreturn [{\n  json: {\n    product_id: productId,\n    image_src: imageSrc,\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -465,7 +465,7 @@
         "nodeCredentialType": "shopifyOAuth2Api",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ image: { attachment: $json.attachment, filename: $json.filename } }) }}",
+        "jsonBody": "={{ { image: { src: $json.image_src } } }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -485,7 +485,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const upload = $input.first().json;\nconst productId = $('Create a product').first().json.id;\nconst imgbbUrl = $('HTTP Request1').first().json?.data?.url ?? '';\nconst src = upload?.image?.src ?? '';\nconst shopifyImageUrl = src || imgbbUrl;\nconst onShopifyCdn = src.includes('cdn.shopify.com') || src.includes('shopifycdn.com');\n\nreturn [{\n  json: {\n    product_id: productId,\n    shopify_image_url: shopifyImageUrl,\n    shopify_image_ready: onShopifyCdn,\n    image_source: src ? 'shopify_upload' : 'imgbb_fallback',\n  },\n}];"
+        "jsCode": "const upload = $input.first().json;\nconst productId = $('Create a product').first().json.id;\nconst imgbb = $('HTTP Request1').first().json?.data;\nconst imgbbUrl = imgbb?.image?.url || imgbb?.url || imgbb?.display_url || '';\nconst src = upload?.image?.src ?? '';\nconst shopifyImageUrl = src || imgbbUrl;\nconst onShopifyCdn = src.includes('cdn.shopify.com') || src.includes('shopifycdn.com');\n\nreturn [{\n  json: {\n    product_id: productId,\n    shopify_image_url: shopifyImageUrl,\n    shopify_image_ready: onShopifyCdn,\n    image_source: onShopifyCdn ? 'shopify_cdn' : (src ? 'shopify_pending' : 'imgbb_fallback'),\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -543,8 +543,8 @@
             "QA Status": "={{ $('Shopify image result').item.json.shopify_image_ready ? 'PASS' : 'PASS_NO_IMAGE' }}",
             "URL handle": "={{ $('Create a product').item.json.handle }}",
             "Shopify Product URL": "=https://8kqexi-2j.myshopify.com/products/{{ $('Create a product').item.json.handle }}",
-            "Shopify Image URL": "={{ $('Shopify image result').item.json.shopify_image_url || $('HTTP Request1').item.json.data.url || '' }}",
-            "Generated Image URL": "={{ $('HTTP Request1').item.json.data.url }}",
+            "Shopify Image URL": "={{ $('Shopify image result').item.json.shopify_image_url || $('HTTP Request1').item.json.data.image.url || $('HTTP Request1').item.json.data.url || $('HTTP Request1').item.json.data.display_url || '' }}",
+            "Generated Image URL": "={{ $('HTTP Request1').item.json.data.image.url || $('HTTP Request1').item.json.data.url || $('HTTP Request1').item.json.data.display_url || '' }}",
             "Status": "draft",
             "Vendor": "={{ $('Google Sheets Trigger').item.json.Vendor }}",
             "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"

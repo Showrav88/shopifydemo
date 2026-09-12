@@ -15,6 +15,10 @@ Internal test store for **men's and women's clothing and accessories** targeting
 | **Sheet columns, batch runs, skip logic** | [docs/SHEET-COLUMNS-AND-BATCH-GUIDE.md](./docs/SHEET-COLUMNS-AND-BATCH-GUIDE.md) |
 | **Tracking sheet template** | [products-tracking-template.csv](./products-tracking-template.csv) |
 | **n8n workflow JSON (original)** | [ShopifyProductAdd.V1.json](./ShopifyProductAdd.V1.json) |
+| **CSV Agent Spec** — scrape → CSV pipeline | [fashion-shopify-csv-agent-spec.md](./fashion-shopify-csv-agent-spec.md) |
+| **Master Project Plan** — gaps, images, n8n comparison | [PROJECT-PLAN.md](./PROJECT-PLAN.md) |
+| **Image + stack FAQ** — hosted URLs, Gemini, JS/Next.js | [docs/IMAGE-AND-STACK-FAQ.md](./docs/IMAGE-AND-STACK-FAQ.md) |
+| **Build scope** — Node + Next.js + SQLite, always AI images | [docs/BUILD-SCOPE-SQLITE.md](./docs/BUILD-SCOPE-SQLITE.md) |
 
 ## Start Here
 
