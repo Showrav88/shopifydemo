@@ -16,7 +16,7 @@
     },
     {
       "parameters": {
-        "content": "## SHEET INPUT DATA \u2014 you type this BEFORE running\n\n### Sheet 1: product_template (trigger sheet)\n\n| Column | Required? | You type | Example |\n|--------|-----------|----------|--------|\n| **Product image URL** | YES | Direct image link | https://...jpg |\n| **Description** | YES* | Raw product text | Women's blue floral blouse... |\n| **Price** | YES | **Trigger column** \u2014 enter or change to start | 29.99 |\n| Title | Optional | Working title (AI improves) | Blue Floral Blouse |\n| Vendor | Recommended | Brand name | TestBrand |\n| Product category | Recommended | Shopify category path | Women > Tops > Blouse |\n| **SKU** | **YES** | Unique product code (used to find row) | TEST-BLOUSE-001 |\n| Inventory quantity | Optional | Stock count | 10 |\n\n*Minimum: **Description** OR **Title** (need at least one)\n\n**Also accepted column names:** Image Src, Image URL, Brand, Type, Variant Price, Variant SKU\n\n**Leave blank** (workflow fills): Tags, SEO title, SEO description, Image alt text\n\n### Sheet 2: Products tab (AI Shopify Product Automation)\n\nAdd a **matching row** for each product row:\n\n| Column | Required? | You type |\n|--------|-----------|----------|\n| **SKU** | **YES** | Must match product_template SKU exactly |\n| QA Status | Optional | NEW |\n| Brand, Category, Raw Product Info, Price | Optional | Copy from product_template for reference |\n\nWorkflow writes: AI Score, SEO Title, Meta Description, Generated Image URL, Shopify Product ID, QA Status\n\n### Example row 2 (product_template)\nTitle: Blue Floral Blouse\nDescription: Women's blue floral blouse. Polyester blend. V-neck.\nVendor: TestBrand | Category: Women > Tops > Blouse\nImage URL: https://img.drz.lazcdn.com/...webp | Price: 29.99 | SKU: TEST-BLOUSE-001"
+        "content": "## ONE SHEET ONLY \u2014 product_template\n\nYou do NOT need a second spreadsheet.\n\n### YOU type (before run):\n| Column | Required? |\n| Product image URL | YES |\n| Description or Title | YES |\n| Price | YES (trigger) |\n| SKU | YES |\n| Vendor, Product category | recommended |\n\n### ADD 2 new column headers (row 1, end of sheet):\n| QA Status | AI Score |\n| (leave empty) | (leave empty) |\nWorkflow fills these automatically.\n\n### Workflow fills:\nTitle, Description, Tags, SEO title, SEO description, Image alt text, QA Status, AI Score\n\nColumn order does NOT matter. Header names matter."
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -319,24 +319,23 @@
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "1kSgtuF52_xevIUmOFUDBg6iHYYWe7_NX-1OnN0APxtI",
+          "value": "1ayWn9AcmgLqmxaL6BOzHzzuZSSVwhqbJCCtzIcwXaZ4",
           "mode": "list",
-          "cachedResultName": "AI Shopify Product Automation"
+          "cachedResultName": "product_template"
         },
         "sheetName": {
           "__rl": true,
-          "value": "gid=0",
+          "value": 1922248105,
           "mode": "list",
-          "cachedResultName": "Products"
+          "cachedResultName": "product_template.csv"
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
             "AI Score": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).quality_score }}",
-            "SEO Title": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).seo_title }}",
-            "Meta Description": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).meta_description }}",
-            "Image Alt Text": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).image_alt_text }}",
-            "Generated Image URL": "={{ $('HTTP Request1').item.json.data.url }}",
+            "SEO title": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).seo_title }}",
+            "SEO description": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).meta_description }}",
+            "Image alt text": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).image_alt_text }}",
             "QA Status": "SCORED",
             "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"
           },
@@ -432,23 +431,20 @@
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "1kSgtuF52_xevIUmOFUDBg6iHYYWe7_NX-1OnN0APxtI",
+          "value": "1ayWn9AcmgLqmxaL6BOzHzzuZSSVwhqbJCCtzIcwXaZ4",
           "mode": "list",
-          "cachedResultName": "AI Shopify Product Automation"
+          "cachedResultName": "product_template"
         },
         "sheetName": {
           "__rl": true,
-          "value": "gid=0",
+          "value": 1922248105,
           "mode": "list",
-          "cachedResultName": "Products"
+          "cachedResultName": "product_template.csv"
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Shopify Product ID": "={{ $json.id }}",
-            "Shopify Product URL": "={{ $json.admin_graphql_api_id ? 'https://admin.shopify.com/store/YOUR_STORE/products/' + $json.id : '' }}",
             "QA Status": "PENDING_REVIEW",
-            "Generated Image URL": "={{ $('HTTP Request1').item.json.data.url }}",
             "SKU": "={{ $('Code in JavaScript').item.json.validated_sku }}"
           },
           "matchingColumns": [
@@ -477,15 +473,15 @@
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "1kSgtuF52_xevIUmOFUDBg6iHYYWe7_NX-1OnN0APxtI",
+          "value": "1ayWn9AcmgLqmxaL6BOzHzzuZSSVwhqbJCCtzIcwXaZ4",
           "mode": "list",
-          "cachedResultName": "AI Shopify Product Automation"
+          "cachedResultName": "product_template"
         },
         "sheetName": {
           "__rl": true,
-          "value": "gid=0",
+          "value": 1922248105,
           "mode": "list",
-          "cachedResultName": "Products"
+          "cachedResultName": "product_template.csv"
         },
         "columns": {
           "mappingMode": "defineBelow",
