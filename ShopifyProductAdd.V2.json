@@ -197,6 +197,19 @@
     },
     {
       "parameters": {
+        "jsCode": "// Analyze image returns text only — re-attach Photoroom PNG for ImgBB upload\nconst analyze = $input.first().json;\nconst photoroomBinary = $('HTTP Request').first().binary;\n\nif (!photoroomBinary || !photoroomBinary.data) {\n  throw new Error('Missing PNG from Photoroom (HTTP Request node). Run Photoroom first.');\n}\n\nreturn [{\n  json: analyze,\n  binary: photoroomBinary\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -990,
+        0
+      ],
+      "id": "c4d5e6f7-a8b9-0123-cdef-456789abcdef",
+      "name": "Restore image binary"
+    },
+    {
+      "parameters": {
         "modelId": {
           "__rl": true,
           "value": "gpt-4o-mini",
@@ -585,6 +598,17 @@
       ]
     },
     "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "Restore image binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore image binary": {
       "main": [
         [
           {
