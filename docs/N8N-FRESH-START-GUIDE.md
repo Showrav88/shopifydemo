@@ -231,6 +231,7 @@ Return JSON only:
 
 ```
 ImgBB (HTTP Request1)
+  → Wait for CDN ready (poll until i.ibb.co responds)
   → Analyze image (vision — sees photo)
   → Message a model (uses verified_facts + sheet text to write listing)
 ```

@@ -47,12 +47,14 @@ These come from Shopify CSV export but this workflow ignores them:
 ## Analyze image flow (working V2)
 
 ```
-Photoroom → ImgBB → Analyze image (Image URL from ImgBB) → Message a model
+Photoroom → ImgBB → Wait for CDN ready → Analyze image → Message a model
 ```
 
-Analyze image URL: `={{ $('HTTP Request1').item.json.data.url }}`
+**Wait for CDN ready** polls the ImgBB URL (up to ~56s) until it responds — this prevents OpenAI `Unable to download content from the provided URL before the timeout`.
 
-If URL times out, re-run once or check ImgBB key — do not reorder nodes unless Analyze fails consistently.
+Analyze image URL: `={{ $('Wait for CDN ready').item.json.image_url }}`
+
+If it still fails after the wait, check ImgBB key and that `i.ibb.co` is reachable from your n8n instance.
 
 ---
 

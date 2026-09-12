@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. Flow: Photoroom \u2192 ImgBB \u2192 Analyze image (URL) \u2192 AI listing\n4. Trigger watches **Price** on sheet **product_template**\n5. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n6. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n7. Set price and SKU: store set to 8kqexi-2j (change if your store differs)"
+        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. Flow: Photoroom \u2192 ImgBB \u2192 **Wait for CDN ready** \u2192 Analyze image \u2192 AI listing\n4. **Wait for CDN ready** polls ImgBB URL until OpenAI can fetch it (fixes URL timeout)\n5. Trigger watches **Price** on sheet **product_template**\n6. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n7. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n8. Set price and SKU: store set to 8kqexi-2j (change if your store differs)"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -164,6 +164,19 @@
     },
     {
       "parameters": {
+        "jsCode": "const imgbb = $('HTTP Request1').first().json;\nconst imageUrl = imgbb?.data?.url;\n\nif (!imageUrl) {\n  throw new Error('ImgBB upload did not return data.url — check ImgBB API key and HTTP Request1 response');\n}\n\nconst maxAttempts = 15;\nconst delayMs = 4000;\nlet lastError = 'unknown';\n\nfor (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  try {\n    const response = await this.helpers.httpRequest({\n      method: 'GET',\n      url: imageUrl,\n      returnFullResponse: true,\n      timeout: 15000,\n      headers: {\n        Range: 'bytes=0-0',\n        'User-Agent': 'n8n-shopify-cdn-probe/1.0',\n      },\n      ignoreHttpStatusErrors: true,\n    });\n\n    const status = response.statusCode ?? response.status ?? 0;\n    if (status >= 200 && status < 400) {\n      return [{\n        json: {\n          image_url: imageUrl,\n          cdn_ready: true,\n          cdn_attempts: attempt,\n          cdn_checked_at: new Date().toISOString(),\n        },\n      }];\n    }\n\n    lastError = `HTTP ${status} on attempt ${attempt}`;\n  } catch (err) {\n    lastError = err.message || String(err);\n  }\n\n  if (attempt < maxAttempts) {\n    await new Promise((resolve) => setTimeout(resolve, delayMs));\n  }\n}\n\nthrow new Error(\n  `Image CDN not ready after ${maxAttempts} attempts (~${Math.round((maxAttempts - 1) * delayMs / 1000)}s). ` +\n  `OpenAI could not fetch: ${imageUrl}. Last error: ${lastError}`\n);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1170,
+        0
+      ],
+      "id": "a8f3c2d1-4e5b-6a7c-8d9e-0f1a2b3c4d5e",
+      "name": "Wait for CDN ready"
+    },
+    {
+      "parameters": {
         "modelId": {
           "__rl": true,
           "value": "gpt-4o",
@@ -174,7 +187,7 @@
         "operation": "analyze",
         "text": "Analyze this fashion product image. Extract ONLY what you can visibly verify. Do NOT invent specifications.\n\nReturn JSON only:\n{\n  \"verified_facts\": [],\n  \"color\": \"\",\n  \"material\": \"\",\n  \"product_type\": \"\",\n  \"gender\": \"\"\n}",
         "inputType": "url",
-        "imageUrls": "={{ $('HTTP Request1').item.json.data.url }}",
+        "imageUrls": "={{ $('Wait for CDN ready').item.json.image_url }}",
         "options": {
           "simplify": true
         }
@@ -588,6 +601,17 @@
       ]
     },
     "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Wait for CDN ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for CDN ready": {
       "main": [
         [
           {
