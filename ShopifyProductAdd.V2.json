@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. Flow: Photoroom \u2192 **Analyze image (binary)** \u2192 Restore image binary \u2192 ImgBB \u2192 AI listing\n4. Analyze uses Photoroom file bytes \u2014 NOT ImgBB URL (OpenAI cannot fetch i.ibb.co reliably)\n5. Trigger watches **Price** on sheet **product_template**\n6. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n7. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n8. Shopify: create draft \u2192 Prepare (download ImgBB) \u2192 **Upload image** (base64 attachment, HTTP + OAuth) \u2192 price/SKU \u2192 sheet\n9. Product category: type plain text (Casual Wear) \u2014 never =Casual Wear (sheet formula error)\n10. Store subdomain 8kqexi-2j (change URLs if your store differs)"
+        "content": "## ShopifyProductAdd.V2 \u2014 Import checklist\n\n1. Reconnect: Google Sheets, Shopify, Photoroom header auth\n2. HTTP Request1 (ImgBB): replace REPLACE_IMGBB_KEY after EVERY re-import\n3. Flow: Photoroom \u2192 **Analyze image (binary)** \u2192 Restore image binary \u2192 ImgBB \u2192 AI listing\n4. Analyze uses Photoroom file bytes \u2014 NOT ImgBB URL (OpenAI cannot fetch i.ibb.co reliably)\n5. Trigger watches **Price** on sheet **product_template**\n6. Fill sheet input first \u2192 see yellow sticky note **Sheet Input Data**\n7. IF score < 90 \u2192 FAIL | score >= 90 \u2192 Shopify draft\n8. Shopify: create draft \u2192 **Download ImgBB for Shopify** (file) \u2192 Prepare (base64) \u2192 Upload (HTTP + OAuth) \u2192 sheet\n9. Product category: type plain text (Casual Wear) \u2014 never =Casual Wear (sheet formula error)\n10. Store subdomain 8kqexi-2j (change URLs if your store differs)"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -446,7 +446,27 @@
     },
     {
       "parameters": {
-        "jsCode": "const productId = $('Create a product').first().json.id;\nconst imgbb = $('HTTP Request1').first().json?.data;\nconst imageSrc = imgbb?.image?.url || imgbb?.url || imgbb?.display_url || '';\n\nif (!imageSrc) {\n  throw new Error('No ImgBB image URL from HTTP Request1 — cannot upload image to Shopify');\n}\n\nconst sleep = (ms) => new Promise((r) => setTimeout(r, ms));\n\nfunction detectImageExt(buf) {\n  if (!buf?.length) return null;\n  if (buf[0] === 0x89 && buf[1] === 0x50) return 'png';\n  if (buf[0] === 0xff && buf[1] === 0xd8) return 'jpg';\n  if (buf[0] === 0x47 && buf[1] === 0x49) return 'gif';\n  if (buf.length > 12 && buf.slice(0, 4).toString() === 'RIFF' && buf.slice(8, 12).toString() === 'WEBP') return 'webp';\n  return null;\n}\n\nconst maxAttempts = 8;\nconst delayMs = 3000;\nlet buffer = null;\nlet lastError = 'unknown';\n\n// n8n can reach ImgBB; Shopify servers often cannot (src URL timeout).\n// Download here, validate bytes, upload as base64 attachment.\nfor (let attempt = 1; attempt <= maxAttempts; attempt++) {\n  try {\n    const imageData = await this.helpers.httpRequest({\n      method: 'GET',\n      url: imageSrc,\n      encoding: null,\n      json: false,\n      timeout: 30000,\n      headers: { 'User-Agent': 'n8n-shopify-image-download/1.0' },\n    });\n\n    buffer = Buffer.isBuffer(imageData) ? imageData : Buffer.from(imageData);\n    const ext = detectImageExt(buffer);\n\n    if (ext) {\n      return [{\n        json: {\n          product_id: productId,\n          attachment: buffer.toString('base64'),\n          filename: `product.${ext}`,\n          image_src: imageSrc,\n          download_attempts: attempt,\n          bytes: buffer.length,\n        },\n      }];\n    }\n\n    lastError = `response is not a valid image (${buffer.slice(0, 16).toString('hex')})`;\n  } catch (err) {\n    lastError = err.message || String(err);\n  }\n\n  if (attempt < maxAttempts) await sleep(delayMs);\n}\n\nthrow new Error(\n  `Could not download image from ImgBB after ${maxAttempts} attempts: ${imageSrc}. Last: ${lastError}`\n);"
+        "url": "={{ $('HTTP Request1').item.json.data.image.url || $('HTTP Request1').item.json.data.url || $('HTTP Request1').item.json.data.display_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        22,
+        -120
+      ],
+      "id": "d4e5f6a7-b8c9-4012-d456-789abcdef012",
+      "name": "Download ImgBB for Shopify"
+    },
+    {
+      "parameters": {
+        "jsCode": "const productId = $('Create a product').first().json.id;\nconst imgbb = $('HTTP Request1').first().json?.data;\nconst imageSrc = imgbb?.image?.url || imgbb?.url || imgbb?.display_url || '';\n\nconst sourceItems = $input.all();\nif (!sourceItems[0]?.binary?.data) {\n  throw new Error(`No image binary from Download ImgBB for Shopify. URL: ${imageSrc}`);\n}\n\nconst buffer = await this.helpers.getBinaryDataBuffer(0, 'data', sourceItems);\n\nfunction detectImageExt(buf) {\n  if (!buf?.length) return null;\n  if (buf[0] === 0x89 && buf[1] === 0x50) return 'png';\n  if (buf[0] === 0xff && buf[1] === 0xd8) return 'jpg';\n  if (buf[0] === 0x47 && buf[1] === 0x49) return 'gif';\n  if (buf.length > 12 && buf.slice(0, 4).toString() === 'RIFF' && buf.slice(8, 12).toString() === 'WEBP') return 'webp';\n  return null;\n}\n\nconst ext = detectImageExt(buffer);\nif (!ext) {\n  throw new Error(`Downloaded file is not a valid image (${buffer.slice(0, 16).toString('hex')}) from ${imageSrc}`);\n}\n\nconst binaryMeta = sourceItems[0].binary.data;\nconst filename = binaryMeta.fileName || (binaryMeta.fileExtension ? `product.${binaryMeta.fileExtension}` : `product.${ext}`);\n\nreturn [{\n  json: {\n    product_id: productId,\n    attachment: buffer.toString('base64'),\n    filename,\n    image_src: imageSrc,\n    bytes: buffer.length,\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -744,6 +764,17 @@
       ]
     },
     "Create a product": {
+      "main": [
+        [
+          {
+            "node": "Download ImgBB for Shopify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download ImgBB for Shopify": {
       "main": [
         [
           {
