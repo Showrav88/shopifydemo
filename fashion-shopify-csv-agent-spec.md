@@ -149,11 +149,50 @@ public class NormalizedExternalProduct
 - **Minimize AI token usage** — target 85%+ algorithmic, 15% AI gap-fill.
 - **Extensible** — swap category rule files for jewelry, shoes, etc. without rewriting parsers.
 
-### 3.3 Out of Scope (v1)
+### 3.3 Image Policy (1 minimum, 4 maximum per product)
+
+Every product in the Shopify CSV must have **at least 1 image** and **at most 4 images**.
+
+**Priority (cheapest first):**
+
+1. **Hosted images from metadata** — scrape `imageUrls` from Shopify JSON, JSON-LD, OpenGraph, WooCommerce API (free, no AI).
+2. **`ImageUrlSelector`** — algorithmically pick best 1–4 URLs: dedupe, HTTPS-only, min width 400px, reject logos/banners/placeholders.
+3. **Template alt text** — `"{Color} {Category} for {Gender}"` from parsed metadata (free).
+4. **AI alt text** — only when template confidence < 0.7 (low text tokens).
+5. **AI image generation** — only when valid hosted count = 0, OR user enables "enhance images" to fill up to 4 total.
+
+**AI image generation input (metadata only — never full HTML):**
+
+```json
+{
+  "title": "Men's Navy Cotton Oxford Shirt",
+  "gender": "Men",
+  "category": "Shirt",
+  "color": "Navy",
+  "material": "Cotton",
+  "referenceImageUrl": "https://optional-source.jpg",
+  "shotsNeeded": 2,
+  "maxTotal": 4
+}
+```
+
+**Image count rules:**
+
+```
+IF hostedCount >= 4  → use top 4 scraped URLs
+IF hostedCount 1-3   → use all hosted + optionally AI-fill remaining slots (max 4 total)
+IF hostedCount == 0  → AI generate minimum 1, up to 4 if requested
+```
+
+Generated images must be **re-hosted** (S3, Cloudinary, or Shopify Files) before CSV export — Shopify import needs stable public URLs.
+
+**Copyright note:** Scraped competitor images are acceptable for internal test store. Public launch requires owned or AI-generated images.
+
+### 3.4 Out of Scope (v1)
 
 - Direct Shopify Admin API upload (CSV import is sufficient for v1).
-- Image downloading/re-hosting (use source image URLs in CSV).
 - Real-time inventory sync (one-time export focus).
+- Automatic image re-hosting of scraped URLs (v1 uses source URLs directly; re-hosting required only for AI-generated images).
 
 ---
 
@@ -805,13 +844,23 @@ foreach (var v in p.GetProperty("variants").EnumerateArray()) {
 - [ ] CLI or minimal API: URL in → CSV file out
 - [ ] Test import into Shopify development store
 
-### Phase 4 — AI Layer (Week 4)
+### Phase 4 — AI Text Layer (Week 4)
 
 - [ ] `AiEnrichmentService` with batched prompts
 - [ ] Field-targeted enrichment (only low-confidence fields)
 - [ ] Description HTML template + AI fallback
 - [ ] SEO title/description templates
 - [ ] Token usage logging and per-run budget cap
+
+### Phase 4b — Image Pipeline (Week 4–5)
+
+- [ ] `ImageUrlSelector` — pick 1–4 hosted URLs from scraped metadata
+- [ ] Image quality filters (HTTPS, min size, dedupe, reject placeholders)
+- [ ] Map images to Shopify CSV rows (Image Src per variant row)
+- [ ] `ImageGenerationGate` — AI generate only when hosted < 1 or user opts in
+- [ ] Metadata-only prompt for image AI (title, gender, category, color, material)
+- [ ] Re-host generated images to CDN before CSV export
+- [ ] Enforce min 1 / max 4 images per product in `CsvValidator`
 
 ### Phase 5 — UI + Polish (Week 5+)
 
@@ -832,11 +881,21 @@ foreach (var v in p.GetProperty("variants").EnumerateArray()) {
 
 Based on 100 products from mixed e-commerce sites:
 
-| Approach | Estimated tokens | Cost profile |
-|----------|------------------|--------------|
-| Naive: full AI rewrite per product (5 fields × 100 products) | 500,000 – 1,000,000 | Expensive |
-| **Recommended: algo + AI gaps only (batched)** | **30,000 – 80,000** | **~90% savings** |
-| Algorithm only (no AI enrichment) | 0 | Free |
+| Approach | Estimated text tokens | Image API calls | Cost profile |
+|----------|----------------------|-----------------|----------------|
+| n8n + Gemini naive (AI every step, every product) | 500,000 – 1,000,000+ | 100–400 if generating | **Highest** |
+| n8n + Gemini semi-smart (one AI node per product) | 150,000 – 300,000 | 100–400 | High |
+| Naive: full AI rewrite per product (5 fields × 100) | 500,000 – 1,000,000 | — | Expensive |
+| **Recommended: algo + AI gaps only (batched)** | **30,000 – 80,000** | **0–15** (only missing images) | **~90% text savings** |
+| Algorithm only + hosted images (no AI) | 0 | 0 | Free |
+
+**Why this beats n8n + Gemini for token usage:**
+- Platform detection, prices, SKUs, variants, and image URLs are parsed algorithmically (0 tokens).
+- AI runs only for fields with confidence < 0.7 (~15% of products).
+- Up to 20 products per batched API call vs n8n's typical one-product-per-execution.
+- n8n workflows often repeat full product context at every node; this agent sends only `needs: ["description"]` fields.
+
+**Recommended hybrid:** Use this C# agent as the production pipeline; use n8n only as an optional trigger (webhook → call agent API → notify team). Do not put parsing or category rules inside n8n AI nodes.
 
 Typical field resolution for 100 fashion products:
 
