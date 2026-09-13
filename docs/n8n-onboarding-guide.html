@@ -374,7 +374,7 @@ Price: (leave empty until you're ready to trigger)</pre>
               <li>Open <strong style="color:var(--text)">Google Sheets Trigger</strong> node → select your credential</li>
               <li>Pick document <code>product_template</code> and sheet tab</li>
               <li>Trigger column: <strong style="color:var(--text)">Price</strong></li>
-              <li>Reconnect same credential on all <strong style="color:var(--text)">Update row in sheet</strong> nodes</li>
+              <li>Reconnect same credential on all <strong style="color:var(--text)">Update sheet</strong> nodes (listing, QA score, Shopify URLs, QA failed)</li>
             </ol>
           </div>
 
@@ -385,7 +385,7 @@ Price: (leave empty until you're ready to trigger)</pre>
               <li>Get API key from <a href="https://www.photoroom.com/api" style="color:var(--accent2)">photoroom.com/api</a></li>
               <li>n8n → Credentials → <strong style="color:var(--text)">Header Auth</strong></li>
               <li>Header name: <code>x-api-key</code> → Value: your key</li>
-              <li>Open <strong style="color:var(--text)">HTTP Request</strong> (Photoroom node) → attach credential</li>
+              <li>Open <strong style="color:var(--text)">Remove background Photoroom</strong> → attach credential</li>
             </ol>
           </div>
 
@@ -394,7 +394,7 @@ Price: (leave empty until you're ready to trigger)</pre>
             <h3>ImgBB (image hosting)</h3>
             <ol>
               <li>Free key at <a href="https://api.imgbb.com/" style="color:var(--accent2)">api.imgbb.com</a></li>
-              <li>Open <strong style="color:var(--text)">HTTP Request1</strong> node</li>
+              <li>Open <strong style="color:var(--text)">Upload to ImgBB</strong> node</li>
               <li>Query parameter <code>key</code> → replace <code>REPLACE_IMGBB_KEY</code></li>
               <li><strong style="color:var(--warn)">Important:</strong> Re-import resets this — fix every time you import JSON</li>
             </ol>
@@ -415,7 +415,10 @@ Price: (leave empty until you're ready to trigger)</pre>
         </div>
 
         <div class="callout">
-          <strong>OpenAI:</strong> Connect on <strong>Analyze image</strong>, <strong>Message a model</strong>, and <strong>Message a model1</strong> (QA). n8n Cloud can use built-in OpenAI credentials.
+          <strong>OpenAI (3 AI nodes — not “Message a model 2/3”):</strong><br>
+          1. <strong>Analyze image</strong> — vision (what’s in the photo?)<br>
+          2. <strong>AI write listing</strong> — title, description, SEO, tags<br>
+          3. <strong>AI QA score listing</strong> — quality score 0–100 + issues list
         </div>
       </div>
     </section>
@@ -469,21 +472,21 @@ Price: (leave empty until you're ready to trigger)</pre>
         <table>
           <tr><th>#</th><th>Node</th><th>What to check</th></tr>
           <tr><td>1</td><td>Google Sheets Trigger</td><td>Pin test data OR enter Price in sheet. SKU + image URL present.</td></tr>
-          <tr><td>2</td><td>Code in JavaScript</td><td>Green. <code>validated_sku</code>, <code>validated_image_url</code> in output.</td></tr>
-          <tr><td>3</td><td>HTTP Request (Photoroom)</td><td>Binary <code>data</code> output. Image with white background.</td></tr>
-          <tr><td>4</td><td>Analyze image</td><td>JSON with <code>verified_facts</code>. Input = Binary, field <code>data</code>.</td></tr>
+          <tr><td>2</td><td>Validate sheet row</td><td>Green. <code>validated_sku</code>, <code>validated_image_url</code> in output.</td></tr>
+          <tr><td>3</td><td>Remove background Photoroom</td><td>Binary <code>data</code> output. Image with white background.</td></tr>
+          <tr><td>4</td><td>Analyze image</td><td><strong>AI #1</strong> — vision JSON: color, material, verified_facts.</td></tr>
           <tr><td>5</td><td>Restore image binary</td><td>Passes binary through for ImgBB.</td></tr>
-          <tr><td>6</td><td>HTTP Request1 (ImgBB)</td><td><code>data.url</code> = <code>https://i.ibb.co/...</code></td></tr>
-          <tr><td>7</td><td>Message a model</td><td>Listing JSON: title, description_html, tags, seo fields.</td></tr>
-          <tr><td>8</td><td>Update row in sheet</td><td>Sheet row updated by SKU. Title, Description filled.</td></tr>
-          <tr><td>9</td><td>Message a model1 (QA)</td><td><code>quality_score</code> number. Read <code>issues</code> array.</td></tr>
-          <tr><td>10</td><td>Update row in sheet2</td><td>AI Score + QA Status (PASS/FAIL) in sheet.</td></tr>
-          <tr><td>11</td><td>If</td><td>Score ≥ 90 → top output. Below 90 → bottom (QA Failed).</td></tr>
+          <tr><td>6</td><td>Upload to ImgBB</td><td><code>data.url</code> = <code>https://i.ibb.co/...</code></td></tr>
+          <tr><td>7</td><td>AI write listing</td><td><strong>AI #2</strong> — listing JSON: title, description_html, tags, SEO.</td></tr>
+          <tr><td>8</td><td>Update sheet listing</td><td>Writes Title, Description, Tags, SEO to sheet.</td></tr>
+          <tr><td>9</td><td>AI QA score listing</td><td><strong>AI #3</strong> — <code>quality_score</code> + <code>issues</code> array.</td></tr>
+          <tr><td>10</td><td>Update sheet QA score</td><td>AI Score + QA Status (PASS/FAIL) in sheet.</td></tr>
+          <tr><td>11</td><td>QA score check 90</td><td>Score ≥ 90 → Shopify path. Below 90 → human QA failed.</td></tr>
           <tr><td>12</td><td>Create a product API → Create a product</td><td>Only if PASS. HTTP POST with <code>status: draft</code>. Output status must be draft (not active).</td></tr>
           <tr><td>13</td><td>Download ImgBB for Shopify</td><td>Binary file output. Response format = <strong>File</strong>.</td></tr>
           <tr><td>14</td><td>Prepare Shopify image upload</td><td><code>bytes</code> &gt; 0, long <code>attachment</code> string.</td></tr>
           <tr><td>15</td><td>Upload image to Shopify</td><td>JSON body with attachment. Returns <code>image.src</code> on cdn.shopify.com.</td></tr>
-          <tr><td>16</td><td>Update row in sheet1</td><td>Shopify URLs written. QA Status = PASS or PASS_NO_IMAGE.</td></tr>
+          <tr><td>16</td><td>Update sheet Shopify URLs</td><td>Shopify URLs written. QA Status = PASS or PASS_NO_IMAGE.</td></tr>
         </table>
 
         <div class="callout">
@@ -538,7 +541,7 @@ Price: (leave empty until you're ready to trigger)</pre>
         <h2>Human QA checklist (when FAIL)</h2>
         <ol>
           <li>Open sheet row — read <strong style="color:var(--text)">AI Score</strong> and check listing columns (Title, Description, SEO fields).</li>
-          <li>In n8n, open <strong style="color:var(--text)">Message a model1</strong> output → find <code>issues</code> array. This tells you what the AI flagged.</li>
+          <li>In n8n, open <strong style="color:var(--text)">AI QA score listing</strong> output → find <code>issues</code> array. This tells you what the AI flagged.</li>
           <li>Common fixes:
             <ul>
               <li>Description too vague → add real specs (material, fit, size) in sheet Description</li>
@@ -602,7 +605,7 @@ Price: (leave empty until you're ready to trigger)</pre>
           <tr>
             <td>ImgBB key missing</td>
             <td>Re-import reset placeholder</td>
-            <td>Replace <code>REPLACE_IMGBB_KEY</code> in HTTP Request1</td>
+            <td>Replace <code>REPLACE_IMGBB_KEY</code> in Upload to ImgBB</td>
           </tr>
         </table>
 
