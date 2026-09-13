@@ -408,7 +408,7 @@ Price: (leave empty until you're ready to trigger)</pre>
               <li>Admin → Settings → Apps → Develop apps → Create app</li>
               <li>Scopes: <code>read_products</code>, <code>write_products</code>, <code>read_inventory</code>, <code>write_inventory</code></li>
               <li>Install app → copy Admin API token OR use OAuth in n8n</li>
-              <li>Connect on: <strong style="color:var(--text)">Create a product</strong>, <strong style="color:var(--text)">Upload image to Shopify</strong>, <strong style="color:var(--text)">Update price, SKU and image link</strong></li>
+              <li>Connect on: <strong style="color:var(--text)">Create a product API</strong>, <strong style="color:var(--text)">Upload image to Shopify</strong>, <strong style="color:var(--text)">Update price, SKU and image link</strong></li>
               <li>Change store URL <code>8kqexi-2j</code> to YOUR store slug in HTTP nodes</li>
             </ol>
           </div>
@@ -479,7 +479,7 @@ Price: (leave empty until you're ready to trigger)</pre>
           <tr><td>9</td><td>Message a model1 (QA)</td><td><code>quality_score</code> number. Read <code>issues</code> array.</td></tr>
           <tr><td>10</td><td>Update row in sheet2</td><td>AI Score + QA Status (PASS/FAIL) in sheet.</td></tr>
           <tr><td>11</td><td>If</td><td>Score ≥ 90 → top output. Below 90 → bottom (QA Failed).</td></tr>
-          <tr><td>12</td><td>Create a product</td><td>Only if PASS. Product ID returned. Status = draft.</td></tr>
+          <tr><td>12</td><td>Create a product API → Create a product</td><td>Only if PASS. HTTP POST with <code>status: draft</code>. Output status must be draft (not active).</td></tr>
           <tr><td>13</td><td>Download ImgBB for Shopify</td><td>Binary file output. Response format = <strong>File</strong>.</td></tr>
           <tr><td>14</td><td>Prepare Shopify image upload</td><td><code>bytes</code> &gt; 0, long <code>attachment</code> string.</td></tr>
           <tr><td>15</td><td>Upload image to Shopify</td><td>JSON body with attachment. Returns <code>image.src</code> on cdn.shopify.com.</td></tr>
