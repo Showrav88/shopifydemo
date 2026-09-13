@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopifyProductAdd.V2 — New Joiner Guide</title>
+  <style>
+    :root {
+      --bg: #08080d;
+      --card: rgba(255,255,255,0.04);
+      --card-hover: rgba(255,255,255,0.07);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #c8f542;
+      --accent2: #7c6cff;
+      --accent3: #ff6b9d;
+      --warn: #fbbf24;
+      --ok: #34d399;
+      --err: #f87171;
+      --border: rgba(255,255,255,0.08);
+      --radius: 18px;
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --nav-h: 76px;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --slide-dur: 0.55s;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .bg-glow {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    }
+    .bg-glow::before, .bg-glow::after {
+      content: ""; position: absolute; border-radius: 50%;
+      filter: blur(110px); opacity: 0.32;
+      animation: float 20s ease-in-out infinite;
+    }
+    .bg-glow::before {
+      width: 55vw; height: 55vw; top: -18%; right: -12%;
+      background: radial-gradient(circle, var(--accent2), transparent 70%);
+    }
+    .bg-glow::after {
+      width: 45vw; height: 45vw; bottom: -15%; left: -10%;
+      background: radial-gradient(circle, var(--accent), transparent 70%);
+      animation-delay: -8s;
+    }
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(3%, -4%) scale(1.05); }
+    }
+    nav.top {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 clamp(1rem, 3vw, 2.5rem);
+      background: rgba(8,8,13,0.82);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+    }
+    .logo { font-weight: 700; font-size: 0.95rem; letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+    .page-indicator {
+      font-size: 0.8rem; color: var(--muted);
+      background: var(--card); padding: 0.4rem 0.9rem;
+      border-radius: 999px; border: 1px solid var(--border);
+    }
+    .nav-btns { display: flex; gap: 0.5rem; }
+    .nav-btns button {
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text); padding: 0.5rem 1rem; border-radius: 10px;
+      cursor: pointer; font-size: 0.85rem; transition: 0.2s var(--ease);
+    }
+    .nav-btns button:hover { background: var(--card-hover); border-color: rgba(255,255,255,0.15); }
+    .nav-btns button.primary { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 600; }
+    .nav-btns button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .slides-wrap {
+      position: relative; height: 100vh; padding-top: var(--nav-h);
+      z-index: 1;
+    }
+    .slide {
+      position: absolute; inset: var(--nav-h) 0 0 0;
+      padding: clamp(1.2rem, 3vw, 3rem);
+      overflow-y: auto;
+      opacity: 0; visibility: hidden;
+      transform: translateX(40px);
+      transition: opacity var(--slide-dur) var(--ease),
+                  transform var(--slide-dur) var(--ease),
+                  visibility var(--slide-dur);
+    }
+    .slide.active {
+      opacity: 1; visibility: visible; transform: translateX(0);
+    }
+    .slide.exit-left { transform: translateX(-40px); }
+
+    .slide-inner { max-width: 920px; margin: 0 auto; }
+    h1 {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      letter-spacing: -0.03em; line-height: 1.15;
+      margin-bottom: 0.6rem;
+      animation: fadeUp 0.7s var(--ease) both;
+    }
+    h2 {
+      font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+      color: var(--accent); margin: 1.8rem 0 0.8rem;
+      animation: fadeUp 0.7s var(--ease) 0.1s both;
+    }
+    h3 { font-size: 1rem; margin: 1.2rem 0 0.5rem; color: var(--text); }
+    p, li { line-height: 1.65; color: var(--muted); font-size: 0.95rem; }
+    p { margin-bottom: 0.9rem; animation: fadeUp 0.7s var(--ease) 0.15s both; }
+    ul, ol { margin: 0.5rem 0 1rem 1.4rem; }
+    li { margin-bottom: 0.45rem; animation: fadeUp 0.6s var(--ease) both; }
+    li:nth-child(2) { animation-delay: 0.05s; }
+    li:nth-child(3) { animation-delay: 0.1s; }
+    li:nth-child(4) { animation-delay: 0.15s; }
+    li:nth-child(5) { animation-delay: 0.2s; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-tag {
+      display: inline-block; font-size: 0.75rem; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--accent2);
+      background: rgba(124,108,255,0.12); padding: 0.35rem 0.75rem;
+      border-radius: 999px; margin-bottom: 1rem;
+      border: 1px solid rgba(124,108,255,0.25);
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.2rem 1.4rem;
+      margin: 1rem 0; transition: 0.25s var(--ease);
+    }
+    .card:hover { background: var(--card-hover); border-color: rgba(255,255,255,0.12); }
+    .card h3 { margin-top: 0; color: var(--accent); font-size: 0.95rem; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+
+    .step-num {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent3));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.9rem; color: #fff; margin-bottom: 0.6rem;
+    }
+    .badge {
+      display: inline-block; font-size: 0.72rem; font-weight: 600;
+      padding: 0.2rem 0.55rem; border-radius: 6px; margin-right: 0.35rem;
+    }
+    .badge-ok { background: rgba(52,211,153,0.15); color: var(--ok); }
+    .badge-warn { background: rgba(251,191,36,0.15); color: var(--warn); }
+    .badge-err { background: rgba(248,113,113,0.15); color: var(--err); }
+    .badge-info { background: rgba(124,108,255,0.15); color: var(--accent2); }
+
+    code {
+      font-family: ui-monospace, "Cascadia Code", monospace;
+      font-size: 0.82rem; background: rgba(0,0,0,0.35);
+      padding: 0.15rem 0.45rem; border-radius: 6px;
+      color: #e4e4e7; word-break: break-all;
+    }
+    pre {
+      background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem; overflow-x: auto;
+      font-size: 0.8rem; line-height: 1.5; color: #d4d4d8;
+      margin: 0.8rem 0;
+    }
+    table {
+      width: 100%; border-collapse: collapse; font-size: 0.85rem;
+      margin: 1rem 0;
+    }
+    th, td {
+      text-align: left; padding: 0.65rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--text); font-weight: 600; }
+    td { color: var(--muted); }
+
+    .flow {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;
+      margin: 1rem 0; font-size: 0.8rem;
+    }
+    .flow span {
+      background: var(--card); border: 1px solid var(--border);
+      padding: 0.4rem 0.7rem; border-radius: 8px; color: var(--text);
+    }
+    .flow .arrow { color: var(--accent); font-weight: bold; }
+
+    .dots {
+      position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 0.45rem; z-index: 100;
+      background: rgba(8,8,13,0.85); padding: 0.5rem 0.9rem;
+      border-radius: 999px; border: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.2); cursor: pointer;
+      transition: 0.25s var(--ease);
+    }
+    .dot.active { background: var(--accent); width: 22px; border-radius: 4px; }
+
+    .callout {
+      border-left: 3px solid var(--warn);
+      background: rgba(251,191,36,0.06);
+      padding: 0.9rem 1.1rem; border-radius: 0 12px 12px 0;
+      margin: 1rem 0;
+    }
+    .callout strong { color: var(--warn); }
+    .callout-ok { border-color: var(--ok); background: rgba(52,211,153,0.06); }
+    .callout-ok strong { color: var(--ok); }
+
+    .progress-bar {
+      position: fixed; top: var(--nav-h); left: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      transition: width 0.4s var(--ease); z-index: 101;
+    }
+
+    @media (max-width: 640px) {
+      .nav-btns button { padding: 0.45rem 0.7rem; font-size: 0.78rem; }
+      .page-indicator { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="progress-bar" id="progressBar"></div>
+
+  <nav class="top">
+    <div class="logo">Shopify<span>ProductAdd</span> .V2</div>
+    <div class="page-indicator" id="pageLabel">Page 1 of 10</div>
+    <div class="nav-btns">
+      <button id="prevBtn" disabled>← Back</button>
+      <button id="nextBtn" class="primary">Next →</button>
+    </div>
+  </nav>
+
+  <div class="slides-wrap">
+
+    <!-- PAGE 1: Welcome -->
+    <section class="slide active" data-title="Welcome">
+      <div class="slide-inner">
+        <div class="hero-tag">New joiner guide</div>
+        <h1>Welcome — let's get your first product live</h1>
+        <p>This guide walks you through <strong style="color:var(--text)">ShopifyProductAdd.V2</strong> step by step. No rush. Learn each piece, test one product, then run the full automation.</p>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>What this workflow does</h3>
+            <p style="margin:0">Reads a row from Google Sheets → removes background (Photoroom) → AI writes listing → QA scores it → creates a <strong style="color:var(--text)">draft</strong> product in Shopify with image.</p>
+          </div>
+          <div class="card">
+            <h3>What you need before starting</h3>
+            <ul style="margin:0.5rem 0 0 1rem">
+              <li>n8n account (cloud or self-hosted)</li>
+              <li>Google Sheet for products</li>
+              <li>Photoroom API key</li>
+              <li>ImgBB API key (free)</li>
+              <li>Shopify trial / dev store</li>
+              <li>OpenAI API (via n8n)</li>
+            </ul>
+          </div>
+        </div>
+
+        <h2>How to use this guide</h2>
+        <p>There are <strong style="color:var(--text)">10 pages</strong>. Use <strong style="color:var(--text)">Next / Back</strong> or the dots at the bottom. Do pages 1–6 before your first real run. Pages 7–9 are for going live. Page 10 is future work.</p>
+
+        <div class="callout callout-ok">
+          <strong>Golden rule:</strong> Run each node <em>one by one</em> the first time. Only turn the workflow <strong>Active</strong> after one full test passes.
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 2: Download files & Shopify template -->
+    <section class="slide" data-title="Downloads">
+      <div class="slide-inner">
+        <div class="hero-tag">Page 2 — Get your files</div>
+        <h1>Download what you need first</h1>
+        <p>Before touching n8n, grab these from the repo and Shopify.</p>
+
+        <h2>From this repo (GitHub)</h2>
+        <table>
+          <tr><th>File</th><th>Why</th></tr>
+          <tr><td><code>ShopifyProductAdd.V2.json</code></td><td>The n8n workflow — import this</td></tr>
+          <tr><td><code>sheet-input-template.csv</code></td><td>Example headers + one test row</td></tr>
+          <tr><td><code>docs/SHEET-COLUMNS-AND-BATCH-GUIDE.md</code></td><td>Column reference (optional read)</td></tr>
+        </table>
+
+        <h2>Shopify built-in product CSV template</h2>
+        <ol>
+          <li>Log in to your <strong style="color:var(--text)">Shopify Admin</strong> (trial store is fine).</li>
+          <li>Go to <strong style="color:var(--text)">Products</strong> → click <strong style="color:var(--text)">Import</strong>.</li>
+          <li>Click <strong style="color:var(--text)">Download CSV template</strong> — Shopify gives you their full export format with every column.</li>
+          <li>Open that CSV in <strong style="color:var(--text)">Google Sheets</strong> (File → Import → Upload).</li>
+          <li>Rename the tab to <code>product_template</code> — the workflow expects this name.</li>
+        </ol>
+
+        <div class="callout">
+          <strong>Do not delete columns blindly.</strong> Shopify's template has 40+ columns. Most are for shipping, tax, Google Shopping, variants. Our workflow only uses a handful. <strong>Hide</strong> what you don't need — don't delete unless you're sure.
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 3: Google Sheet setup -->
+    <section class="slide" data-title="Google Sheet">
+      <div class="slide-inner">
+        <div class="hero-tag">Page 3 — Sheet setup</div>
+        <h1>Set up your Google Sheet</h1>
+        <p>Row 1 = headers. Row 2+ = your products. The workflow triggers when you enter or change <strong style="color:var(--text)">Price</strong>.</p>
+
+        <h2>Columns you MUST keep (do not delete)</h2>
+        <table>
+          <tr><th>Column</th><th>You type?</th><th>Notes</th></tr>
+          <tr><td>SKU</td><td>Yes</td><td>Unique per product — workflow finds rows by SKU</td></tr>
+          <tr><td>Product image URL</td><td>Yes</td><td>Public image link (lazcdn, etc.)</td></tr>
+          <tr><td>Description</td><td>Yes</td><td>Raw facts — AI must not invent specs</td></tr>
+          <tr><td>Price</td><td>Yes</td><td><strong>Trigger column</strong> — enter last when testing</td></tr>
+          <tr><td>Title</td><td>Optional</td><td>AI overwrites with better title</td></tr>
+          <tr><td>Vendor</td><td>Recommended</td><td>Brand name</td></tr>
+          <tr><td>Product category</td><td>Recommended</td><td>Plain text: <code>Casual Wear</code> — never <code>=Casual Wear</code></td></tr>
+          <tr><td>Inventory quantity</td><td>Optional</td><td>Stock count</td></tr>
+          <tr><td>Status</td><td>Optional</td><td>Use <code>draft</code></td></tr>
+          <tr><td>QA Status</td><td>Workflow</td><td>Add header if missing — PASS / FAIL</td></tr>
+          <tr><td>AI Score</td><td>Workflow</td><td>Add header if missing — 0–100</td></tr>
+          <tr><td>Generated Image URL</td><td>Workflow</td><td>ImgBB link after processing</td></tr>
+          <tr><td>Shopify Image URL</td><td>Workflow</td><td>cdn.shopify.com link</td></tr>
+          <tr><td>Shopify Product URL</td><td>Workflow</td><td>Your store product page</td></tr>
+          <tr><td>URL handle</td><td>Workflow</td><td>Product slug</td></tr>
+          <tr><td>Tags, SEO title, SEO description, Image alt text</td><td>Workflow</td><td>AI writes these</td></tr>
+        </table>
+
+        <h2>Hide unused columns (recommended)</h2>
+        <ol>
+          <li>Select columns you don't use (Google Shopping, Option2/3, Barcode, Compare-at price, etc.).</li>
+          <li>Right-click → <strong style="color:var(--text)">Hide column</strong>.</li>
+          <li>Your data stays safe. Sheet looks clean. You can unhide anytime.</li>
+        </ol>
+
+        <div class="callout callout-ok">
+          <strong>Why hide instead of delete?</strong> If you ever re-export from Shopify, those columns come back anyway. Hiding is safer and keeps compatibility.
+        </div>
+
+        <h2>First test row (row 2)</h2>
+        <pre>SKU: TEST-001
+Description: Men's royal blue casual shirt. Cotton blend. Long sleeve.
+Product image URL: https://...(your public image link)
+Vendor: TestBrand
+Product category: Men > Shirts > Casual
+Inventory quantity: 10
+Status: draft
+Price: (leave empty until you're ready to trigger)</pre>
+      </div>
+    </section>
+
+    <!-- PAGE 4: 4-step credentials -->
+    <section class="slide" data-title="4 Credentials">
+      <div class="slide-inner">
+        <div class="hero-tag">Page 4 — Connect everything</div>
+        <h1>4-step credential setup</h1>
+        <p>Do these in order. Each takes about 5–10 minutes. You only do this once (re-do after re-importing the workflow JSON).</p>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="step-num">1</div>
+            <h3>Google Sheets</h3>
+            <ol>
+              <li>n8n → <strong style="color:var(--text)">Credentials</strong> → New → Google Sheets OAuth2</li>
+              <li>Sign in with the Google account that owns the sheet</li>
+              <li>Open <strong style="color:var(--text)">Google Sheets Trigger</strong> node → select your credential</li>
+              <li>Pick document <code>product_template</code> and sheet tab</li>
+              <li>Trigger column: <strong style="color:var(--text)">Price</strong></li>
+              <li>Reconnect same credential on all <strong style="color:var(--text)">Update row in sheet</strong> nodes</li>
+            </ol>
+          </div>
+
+          <div class="card">
+            <div class="step-num">2</div>
+            <h3>Photoroom (background removal)</h3>
+            <ol>
+              <li>Get API key from <a href="https://www.photoroom.com/api" style="color:var(--accent2)">photoroom.com/api</a></li>
+              <li>n8n → Credentials → <strong style="color:var(--text)">Header Auth</strong></li>
+              <li>Header name: <code>x-api-key</code> → Value: your key</li>
+              <li>Open <strong style="color:var(--text)">HTTP Request</strong> (Photoroom node) → attach credential</li>
+            </ol>
+          </div>
+
+          <div class="card">
+            <div class="step-num">3</div>
+            <h3>ImgBB (image hosting)</h3>
+            <ol>
+              <li>Free key at <a href="https://api.imgbb.com/" style="color:var(--accent2)">api.imgbb.com</a></li>
+              <li>Open <strong style="color:var(--text)">HTTP Request1</strong> node</li>
+              <li>Query parameter <code>key</code> → replace <code>REPLACE_IMGBB_KEY</code></li>
+              <li><strong style="color:var(--warn)">Important:</strong> Re-import resets this — fix every time you import JSON</li>
+            </ol>
+          </div>
+
+          <div class="card">
+            <div class="step-num">4</div>
+            <h3>Shopify (trial store)</h3>
+            <ol>
+              <li>Create free trial at <a href="https://www.shopify.com/uk/free-trial" style="color:var(--accent2)">shopify.com</a></li>
+              <li>Admin → Settings → Apps → Develop apps → Create app</li>
+              <li>Scopes: <code>read_products</code>, <code>write_products</code>, <code>read_inventory</code>, <code>write_inventory</code></li>
+              <li>Install app → copy Admin API token OR use OAuth in n8n</li>
+              <li>Connect on: <strong style="color:var(--text)">Create a product</strong>, <strong style="color:var(--text)">Upload image to Shopify</strong>, <strong style="color:var(--text)">Update price, SKU and image link</strong></li>
+              <li>Change store URL <code>8kqexi-2j</code> to YOUR store slug in HTTP nodes</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="callout">
+          <strong>OpenAI:</strong> Connect on <strong>Analyze image</strong>, <strong>Message a model</strong>, and <strong>Message a model1</strong> (QA). n8n Cloud can use built-in OpenAI credentials.
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 5: Import workflow -->
+    <section class="slide" data-title="Import">
+      <div class="slide-inner">
+        <div class="hero-tag">Page 5 — Import workflow</div>
+        <h1>Import ShopifyProductAdd.V2 into n8n</h1>
+        <ol>
+          <li>Download <code>ShopifyProductAdd.V2.json</code> from the repo <strong style="color:var(--text)">main</strong> branch (latest).</li>
+          <li>n8n → <strong style="color:var(--text)">Workflows</strong> → <strong style="color:var(--text)">Import from File</strong></li>
+          <li>Select the JSON file</li>
+          <li>Every node with a red warning needs a credential reconnected</li>
+          <li>Fix ImgBB key (step 3 from previous page)</li>
+          <li>Fix Shopify store URLs if your store is not <code>8kqexi-2j</code></li>
+          <li>Read the yellow <strong style="color:var(--text)">Setup Instructions</strong> sticky note on the canvas</li>
+        </ol>
+
+        <h2>Workflow map (high level)</h2>
+        <div class="flow">
+          <span>Sheet Trigger</span><span class="arrow">→</span>
+          <span>Validate</span><span class="arrow">→</span>
+          <span>Photoroom</span><span class="arrow">→</span>
+          <span>Analyze image</span><span class="arrow">→</span>
+          <span>ImgBB</span><span class="arrow">→</span>
+          <span>AI Listing</span><span class="arrow">→</span>
+          <span>Update sheet</span><span class="arrow">→</span>
+          <span>AI QA</span><span class="arrow">→</span>
+          <span>IF ≥90?</span>
+        </div>
+        <div class="flow" style="margin-top:0.5rem">
+          <span style="border-color:var(--ok)">TRUE → Shopify create + image + sheet</span>
+          <span class="arrow">|</span>
+          <span style="border-color:var(--err)">FALSE → Update QA Failed (human review)</span>
+        </div>
+
+        <div class="callout callout-ok">
+          <strong>Keep workflow Inactive</strong> until you finish the node-by-node test on page 6.
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 6: Run one by one -->
+    <section class="slide" data-title="Node by node">
+      <div class="slide-inner">
+        <div class="hero-tag">Page 6 — Learning mode</div>
+        <h1>Run each node one by one (first time)</h1>
+        <p>This is how you learn the workflow and catch errors early. Use <strong style="color:var(--text)">Execute workflow</strong> from the trigger, or click a node → <strong style="color:var(--text)">Execute previous nodes</strong>.</p>
+
+        <table>
+          <tr><th>#</th><th>Node</th><th>What to check</th></tr>
+          <tr><td>1</td><td>Google Sheets Trigger</td><td>Pin test data OR enter Price in sheet. SKU + image URL present.</td></tr>
+          <tr><td>2</td><td>Code in JavaScript</td><td>Green. <code>validated_sku</code>, <code>validated_image_url</code> in output.</td></tr>
+          <tr><td>3</td><td>HTTP Request (Photoroom)</td><td>Binary <code>data</code> output. Image with white background.</td></tr>
+          <tr><td>4</td><td>Analyze image</td><td>JSON with <code>verified_facts</code>. Input = Binary, field <code>data</code>.</td></tr>
+          <tr><td>5</td><td>Restore image binary</td><td>Passes binary through for ImgBB.</td></tr>
+          <tr><td>6</td><td>HTTP Request1 (ImgBB)</td><td><code>data.url</code> = <code>https://i.ibb.co/...</code></td></tr>
+          <tr><td>7</td><td>Message a model</td><td>Listing JSON: title, description_html, tags, seo fields.</td></tr>
+          <tr><td>8</td><td>Update row in sheet</td><td>Sheet row updated by SKU. Title, Description filled.</td></tr>
+          <tr><td>9</td><td>Message a model1 (QA)</td><td><code>quality_score</code> number. Read <code>issues</code> array.</td></tr>
+          <tr><td>10</td><td>Update row in sheet2</td><td>AI Score + QA Status (PASS/FAIL) in sheet.</td></tr>
+          <tr><td>11</td><td>If</td><td>Score ≥ 90 → top output. Below 90 → bottom (QA Failed).</td></tr>
+          <tr><td>12</td><td>Create a product</td><td>Only if PASS. Product ID returned. Status = draft.</td></tr>
+          <tr><td>13</td><td>Download ImgBB for Shopify</td><td>Binary file output. Response format = <strong>File</strong>.</td></tr>
+          <tr><td>14</td><td>Prepare Shopify image upload</td><td><code>bytes</code> &gt; 0, long <code>attachment</code> string.</td></tr>
+          <tr><td>15</td><td>Upload image to Shopify</td><td>JSON body with attachment. Returns <code>image.src</code> on cdn.shopify.com.</td></tr>
+          <tr><td>16</td><td>Update row in sheet1</td><td>Shopify URLs written. QA Status = PASS or PASS_NO_IMAGE.</td></tr>
+        </table>
+
+        <div class="callout">
+          <strong>Tip:</strong> If a node fails, fix it before moving on. Open the node → <strong>Output</strong> tab → read the error. Use browser DevTools console for Code node <code>console.log</code> output.
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 7: Run full workflow -->
+    <section class="slide" data-title="Full run">
+      <div class="slide-inner">
+        <div class="hero-tag">Page 7 — Go live (one product)</div>
+        <h1>Run the full workflow at once</h1>
+        <p>After every node passed individually, you're ready for a real end-to-end run.</p>
+
+        <h2>Step-by-step</h2>
+        <ol>
+          <li>Fill row 2 in Google Sheet — everything <strong style="color:var(--text)">except Price</strong>.</li>
+          <li>In n8n, make sure workflow is still <strong style="color:var(--text)">Inactive</strong> for manual test OR Active for auto trigger.</li>
+          <li>Enter <strong style="color:var(--text)">Price</strong> in the sheet (e.g. <code>29.99</code>).</li>
+          <li>Wait ~1 minute (trigger polls Price column).</li>
+          <li>Watch n8n <strong style="color:var(--text)">Executions</strong> tab — should show full green path.</li>
+          <li>Check sheet: QA Status, AI Score, Generated Image URL, Shopify URLs.</li>
+          <li>Check Shopify Admin → Products → your draft product with image.</li>
+        </ol>
+
+        <h2>When to turn workflow Active</h2>
+        <div class="card">
+          <p style="margin:0">Toggle <strong style="color:var(--text)">Active</strong> only after <span class="badge badge-ok">one full PASS</span>. Then each Price change on a new row auto-runs the workflow.</p>
+        </div>
+
+        <h2>Batch products (later)</h2>
+        <p>Add many rows with unique SKUs. Enter Price <strong style="color:var(--text)">one row at a time</strong>. Wait for each run to finish before triggering the next. Safer for credits and debugging.</p>
+      </div>
+    </section>
+
+    <!-- PAGE 8: Human QA -->
+    <section class="slide" data-title="Human QA">
+      <div class="slide-inner">
+        <div class="hero-tag">Page 8 — Human QA (the part people miss)</div>
+        <h1>What happens when QA fails?</h1>
+        <p>Not every run creates a Shopify product. That's intentional — it's your safety net.</p>
+
+        <h2>QA Status meanings</h2>
+        <table>
+          <tr><th>QA Status</th><th>AI Score</th><th>What happened</th><th>Your action</th></tr>
+          <tr><td><span class="badge badge-ok">PASS</span></td><td>≥ 90</td><td>Shopify draft created with image</td><td>Review in Shopify, publish when ready</td></tr>
+          <tr><td><span class="badge badge-warn">PASS_NO_IMAGE</span></td><td>≥ 90</td><td>Product created but image missing on CDN</td><td>Check Upload image node; re-run or add image manually</td></tr>
+          <tr><td><span class="badge badge-err">FAIL</span></td><td>&lt; 90</td><td>No Shopify product. <strong>Update QA Failed</strong> node ran.</td><td><strong>Human review required</strong></td></tr>
+        </table>
+
+        <h2>Human QA checklist (when FAIL)</h2>
+        <ol>
+          <li>Open sheet row — read <strong style="color:var(--text)">AI Score</strong> and check listing columns (Title, Description, SEO fields).</li>
+          <li>In n8n, open <strong style="color:var(--text)">Message a model1</strong> output → find <code>issues</code> array. This tells you what the AI flagged.</li>
+          <li>Common fixes:
+            <ul>
+              <li>Description too vague → add real specs (material, fit, size) in sheet Description</li>
+              <li>AI invented details → tighten Description to facts only</li>
+              <li>Bad image → use a clearer Product image URL</li>
+              <li>Wrong category → fix Product category (plain text, no formula errors)</li>
+            </ul>
+          </li>
+          <li>Clear <strong style="color:var(--text)">QA Status</strong> and <strong style="color:var(--text)">AI Score</strong> cells.</li>
+          <li>Change <strong style="color:var(--text)">Price</strong> slightly (e.g. 29.99 → 30.00) to re-trigger the whole workflow.</li>
+        </ol>
+
+        <div class="callout">
+          <strong>Skip logic:</strong> If a row already has <span class="badge badge-ok">PASS</span> and score ≥ 90, the workflow <strong>skips</strong> it — no duplicate Shopify product. Clear QA fields if you need a full re-run.
+        </div>
+
+        <h2>Who does human QA?</h2>
+        <p>A team member reviews FAIL rows before re-running. This is not automated — someone reads the <code>issues</code>, fixes the sheet, and triggers again. Think of it as your editorial gate before products go to Shopify.</p>
+      </div>
+    </section>
+
+    <!-- PAGE 9: Debugging -->
+    <section class="slide" data-title="Debugging">
+      <div class="slide-inner">
+        <div class="hero-tag">Page 9 — Debug like a pro</div>
+        <h1>Debugging & making the workflow flawless</h1>
+
+        <h2>Common errors & fixes</h2>
+        <table>
+          <tr><th>Error</th><th>Cause</th><th>Fix</th></tr>
+          <tr>
+            <td>OpenAI URL timeout</td>
+            <td>Analyze image using ImgBB URL</td>
+            <td>Input Type = <strong>Binary File</strong>, field <code>data</code> from Photoroom</td>
+          </tr>
+          <tr>
+            <td>422 corrupt image</td>
+            <td>Bad base64 or JSON.stringify double encoding</td>
+            <td>Use latest JSON. Download node = File format. Upload = JSON object expression</td>
+          </tr>
+          <tr>
+            <td>efbfbd in hex (not valid image)</td>
+            <td>Code node downloaded image as UTF-8 text</td>
+            <td>Use <strong>Download ImgBB for Shopify</strong> HTTP node (File), not Code download</td>
+          </tr>
+          <tr>
+            <td>Shopify timeout on src URL</td>
+            <td>Shopify can't fetch i.ibb.co</td>
+            <td>Use attachment upload (Prepare → base64 → Upload JSON)</td>
+          </tr>
+          <tr>
+            <td>Product category #ERROR</td>
+            <td>Sheet formula <code>=Casual Wear</code></td>
+            <td>Type plain text or <code>="Casual Wear"</code></td>
+          </tr>
+          <tr>
+            <td>Row not updating</td>
+            <td>SKU missing or mismatch</td>
+            <td>Every row needs unique SKU. Match column = SKU on all sheet nodes</td>
+          </tr>
+          <tr>
+            <td>ImgBB key missing</td>
+            <td>Re-import reset placeholder</td>
+            <td>Replace <code>REPLACE_IMGBB_KEY</code> in HTTP Request1</td>
+          </tr>
+        </table>
+
+        <h2>Debug workflow (every time something breaks)</h2>
+        <ol>
+          <li>n8n → <strong style="color:var(--text)">Executions</strong> → click the failed run</li>
+          <li>Find the <span class="badge badge-err">red</span> node — read full error message</li>
+          <li>Click node → <strong style="color:var(--text)">Input</strong> tab — was data missing upstream?</li>
+          <li>Click node → <strong style="color:var(--text)">Output</strong> tab — what did it actually return?</li>
+          <li>For HTTP nodes: check status code, response body</li>
+          <li>For Code nodes: add <code>console.log()</code> → open browser DevTools (F12) → Console</li>
+          <li>Fix one node → re-run from that point → don't activate until green end-to-end</li>
+        </ol>
+
+        <h2>Why Upload uses JSON (not Form-Data)</h2>
+        <p>Shopify's <code>images.json</code> API expects JSON: <code>{ "image": { "attachment": "base64..." } }</code>. Form-Data is for ImgBB upload. Different APIs, different body types — both are correct for their step.</p>
+
+        <div class="callout callout-ok">
+          <strong>Flawless checklist:</strong>
+          All credentials connected → ImgBB key set → one node-by-node PASS → one full run PASS → then Active → one product at a time → human reviews every FAIL.
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 10: Future work -->
+    <section class="slide" data-title="Future">
+      <div class="slide-inner">
+        <div class="hero-tag">Page 10 — Future work</div>
+        <h1>What's next & roadmap</h1>
+        <p>You now have a working V2 pipeline. Here's what the team may add later.</p>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Short term</h3>
+            <ul>
+              <li>Slack/email alert when QA Status = FAIL</li>
+              <li>Human QA dashboard tab in Google Sheet</li>
+              <li>Bulk import trigger (schedule + loop all rows)</li>
+              <li>Auto-retry failed image upload once</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Medium term</h3>
+            <ul>
+              <li>Multi-variant products (sizes/colours)</li>
+              <li>Compare-at price & sale badges</li>
+              <li>Google Shopping column mapping</li>
+              <li>Collection auto-assign in Shopify</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Long term</h3>
+            <ul>
+              <li>Replace n8n with Node.js + Next.js app</li>
+              <li>SQLite cache for images & listings</li>
+              <li>AI image generation (no supplier photo needed)</li>
+              <li>Full scrape → CSV → Shopify pipeline</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Your job as new joiner</h3>
+            <ul>
+              <li>Get one product to PASS end-to-end</li>
+              <li>Document any new errors you hit</li>
+              <li>Never delete sheet columns — hide them</li>
+              <li>Review every FAIL before re-running</li>
+            </ul>
+          </div>
+        </div>
+
+        <h2>Quick links</h2>
+        <table>
+          <tr><td><code>ShopifyProductAdd.V2.json</code></td><td>Workflow file — import into n8n</td></tr>
+          <tr><td><code>sheet-input-template.csv</code></td><td>Minimal sheet example</td></tr>
+          <tr><td><code>docs/N8N-FRESH-START-GUIDE.md</code></td><td>Detailed text reference</td></tr>
+          <tr><td><code>docs/SHEET-COLUMNS-AND-BATCH-GUIDE.md</code></td><td>Columns, batch, skip logic</td></tr>
+        </table>
+
+        <div class="callout callout-ok" style="margin-top:1.5rem">
+          <strong>You're ready.</strong> Go back to Page 4, connect your four credentials, and run your first test product. Good luck!
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="dots" id="dots"></div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const total = slides.length;
+    let current = 0;
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const pageLabel = document.getElementById('pageLabel');
+    const progressBar = document.getElementById('progressBar');
+    const dotsContainer = document.getElementById('dots');
+
+    slides.forEach((_, i) => {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i === 0 ? ' active' : '');
+      d.title = slides[i].dataset.title || `Page ${i + 1}`;
+      d.addEventListener('click', () => goTo(i));
+      dotsContainer.appendChild(d);
+    });
+
+    function goTo(index) {
+      if (index < 0 || index >= total) return;
+      const dir = index > current ? 1 : -1;
+      slides[current].classList.remove('active');
+      if (dir < 0) slides[current].classList.add('exit-left');
+      setTimeout(() => slides[current].classList.remove('exit-left'), 50);
+
+      current = index;
+      slides[current].classList.add('active');
+
+      prevBtn.disabled = current === 0;
+      nextBtn.textContent = current === total - 1 ? 'Done ✓' : 'Next →';
+      pageLabel.textContent = `Page ${current + 1} of ${total} — ${slides[current].dataset.title || ''}`;
+      progressBar.style.width = `${((current + 1) / total) * 100}%`;
+
+      document.querySelectorAll('.dot').forEach((d, i) => {
+        d.classList.toggle('active', i === current);
+      });
+
+      slides[current].scrollTop = 0;
+    }
+
+    prevBtn.addEventListener('click', () => goTo(current - 1));
+    nextBtn.addEventListener('click', () => {
+      if (current < total - 1) goTo(current + 1);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); if (current < total - 1) goTo(current + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); if (current > 0) goTo(current - 1); }
+    });
+
+    goTo(0);
+  </script>
+</body>
+</html>
