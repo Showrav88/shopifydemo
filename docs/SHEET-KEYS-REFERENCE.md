@@ -7,7 +7,7 @@
 | **Product URL** | Start here | Triggers scrape | No (reference only) |
 | **Price** | Before publish | **Your UK sell price** | Yes — **after** draft create |
 | **Inventory quantity** | Before publish | Stock you ordered | Yes — **after** draft create |
-| **SKU** | Recommended | Row match key | Yes — variant SKU |
+| **SKU** | Optional | Auto if empty: `CATEGORY-XXXXXX` (4-letter category code + 6 random letters/numbers) | Yes — variant SKU |
 | **Prompt Title** … **Prompt Category** | Optional | How AI writes each field | Via AI output |
 | Product image URL | Manual mode | Image for Photoroom | Image upload |
 | Description / Title | Manual mode | AI facts | Via AI listing |

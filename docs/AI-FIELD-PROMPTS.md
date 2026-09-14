@@ -14,11 +14,23 @@ Add these **optional** columns to your sheet. Leave blank to use defaults.
 | **Prompt Image alt** | `image_alt_text` | Accessibility alt for the product image |
 | **Prompt Category** | `collection` | UK category path e.g. Men > Shirts > Casual |
 
-### Example — custom title only
+### Copyright-safe rewrites (recommended)
+
+Scraped title/description are **reference facts only**. AI must **paraphrase** before Shopify.
+
+**Defaults already say:** rewrite in new words, do not copy competitor phrasing.
 
 | Prompt Title | Prompt Description |
 |--------------|-------------------|
-| Short punchy name for TikTok audience, max 50 chars, no brand name | *(leave empty = default)* |
+| Completely new title. Never reuse competitor words. Max 60 chars. | Rewrite all sentences. Keep only material/colour/fit facts. Zero copied phrases. |
+
+**QA score** fails if listing is too close to source text.
+
+### Example — custom tone
+
+| Prompt Title | Prompt Description |
+|--------------|-------------------|
+| Short punchy name for TikTok audience, max 50 chars, no brand name | *(leave empty = copyright-safe default)* |
 
 The **AI write listing** node reads `ai_field_prompts` from **Active product row**.
 
