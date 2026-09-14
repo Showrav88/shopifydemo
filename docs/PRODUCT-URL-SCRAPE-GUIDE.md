@@ -53,12 +53,23 @@ Product URL (trigger)
 
 Change **Product URL** on a row → `Scrape Status` resets logic → scrapes again on next trigger.
 
-## Troubleshooting: Update sheet scraped shows success but sheet is empty
+## Troubleshooting: Update sheet scraped errors or messy columns
 
-**Symptom:** Input on the left has Title, SKU, image URL, etc. Output is `[ {} ]` and the Google Sheet row does not change.
+### Error: `The 'Column to Match On' parameter is required`
 
-**Cause:** The update node was matching on **SKU**, but you paste **Product URL** first — SKU is blank on the sheet until scrape generates it. No row matches → nothing updates.
+**Cause:** **Product URL** is selected as match column but has **no expression/value**, OR your Google Sheet row 1 does not have a column literally named `Product URL`.
 
-**Fix (in n8n):** On **Update sheet scraped**, set **Column to match on** = `Product URL` (not SKU). Include **Product URL** in the values mapping. Re-import `ShopifyProductAdd.V2.json` from this repo for the fixed version.
+**Fix:**
+1. Row 1 of your sheet = copy **only** from `sheet-input-template.csv` (36 columns). Do not add workflow fields (`validated_sku`, `_run_id`, `scrape_context`, etc.).
+2. Re-import latest `ShopifyProductAdd.V2.json` — flow is now: `Apply scraped data` → **Prepare sheet scrape write** → `Update sheet scraped`.
+3. **Prepare sheet scrape write** outputs clean sheet columns only; **Update sheet scraped** uses auto-map from that node.
 
-**Also check:** Sheet tab headers must match exactly (`Product URL`, `Competitor price`, `Scrape Status`, etc.). Remove any stray column named with a SKU value (e.g. `GEN-PZNVMM`) — that is a mis-click in n8n, not a real column.
+### Messy columns in the Google Sheets node (processing_sku, validated_sku, …)
+
+**Cause:** n8n "auto match" pulled **internal workflow fields** from `Apply scraped data` into the sheet mapping. Those are for the workflow, not your spreadsheet.
+
+**Fix:** Delete those extra columns from your Google Sheet row 1 if you added them. Use only `sheet-input-template.csv` headers. In n8n, remove all manual mappings and use the new **Prepare sheet scrape write** node instead.
+
+### Sheet empty after "success" (`[ {} ]`)
+
+Match column was **SKU** while sheet SKU was blank. Fixed by matching on **Product URL** (the value you paste first).
