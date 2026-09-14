@@ -824,6 +824,19 @@
     },
     {
       "parameters": {
+        "jsCode": "// Only sheet columns — keeps Google Sheets node clean (no validated_sku, _run_id, etc.)\nconst s = $input.first().json;\nconst productUrl = String(s['Product URL'] || s['Source Product URL'] || s.source_product_url || '').trim();\nif (!productUrl) {\n  throw new Error('Product URL is empty. Paste a URL in the sheet Product URL column first.');\n}\n\nreturn [{\n  json: {\n    'Product URL': productUrl,\n    'Title': s.Title || '',\n    'Description': s.Description || '',\n    'Product image URL': s['Product image URL'] || '',\n    'Competitor price': s['Competitor price'] ?? '',\n    'Competitor currency': s['Competitor currency'] ?? '',\n    'Sizes': s.Sizes || '',\n    'Colors': s.Colors || '',\n    'Scraped variants': s['Scraped variants'] || '',\n    'Vendor': s.Vendor || '',\n    'Product category': s['Product category'] || '',\n    'Tags': s.Tags || '',\n    'SKU': s.SKU || '',\n    'Scrape Status': 'SCRAPED',\n    'Source Product URL': s['Source Product URL'] || productUrl,\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -630,
+        -120
+      ],
+      "id": "c4e1a2b3-d5f6-7890-abcd-ef1234567890",
+      "name": "Prepare sheet scrape write"
+    },
+    {
+      "parameters": {
         "operation": "update",
         "documentId": {
           "__rl": true,
@@ -838,24 +851,7 @@
           "cachedResultName": "product_template.csv"
         },
         "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "Product URL": "={{ $('Apply scraped data').item.json['Product URL'] || $('Apply scraped data').item.json['Source Product URL'] || $('Apply scraped data').item.json.source_product_url }}",
-            "Title": "={{ $('Apply scraped data').item.json.Title }}",
-            "Description": "={{ $('Apply scraped data').item.json.Description }}",
-            "Product image URL": "={{ $('Apply scraped data').item.json['Product image URL'] }}",
-            "Competitor price": "={{ $('Apply scraped data').item.json['Competitor price'] }}",
-            "Competitor currency": "={{ $('Apply scraped data').item.json['Competitor currency'] }}",
-            "Sizes": "={{ $('Apply scraped data').item.json.Sizes }}",
-            "Colors": "={{ $('Apply scraped data').item.json.Colors }}",
-            "Scraped variants": "={{ $('Apply scraped data').item.json['Scraped variants'] }}",
-            "Vendor": "={{ $('Apply scraped data').item.json.Vendor }}",
-            "Product category": "={{ $('Apply scraped data').item.json['Product category'] }}",
-            "Tags": "={{ $('Apply scraped data').item.json.Tags }}",
-            "SKU": "={{ $('Apply scraped data').item.json.SKU }}",
-            "Scrape Status": "SCRAPED",
-            "Source Product URL": "={{ $('Apply scraped data').item.json['Source Product URL'] }}"
-          },
+          "mappingMode": "autoMapInputData",
           "matchingColumns": [
             "Product URL"
           ]
@@ -865,7 +861,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        -540,
+        -480,
         -120
       ],
       "id": "a2dccb98-2073-4c64-9d6b-927521d39429",
@@ -991,6 +987,17 @@
       ]
     },
     "Apply scraped data": {
+      "main": [
+        [
+          {
+            "node": "Prepare sheet scrape write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare sheet scrape write": {
       "main": [
         [
           {
