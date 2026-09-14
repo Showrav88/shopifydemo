@@ -13,6 +13,7 @@ Internal test store for **men's and women's clothing and accessories** targeting
 | **n8n workflow JSON (latest)** | [ShopifyProductAdd.V2.json](./ShopifyProductAdd.V2.json) |
 | **Google Sheet input template** | [sheet-input-template.csv](./sheet-input-template.csv) |
 | **Sheet columns, batch runs, skip logic** | [docs/SHEET-COLUMNS-AND-BATCH-GUIDE.md](./docs/SHEET-COLUMNS-AND-BATCH-GUIDE.md) |
+| **n8n New Joiner Guide (HTML, 10 pages)** — setup, QA, debugging | [docs/n8n-onboarding-guide.html](./docs/n8n-onboarding-guide.html) |
 | **Tracking sheet template** | [products-tracking-template.csv](./products-tracking-template.csv) |
 | **n8n workflow JSON (original)** | [ShopifyProductAdd.V1.json](./ShopifyProductAdd.V1.json) |
 | **CSV Agent Spec** — scrape → CSV pipeline | [fashion-shopify-csv-agent-spec.md](./fashion-shopify-csv-agent-spec.md) |
