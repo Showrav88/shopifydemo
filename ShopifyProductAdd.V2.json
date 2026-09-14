@@ -840,6 +840,7 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
+            "Product URL": "={{ $('Apply scraped data').item.json['Product URL'] || $('Apply scraped data').item.json['Source Product URL'] || $('Apply scraped data').item.json.source_product_url }}",
             "Title": "={{ $('Apply scraped data').item.json.Title }}",
             "Description": "={{ $('Apply scraped data').item.json.Description }}",
             "Product image URL": "={{ $('Apply scraped data').item.json['Product image URL'] }}",
@@ -856,7 +857,7 @@
             "Source Product URL": "={{ $('Apply scraped data').item.json['Source Product URL'] }}"
           },
           "matchingColumns": [
-            "SKU"
+            "Product URL"
           ]
         },
         "options": {}
