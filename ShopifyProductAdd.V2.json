@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ShopifyProductAdd.V2 \u2014 Node guide\n\n**3 AI steps (not Message a model 1/2/3):**\n1. **Analyze image** \u2014 GPT-4o vision: what is in the photo?\n2. **AI write listing** \u2014 GPT-4o-mini: title, description, SEO, tags\n3. **AI QA score listing** \u2014 GPT-4o-mini: score 0\u2013100, issues list\n\n**Setup:** Reconnect Google Sheets, Photoroom, Shopify OAuth\n**Upload to ImgBB:** replace REPLACE_IMGBB_KEY after every re-import\n**Trigger:** Price column — live runs fire on the row you change\n**Validate sheet row:** scans rows top→bottom — skips PASS (score≥90), picks first row with Price+data\n**Row ready to process:** stops workflow if nothing to run (prevents empty Photoroom crash)\n**NOT a loop:** 1 trigger = 1 product. Batch = add Price to row 2, wait, then row 3…\n**All PASS + run again:** workflow ends safely (_workflow_status: nothing_to_process)\n**Turn OFF** \"Always Output Data\" on Validate sheet row if you enabled it\n**PASS:** score \u2265 90 \u2192 Create a product API (draft) \u2192 image upload \u2192 sheet\n**FAIL:** score < 90 \u2192 Update sheet QA failed (human review, no Shopify)"
+        "content": "## ShopifyProductAdd.V2 + Product URL scrape\n\n**START:** Paste **Product URL** on a row (competitor/public product page) \u2192 workflow auto-scrapes \u2192 listing \u2192 Shopify draft.\n**Manual mode still works:** image URL + description + price + SKU (no Product URL).\n\n**4 AI steps:** AI scrape product \u2192 Analyze image \u2192 AI write listing \u2192 AI QA score\n**No cache:** each run uses `_run_id` + **Active product row** \u2014 never reuses prior row text.\n**Unpin** Google Sheets Trigger before manual test.\n**Scrape Status:** SCRAPED = done | empty = will scrape on next trigger\n**All PASS + run again:** stops safely (nothing_to_process)"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -16,7 +16,7 @@
     },
     {
       "parameters": {
-        "content": "## ONE SHEET ONLY \u2014 product_template\n\nYou do NOT need a second spreadsheet.\n\n### YOU type (before run):\n| Column | Required? |\n| Product image URL | YES |\n| Description or Title | YES |\n| Price | YES (trigger) |\n| SKU | YES |\n| Vendor, Product category | recommended |\n\n### ADD 2 new column headers (row 1, end of sheet):\n| QA Status | AI Score |\n| (leave empty) | (leave empty) |\nWorkflow fills these automatically.\n\n### QA Status values (workflow writes):\n| Value | Meaning |\n| PASS | Score >= 90, draft + image on Shopify CDN |\n| PASS_NO_IMAGE | Score >= 90, draft but image missing |\n| FAIL | Score < 90, no Shopify product |\n\nColumn order does NOT matter. Header names matter."
+        "content": "## Sheet columns\n\n### YOU type:\n| Product URL | Paste public product page (triggers scrape) |\n| SKU | Optional \u2014 auto-generated if empty |\n| Price | Optional if scrape finds price |\n\n### OR manual (no URL):\nProduct image URL + Description/Title + Price + SKU\n\n### Workflow writes:\nTitle, Description, Vendor, category, Tags, SEO fields, Scrape Status, Source Product URL, QA Status, AI Score, Shopify URLs"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -50,7 +50,7 @@
         },
         "options": {
           "columnsToWatch": [
-            "Price"
+            "Product URL"
           ]
         }
       },
@@ -71,7 +71,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rows = $input.all().map((i) => i.json);\n\nfunction isRowDone(row) {\n  const qa = String(row['QA Status'] || '').trim().toUpperCase();\n  const score = Number(row['AI Score'] || 0);\n  return (qa === 'PASS' || qa === 'PASS_NO_IMAGE') && score >= 90;\n}\n\nfunction getPrice(row) {\n  const p = row['Price'] ?? row['Variant Price'] ?? null;\n  if (p === null || p === undefined || String(p).trim() === '') return null;\n  return p;\n}\n\nfunction normalizeRow(item) {\n  const sku = String(item['SKU'] || item['Variant SKU'] || '').trim();\n  const imageUrl = String(item['Product image URL'] || item['Image Src'] || item['Image URL'] || '').trim();\n  const rawInfo = String(item['Description'] || item['Title'] || '').trim();\n  let category = String(item['Product category'] || item['Type'] || '').trim();\n  const vendor = item['Vendor'] || item['Brand'] || '';\n  const price = getPrice(item);\n  const rowNumber = item.row_number ?? item.__rowNumber ?? item.__row ?? null;\n\n  if (category.startsWith('#') || /error/i.test(category)) {\n    category = '';\n  }\n\n  return { sku, imageUrl, rawInfo, category, vendor, price, rowNumber, item };\n}\n\n// Trigger may send multiple rows (manual test). Pick first row that still needs QA.\nlet chosen = null;\nconst skipped = [];\n\nfor (const raw of rows) {\n  if (isRowDone(raw)) {\n    skipped.push({ sku: raw['SKU'] || '', reason: 'already PASS' });\n    continue;\n  }\n\n  const r = normalizeRow(raw);\n\n  if (!r.sku || !r.imageUrl || !r.rawInfo) {\n    skipped.push({ sku: r.sku || '(no sku)', reason: 'incomplete row' });\n    continue;\n  }\n\n  if (r.price === null) {\n    skipped.push({ sku: r.sku, reason: 'no Price yet' });\n    continue;\n  }\n\n  chosen = r;\n  break;\n}\n\nif (!chosen) {\n  return [{\n    json: {\n      _workflow_status: 'nothing_to_process',\n      _message: 'No row to run. PASS rows (score>=90) are skipped. Add Price to the next row, or fix a FAIL row and re-trigger.',\n      _skipped_rows: skipped,\n      _rows_checked: rows.length,\n    },\n  }];\n}\n\nreturn [{\n  json: {\n    ...chosen.item,\n    row_number: chosen.rowNumber,\n    processing_sku: chosen.sku,\n    validated_image_url: chosen.imageUrl,\n    validated_raw_info: chosen.rawInfo,\n    validated_category: chosen.category,\n    validated_vendor: chosen.vendor,\n    validated_sku: chosen.sku,\n    validated_price: chosen.price,\n    validated_inventory: chosen.item['Inventory quantity'] || chosen.item['Variant Inventory Qty'] || chosen.item['Inventory Qty'] || null,\n    _skipped_rows: skipped,\n  },\n}];"
+        "jsCode": "const rows = $input.all().map((i) => i.json);\n\nfunction isRowDone(row) {\n  const qa = String(row['QA Status'] || '').trim().toUpperCase();\n  const score = Number(row['AI Score'] || 0);\n  return (qa === 'PASS' || qa === 'PASS_NO_IMAGE') && score >= 90;\n}\n\nfunction getPrice(row) {\n  const p = row['Price'] ?? row['Variant Price'] ?? null;\n  if (p === null || p === undefined || String(p).trim() === '') return null;\n  return p;\n}\n\nfunction getProductUrl(row) {\n  return String(row['Product URL'] || row['Source URL'] || '').trim();\n}\n\nfunction urlToSku(url) {\n  let h = 0;\n  for (let i = 0; i < url.length; i++) h = ((h << 5) - h + url.charCodeAt(i)) | 0;\n  return `SCRAPE-${Math.abs(h)}`;\n}\n\nfunction needsScrape(row, productUrl) {\n  if (!productUrl) return false;\n  const status = String(row['Scrape Status'] || '').trim().toUpperCase();\n  const lastUrl = String(row['Source Product URL'] || '').trim();\n  if (status !== 'SCRAPED') return true;\n  if (lastUrl && lastUrl !== productUrl) return true;\n  const imageUrl = String(row['Product image URL'] || '').trim();\n  const title = String(row['Title'] || '').trim();\n  if (!imageUrl || !title) return true;\n  return false;\n}\n\nfunction normalizeRow(item) {\n  const productUrl = getProductUrl(item);\n  let sku = String(item['SKU'] || item['Variant SKU'] || '').trim();\n  if (!sku && productUrl) sku = urlToSku(productUrl);\n  const imageUrl = String(item['Product image URL'] || item['Image Src'] || item['Image URL'] || '').trim();\n  const rawInfo = String(item['Description'] || item['Title'] || '').trim();\n  let category = String(item['Product category'] || item['Type'] || '').trim();\n  const vendor = item['Vendor'] || item['Brand'] || '';\n  const price = getPrice(item);\n  const rowNumber = item.row_number ?? item.__rowNumber ?? item.__row ?? null;\n  if (category.startsWith('#') || /error/i.test(category)) category = '';\n  return {\n    sku, productUrl, imageUrl, rawInfo, category, vendor, price, rowNumber, item,\n    needsScrape: needsScrape(item, productUrl),\n  };\n}\n\nlet chosen = null;\nconst skipped = [];\n\nfor (const raw of rows) {\n  if (isRowDone(raw)) {\n    skipped.push({ sku: raw['SKU'] || '', reason: 'already PASS' });\n    continue;\n  }\n  const r = normalizeRow(raw);\n  const hasUrl = !!r.productUrl;\n  const hasManual = r.imageUrl && r.rawInfo && r.price !== null && r.sku;\n\n  if (!hasUrl && !hasManual) {\n    skipped.push({ sku: r.sku || '(no sku)', reason: 'no Product URL and incomplete manual row' });\n    continue;\n  }\n\n  if (hasUrl && r.needsScrape) {\n    chosen = { ...r, mode: 'scrape' };\n    break;\n  }\n\n  if (!r.imageUrl || !r.rawInfo) {\n    skipped.push({ sku: r.sku, reason: 'missing image or description after scrape' });\n    continue;\n  }\n  if (r.price === null && !hasUrl) {\n    skipped.push({ sku: r.sku, reason: 'no Price' });\n    continue;\n  }\n\n  chosen = { ...r, mode: hasUrl ? 'url_pipeline' : 'manual' };\n  break;\n}\n\nif (!chosen) {\n  return [{\n    json: {\n      _workflow_status: 'nothing_to_process',\n      _message: 'No row to run. Add a Product URL or complete manual row (image + description + price + SKU).',\n      _skipped_rows: skipped,\n      _rows_checked: rows.length,\n    },\n  }];\n}\n\nconst runId = `${Date.now()}-${chosen.sku}`;\n\nreturn [{\n  json: {\n    ...chosen.item,\n    row_number: chosen.rowNumber,\n    processing_sku: chosen.sku,\n    validated_sku: chosen.sku,\n    source_product_url: chosen.productUrl,\n    scrape_mode: chosen.mode,\n    validated_image_url: chosen.imageUrl,\n    validated_raw_info: chosen.rawInfo,\n    validated_category: chosen.category,\n    validated_vendor: chosen.vendor,\n    validated_price: chosen.price,\n    validated_inventory: chosen.item['Inventory quantity'] || item['Variant Inventory Qty'] || item['Inventory Qty'] || null,\n    needs_scrape: chosen.mode === 'scrape',\n    _run_id: runId,\n    _skipped_rows: skipped,\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -93,8 +93,8 @@
           },
           "conditions": [
             {
-              "id": "b1c2d3e4-f5a6-7890-abcd-ef1234567890",
-              "leftValue": "={{ $json.processing_sku }}",
+              "id": "7d3e5004-d711-4e9b-85a1-f1088bb76ac8",
+              "leftValue": "={{ $json.processing_sku || $json.source_product_url }}",
               "rightValue": "",
               "operator": {
                 "type": "string",
@@ -150,7 +150,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        -1440,
+        -1080,
         0
       ],
       "id": "ef637d98-725a-469c-818a-ea0e1240c556",
@@ -254,10 +254,10 @@
         "responses": {
           "values": [
             {
-              "content": "You are a UK fashion e-commerce copywriter.\nUse ONLY verified facts from image analysis and sheet data. Do NOT invent specifications.\nReturn ONLY valid JSON (no markdown fences):\n{\n  \"title\": \"\",\n  \"description_html\": \"<p></p>\",\n  \"tags\": \"\",\n  \"seo_title\": \"\",\n  \"meta_description\": \"\",\n  \"image_alt_text\": \"\",\n  \"collection\": \"\"\n}"
+              "content": "You are a UK fashion e-commerce copywriter.\nUse ONLY facts from THIS run's image analysis and scraped/sheet data below.\nDo NOT reuse or copy text from any previous product or run.\nDo NOT invent specifications.\nReturn ONLY valid JSON (no markdown fences):\n{\n  \"title\": \"\",\n  \"description_html\": \"<p></p>\",\n  \"tags\": \"\",\n  \"seo_title\": \"\",\n  \"meta_description\": \"\",\n  \"image_alt_text\": \"\",\n  \"collection\": \"\"\n}"
             },
             {
-              "content": "=Verified from image analysis:\n{{ $('Analyze image').item.json.output[0].content[0].text || $('Analyze image').item.json.text || $('Analyze image').item.json.message?.content }}\n\nFrom Google Sheet:\nTitle: {{ $('Validate sheet row').item.json.Title }}\nDescription: {{ $('Validate sheet row').item.json.Description }}\nCategory: {{ $('Validate sheet row').item.json['Product category'] }}\nVendor: {{ $('Validate sheet row').item.json.Vendor }}\nPrice: {{ $('Validate sheet row').item.json.Price }}"
+              "content": "=RUN ID (unique \u2014 do not reuse other runs): {{ $('Active product row').item.json._run_id }}\nSource URL: {{ $('Active product row').item.json.source_product_url || 'manual row' }}\n\nVerified from image analysis:\n{{ $('Analyze image').item.json.output[0].content[0].text || $('Analyze image').item.json.text || $('Analyze image').item.json.message?.content }}\n\nScraped / sheet facts (THIS product only):\nTitle: {{ $('Active product row').item.json.Title }}\nDescription: {{ $('Active product row').item.json.Description }}\nCategory: {{ $('Active product row').item.json['Product category'] }}\nVendor: {{ $('Active product row').item.json.Vendor }}\nPrice: {{ $('Active product row').item.json.Price }}"
             }
           ]
         },
@@ -299,13 +299,13 @@
           "mappingMode": "defineBelow",
           "value": {
             "Title": "={{ JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).title }}",
-            "Product category": "={{ $('Validate sheet row').item.json.validated_category || JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).collection }}",
+            "Product category": "={{ $('Active product row').item.json.validated_category || JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).collection }}",
             "Description": "={{ JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).description_html }}",
             "Tags": "={{ JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).tags }}",
             "SEO title": "={{ JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).seo_title }}",
             "SEO description": "={{ JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).meta_description }}",
             "Image alt text": "={{ JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).image_alt_text }}",
-            "SKU": "={{ $('Validate sheet row').item.json.validated_sku }}"
+            "SKU": "={{ $('Active product row').item.json.validated_sku }}"
           },
           "matchingColumns": [
             "SKU"
@@ -339,7 +339,7 @@
         "responses": {
           "values": [
             {
-              "content": "=You are a strict QA reviewer. Compare ORIGINAL vs GENERATED listing.\n\nOriginal Description: {{ $('Validate sheet row').item.json.Description }}\nGenerated listing: {{ $('AI write listing').item.json.output[0].content[0].text }}\n\nRules:\n- Score 90-100 ONLY if accurate, no invented specs, good SEO\n- Score below 90 if anything is invented, wrong, or weak\n- Do NOT default to 85. Score honestly.\n\nReturn JSON only:\n{\n  \"quality_score\": 0,\n  \"seo_title\": \"max 60 chars\",\n  \"meta_description\": \"max 160 chars\",\n  \"image_alt_text\": \"\",\n  \"issues\": []\n}"
+              "content": "=RUN ID: {{ $('Active product row').item.json._run_id }}\nYou are a strict QA reviewer. Compare ORIGINAL scraped/sheet facts vs GENERATED listing.\n\nOriginal Description: {{ $('Active product row').item.json.scraped_raw_description || $('Active product row').item.json.Description }}\nGenerated listing: {{ $('AI write listing').item.json.output[0].content[0].text }}\n\nRules:\n- Score 90-100 ONLY if accurate, no invented specs, good SEO\n- Score below 90 if anything is invented, wrong, or weak\n- Do NOT default to 85. Score honestly.\n\nReturn JSON only:\n{\n  \"quality_score\": 0,\n  \"seo_title\": \"max 60 chars\",\n  \"meta_description\": \"max 160 chars\",\n  \"image_alt_text\": \"\",\n  \"issues\": []\n}"
             }
           ]
         },
@@ -386,7 +386,7 @@
             "Image alt text": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).image_alt_text }}",
             "QA Status": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).quality_score >= 90 ? 'PASS' : 'FAIL' }}",
             "Generated Image URL": "={{ $('Upload to ImgBB').item.json.data.image.url || $('Upload to ImgBB').item.json.data.url || $('Upload to ImgBB').item.json.data.display_url || '' }}",
-            "SKU": "={{ $('Validate sheet row').item.json.validated_sku }}"
+            "SKU": "={{ $('Active product row').item.json.validated_sku }}"
           },
           "matchingColumns": [
             "SKU"
@@ -451,7 +451,7 @@
         "nodeCredentialType": "shopifyOAuth2Api",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ (() => { const listing = JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()); return { product: { title: listing.title, body_html: listing.description_html, vendor: $('Validate sheet row').item.json.Vendor || $('Validate sheet row').item.json.validated_vendor, product_type: $('Validate sheet row').item.json.validated_category, tags: listing.tags, status: 'draft', variants: [{ price: String($('Validate sheet row').item.json.Price || $('Validate sheet row').item.json.validated_price), sku: $('Validate sheet row').item.json.validated_sku, inventory_management: 'shopify', inventory_quantity: Number($('Validate sheet row').item.json['Inventory quantity'] || $('Validate sheet row').item.json.validated_inventory || 0) }] } }; })() }}",
+        "jsonBody": "={{ (() => { const listing = JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()); return { product: { title: listing.title, body_html: listing.description_html, vendor: $('Active product row').item.json.Vendor || $('Active product row').item.json.validated_vendor, product_type: $('Active product row').item.json.validated_category, tags: listing.tags, status: 'draft', variants: [{ price: String($('Active product row').item.json.Price || $('Active product row').item.json.validated_price), sku: $('Active product row').item.json.validated_sku, inventory_management: 'shopify', inventory_quantity: Number($('Active product row').item.json['Inventory quantity'] || $('Active product row').item.json.validated_inventory || 0) }] } }; })() }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -556,32 +556,6 @@
     },
     {
       "parameters": {
-        "method": "PUT",
-        "url": "=https://8kqexi-2j.myshopify.com/admin/api/2025-01/variants/{{ $('Create a product').item.json.variants[0].id }}.json",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "shopifyOAuth2Api",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"variant\": {\n    \"id\": {{ $('Create a product').item.json.variants[0].id }},\n    \"price\": \"{{ String($('Validate sheet row').item.json.Price || $('Validate sheet row').item.json.validated_price) }}\",\n    \"sku\": \"{{ $('Validate sheet row').item.json.validated_sku }}\",\n    \"inventory_quantity\": {{ Number($('Validate sheet row').item.json['Inventory quantity'] || $('Validate sheet row').item.json.validated_inventory || 0) }}\n  }\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [
-        180,
-        -120
-      ],
-      "id": "b8c9d0e1-f2a3-4567-89ab-cdef01234567",
-      "name": "Update price, SKU and image link",
-      "credentials": {
-        "shopifyOAuth2Api": {
-          "id": "RECONNECT_ME",
-          "name": "Shopify account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "operation": "update",
         "documentId": {
           "__rl": true,
@@ -604,8 +578,8 @@
             "Shopify Image URL": "={{ $('Shopify image result').item.json.shopify_image_url || $('Upload to ImgBB').item.json.data.image.url || $('Upload to ImgBB').item.json.data.url || $('Upload to ImgBB').item.json.data.display_url || '' }}",
             "Generated Image URL": "={{ $('Upload to ImgBB').item.json.data.image.url || $('Upload to ImgBB').item.json.data.url || $('Upload to ImgBB').item.json.data.display_url || '' }}",
             "Status": "={{ $('Create a product').item.json.status || 'draft' }}",
-            "Vendor": "={{ $('Validate sheet row').item.json.Vendor || $('Validate sheet row').item.json.validated_vendor }}",
-            "SKU": "={{ $('Validate sheet row').item.json.validated_sku }}"
+            "Vendor": "={{ $('Active product row').item.json.Vendor || $('Active product row').item.json.validated_vendor }}",
+            "SKU": "={{ $('Active product row').item.json.validated_sku }}"
           },
           "matchingColumns": [
             "SKU"
@@ -648,7 +622,7 @@
           "value": {
             "QA Status": "FAIL",
             "AI Score": "={{ Number(JSON.parse($('AI QA score listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).quality_score) }}",
-            "SKU": "={{ $('Validate sheet row').item.json.validated_sku }}"
+            "SKU": "={{ $('Active product row').item.json.validated_sku }}"
           },
           "matchingColumns": [
             "SKU"
@@ -670,6 +644,204 @@
           "name": "Google Sheets account"
         }
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "389a701c-ae71-4a8d-a075-b1956bce7a46",
+              "leftValue": "={{ $json.needs_scrape }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1440,
+        0
+      ],
+      "id": "1b6681bf-ebbc-4f26-bee6-6d9c622d9242",
+      "name": "Needs scrape"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.source_product_url }}",
+        "options": {
+          "redirect": {
+            "redirect": {
+              "followRedirects": true
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 30000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; ShopifyProductBot/1.0)"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -1260,
+        -120
+      ],
+      "id": "b1cf56d2-a85a-494d-9f7e-6ecf2b294d4c",
+      "name": "Fetch product page",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $('Validate sheet row').first().json;\nconst http = $input.first().json;\nconst productUrl = row.source_product_url || row['Product URL'] || '';\nlet body = http.data ?? http.body ?? '';\n\nif (typeof body !== 'string') {\n  try { body = JSON.stringify(body); } catch { body = String(body); }\n}\n\nfunction extractJsonLd(html) {\n  const out = [];\n  const re = /<script[^>]*type=[\"']application\\/ld\\+json[\"'][^>]*>([\\s\\S]*?)<\\/script>/gi;\n  let m;\n  while ((m = re.exec(html)) !== null) {\n    try { out.push(JSON.parse(m[1])); } catch { /* skip */ }\n  }\n  return out;\n}\n\nfunction meta(html, prop) {\n  const re = new RegExp(`<meta[^>]+(?:property|name)=[\"']${prop}[\"'][^>]+content=[\"']([^\"']+)[\"']`, 'i');\n  const m = html.match(re);\n  return m ? m[1] : '';\n}\n\nconst jsonLd = extractJsonLd(body);\nconst snippet = {\n  product_url: productUrl,\n  run_id: row._run_id,\n  json_ld: jsonLd.slice(0, 3),\n  og_title: meta(body, 'og:title'),\n  og_description: meta(body, 'og:description'),\n  og_image: meta(body, 'og:image'),\n  html_excerpt: body.replace(/<script[\\s\\S]*?<\\/script>/gi, '').replace(/\\s+/g, ' ').slice(0, 12000),\n};\n\nreturn [{ json: { ...row, scrape_context: snippet } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1080,
+        -120
+      ],
+      "id": "e48399f6-ae08-461b-aa87-16eb0d6b7f91",
+      "name": "Prepare page for scrape"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "You extract product data from a scraped web page for UK fashion e-commerce.\nUse ONLY facts present in the JSON-LD, OpenGraph, or HTML excerpt.\nDo NOT invent specs. Do NOT copy from memory or prior products.\nReturn ONLY valid JSON (no markdown):\n{\n  \"title\": \"\",\n  \"description_plain\": \"\",\n  \"price\": \"\",\n  \"image_url\": \"\",\n  \"vendor\": \"\",\n  \"product_category\": \"\",\n  \"tags\": \"\",\n  \"inventory_quantity\": 10,\n  \"variants\": []\n}"
+            },
+            {
+              "content": "=RUN ID (this execution only): {{ $json._run_id }}\nSource Product URL: {{ $json.source_product_url }}\nScrape context:\n{{ JSON.stringify($json.scrape_context) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -900,
+        -120
+      ],
+      "id": "5191d3c5-4e8a-4459-8206-d99872da2beb",
+      "name": "AI scrape product",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $('Prepare page for scrape').first().json;\nconst ai = $input.first().json;\nlet text = ai.output?.[0]?.content?.[0]?.text || ai.text || ai.message?.content || '';\ntext = String(text).replace(/```json|```/g, '').trim();\nlet scraped;\ntry {\n  scraped = JSON.parse(text);\n} catch (e) {\n  throw new Error(`AI scrape returned invalid JSON: ${text.slice(0, 300)}`);\n}\n\nconst sku = row.validated_sku || row.processing_sku;\nconst price = scraped.price ?? scraped.variant_price ?? row.validated_price;\nconst imageUrl = scraped.image_url || scraped.product_image_url || row.validated_image_url;\nconst title = scraped.title || row.Title || '';\nconst description = scraped.description_plain || scraped.description || row.Description || '';\nconst vendor = scraped.vendor || scraped.brand || row.validated_vendor || '';\nconst category = scraped.product_category || scraped.category || row.validated_category || '';\nconst tags = scraped.tags || '';\nconst inventory = scraped.inventory_quantity ?? row.validated_inventory ?? 10;\n\nreturn [{\n  json: {\n    ...row,\n    Title: title,\n    Description: description,\n    'Product image URL': imageUrl,\n    Price: price,\n    Vendor: vendor,\n    'Product category': category,\n    Tags: tags,\n    SKU: sku,\n    'Inventory quantity': inventory,\n    'Scrape Status': 'SCRAPED',\n    'Source Product URL': row.source_product_url,\n    scraped_raw_description: description,\n    validated_image_url: imageUrl,\n    validated_raw_info: description || title,\n    validated_category: category,\n    validated_vendor: vendor,\n    validated_price: price,\n    validated_sku: sku,\n    validated_inventory: inventory,\n    needs_scrape: false,\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        -120
+      ],
+      "id": "8acf4692-fcb8-4f4e-a96b-f4701a479c8f",
+      "name": "Apply scraped data"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1ayWn9AcmgLqmxaL6BOzHzzuZSSVwhqbJCCtzIcwXaZ4",
+          "mode": "list",
+          "cachedResultName": "product_template"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1922248105,
+          "mode": "list",
+          "cachedResultName": "product_template.csv"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Title": "={{ $('Apply scraped data').item.json.Title }}",
+            "Description": "={{ $('Apply scraped data').item.json.Description }}",
+            "Product image URL": "={{ $('Apply scraped data').item.json['Product image URL'] }}",
+            "Price": "={{ $('Apply scraped data').item.json.Price }}",
+            "Vendor": "={{ $('Apply scraped data').item.json.Vendor }}",
+            "Product category": "={{ $('Apply scraped data').item.json['Product category'] }}",
+            "Tags": "={{ $('Apply scraped data').item.json.Tags }}",
+            "SKU": "={{ $('Apply scraped data').item.json.SKU }}",
+            "Inventory quantity": "={{ $('Apply scraped data').item.json['Inventory quantity'] }}",
+            "Scrape Status": "SCRAPED",
+            "Source Product URL": "={{ $('Apply scraped data').item.json['Source Product URL'] }}"
+          },
+          "matchingColumns": [
+            "SKU"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -540,
+        -120
+      ],
+      "id": "a2dccb98-2073-4c64-9d6b-927521d39429",
+      "name": "Update sheet scraped",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RECONNECT_ME",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const v = $('Validate sheet row').first().json;\nlet merged = { ...v };\ntry {\n  const scraped = $('Apply scraped data').first().json;\n  if (scraped?.validated_sku) merged = { ...merged, ...scraped };\n} catch { /* scrape branch did not run */ }\n\nif (!merged.validated_image_url) {\n  merged.validated_image_url = merged['Product image URL'] || '';\n}\nif (!merged.validated_raw_info) {\n  merged.validated_raw_info = merged.Description || merged.Title || '';\n}\n\nmerged._run_id = merged._run_id || `${Date.now()}-${merged.processing_sku}`;\nreturn [{ json: merged }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1260,
+        120
+      ],
+      "id": "8e686842-d50c-48f2-abc4-9971bedd2f98",
+      "name": "Active product row"
     }
   ],
   "connections": {
@@ -699,12 +871,96 @@
       "main": [
         [
           {
-            "node": "Remove background Photoroom",
+            "node": "Needs scrape",
             "type": "main",
             "index": 0
           }
         ],
         []
+      ]
+    },
+    "Needs scrape": {
+      "main": [
+        [
+          {
+            "node": "Fetch product page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Active product row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch product page": {
+      "main": [
+        [
+          {
+            "node": "Prepare page for scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare page for scrape": {
+      "main": [
+        [
+          {
+            "node": "AI scrape product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI scrape product": {
+      "main": [
+        [
+          {
+            "node": "Apply scraped data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply scraped data": {
+      "main": [
+        [
+          {
+            "node": "Update sheet scraped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update sheet scraped": {
+      "main": [
+        [
+          {
+            "node": "Active product row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Active product row": {
+      "main": [
+        [
+          {
+            "node": "Remove background Photoroom",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Remove background Photoroom": {
@@ -869,17 +1125,6 @@
       ]
     },
     "Shopify image result": {
-      "main": [
-        [
-          {
-            "node": "Update price, SKU and image link",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update price, SKU and image link": {
       "main": [
         [
           {
