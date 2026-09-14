@@ -25,6 +25,8 @@ Product URL (trigger)
 | You type | Workflow writes |
 |----------|-----------------|
 | **Product URL** | triggers scrape |
+| **Inventory quantity** | YOU set stock — **not** from scrape |
+| **Prompt Title**, **Prompt Description**, etc. | optional — control how AI writes each field (see `docs/AI-FIELD-PROMPTS.md`) |
 | SKU (optional) | auto `SCRAPE-…` if empty |
 | Price (optional) | from scrape if found |
 | Manual: image + description + price + SKU | still works without URL |

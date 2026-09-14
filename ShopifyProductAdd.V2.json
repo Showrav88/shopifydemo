@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ShopifyProductAdd.V2 + Product URL scrape\n\n**START:** Paste **Product URL** on a row (competitor/public product page) \u2192 workflow auto-scrapes \u2192 listing \u2192 Shopify draft.\n**Manual mode still works:** image URL + description + price + SKU (no Product URL).\n\n**4 AI steps:** AI scrape product \u2192 Analyze image \u2192 AI write listing \u2192 AI QA score\n**No cache:** each run uses `_run_id` + **Active product row** \u2014 never reuses prior row text.\n**Unpin** Google Sheets Trigger before manual test.\n**Scrape Status:** SCRAPED = done | empty = will scrape on next trigger\n**All PASS + run again:** stops safely (nothing_to_process)"
+        "content": "## ShopifyProductAdd.V2 + Product URL scrape\n\n**START:** Paste **Product URL** \u2192 scrape \u2192 listing \u2192 Shopify draft.\n\n**Per-field AI prompts (optional sheet columns):**\n`Prompt Title` | `Prompt Description` | `Prompt Tags` | `Prompt SEO title` | `Prompt SEO description` | `Prompt Image alt` | `Prompt Category`\nLeave blank = sensible UK fashion defaults in **Active product row**.\n\n**Inventory:** scrape does NOT set stock. YOU type **Inventory quantity** on sheet \u2192 **Set Shopify inventory** applies after draft create.\n\n**4 AI steps:** scrape \u2192 Analyze image \u2192 AI write listing \u2192 QA\n**Unpin** trigger before manual test."
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -16,7 +16,7 @@
     },
     {
       "parameters": {
-        "content": "## Sheet columns\n\n### YOU type:\n| Product URL | Paste public product page (triggers scrape) |\n| SKU | Optional \u2014 auto-generated if empty |\n| Price | Optional if scrape finds price |\n\n### OR manual (no URL):\nProduct image URL + Description/Title + Price + SKU\n\n### Workflow writes:\nTitle, Description, Vendor, category, Tags, SEO fields, Scrape Status, Source Product URL, QA Status, AI Score, Shopify URLs"
+        "content": "## Sheet columns\n\n### YOU type:\n| Product URL | Triggers scrape |\n| Inventory quantity | Stock for Shopify (NOT scraped) |\n| Prompt Title / Prompt Description / etc. | Optional \u2014 how AI writes each field |\n| SKU | Optional |\n\n### OR manual:\nimage URL + description + price + SKU\n\n### Workflow writes:\nTitle, Description, Vendor, category, Tags, SEO, Scrape Status, Shopify URLs"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -257,7 +257,7 @@
               "content": "You are a UK fashion e-commerce copywriter.\nUse ONLY facts from THIS run's image analysis and scraped/sheet data below.\nDo NOT reuse or copy text from any previous product or run.\nDo NOT invent specifications.\nReturn ONLY valid JSON (no markdown fences):\n{\n  \"title\": \"\",\n  \"description_html\": \"<p></p>\",\n  \"tags\": \"\",\n  \"seo_title\": \"\",\n  \"meta_description\": \"\",\n  \"image_alt_text\": \"\",\n  \"collection\": \"\"\n}"
             },
             {
-              "content": "=RUN ID (unique \u2014 do not reuse other runs): {{ $('Active product row').item.json._run_id }}\nSource URL: {{ $('Active product row').item.json.source_product_url || 'manual row' }}\n\nVerified from image analysis:\n{{ $('Analyze image').item.json.output[0].content[0].text || $('Analyze image').item.json.text || $('Analyze image').item.json.message?.content }}\n\nScraped / sheet facts (THIS product only):\nTitle: {{ $('Active product row').item.json.Title }}\nDescription: {{ $('Active product row').item.json.Description }}\nCategory: {{ $('Active product row').item.json['Product category'] }}\nVendor: {{ $('Active product row').item.json.Vendor }}\nPrice: {{ $('Active product row').item.json.Price }}"
+              "content": "=RUN ID (unique \u2014 do not reuse other runs): {{ $('Active product row').item.json._run_id }}\nSource URL: {{ $('Active product row').item.json.source_product_url || 'manual row' }}\n\n=== HOW TO GENERATE EACH JSON KEY (follow exactly) ===\n\"title\": {{ $('Active product row').item.json.ai_field_prompts.title }}\n\"description_html\": {{ $('Active product row').item.json.ai_field_prompts.description }}\n\"tags\": {{ $('Active product row').item.json.ai_field_prompts.tags }}\n\"seo_title\": {{ $('Active product row').item.json.ai_field_prompts.seo_title }}\n\"meta_description\": {{ $('Active product row').item.json.ai_field_prompts.seo_description }}\n\"image_alt_text\": {{ $('Active product row').item.json.ai_field_prompts.image_alt_text }}\n\"collection\": {{ $('Active product row').item.json.ai_field_prompts.collection }}\n\nVerified from image analysis:\n{{ $('Analyze image').item.json.output[0].content[0].text || $('Analyze image').item.json.text || $('Analyze image').item.json.message?.content }}\n\nScraped / sheet facts (THIS product only \u2014 do not copy other rows):\nTitle: {{ $('Active product row').item.json.Title }}\nDescription: {{ $('Active product row').item.json.Description }}\nCategory: {{ $('Active product row').item.json['Product category'] }}\nVendor: {{ $('Active product row').item.json.Vendor }}\nPrice: {{ $('Active product row').item.json.Price }}"
             }
           ]
         },
@@ -451,7 +451,7 @@
         "nodeCredentialType": "shopifyOAuth2Api",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ (() => { const listing = JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()); return { product: { title: listing.title, body_html: listing.description_html, vendor: $('Active product row').item.json.Vendor || $('Active product row').item.json.validated_vendor, product_type: $('Active product row').item.json.validated_category, tags: listing.tags, status: 'draft', variants: [{ price: String($('Active product row').item.json.Price || $('Active product row').item.json.validated_price), sku: $('Active product row').item.json.validated_sku, inventory_management: 'shopify', inventory_quantity: Number($('Active product row').item.json['Inventory quantity'] || $('Active product row').item.json.validated_inventory || 0) }] } }; })() }}",
+        "jsonBody": "={{ (() => { const listing = JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()); return { product: { title: listing.title, body_html: listing.description_html, vendor: $('Active product row').item.json.Vendor || $('Active product row').item.json.validated_vendor, product_type: $('Active product row').item.json.validated_category, tags: listing.tags, status: 'draft', variants: [{ price: String($('Active product row').item.json.Price || $('Active product row').item.json.validated_price), sku: $('Active product row').item.json.validated_sku, inventory_management: 'shopify', inventory_quantity: 0 }] } }; })() }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -481,6 +481,32 @@
       ],
       "id": "c1d2e3f4-a5b6-4789-c0d1-e2f3a4b5c6d7",
       "name": "Create a product"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://8kqexi-2j.myshopify.com/admin/api/2025-01/variants/{{ $('Create a product').item.json.variants[0].id }}.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "shopifyOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"variant\": {\n    \"id\": {{ $('Create a product').item.json.variants[0].id }},\n    \"inventory_management\": \"shopify\",\n    \"inventory_quantity\": {{ Number($('Active product row').item.json['Inventory quantity'] ?? $('Active product row').item.json.validated_inventory ?? 0) }}\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        120,
+        -120
+      ],
+      "id": "a1b2c3d4-e5f6-7890-inventory-set01",
+      "name": "Set Shopify inventory",
+      "credentials": {
+        "shopifyOAuth2Api": {
+          "id": "RECONNECT_ME",
+          "name": "Shopify account"
+        }
+      }
     },
     {
       "parameters": {
@@ -740,7 +766,7 @@
         "responses": {
           "values": [
             {
-              "content": "You extract product data from a scraped web page for UK fashion e-commerce.\nUse ONLY facts present in the JSON-LD, OpenGraph, or HTML excerpt.\nDo NOT invent specs. Do NOT copy from memory or prior products.\nReturn ONLY valid JSON (no markdown):\n{\n  \"title\": \"\",\n  \"description_plain\": \"\",\n  \"price\": \"\",\n  \"image_url\": \"\",\n  \"vendor\": \"\",\n  \"product_category\": \"\",\n  \"tags\": \"\",\n  \"inventory_quantity\": 10,\n  \"variants\": []\n}"
+              "content": "You extract product data from a scraped web page for UK fashion e-commerce.\nUse ONLY facts present in the JSON-LD, OpenGraph, or HTML excerpt.\nDo NOT invent specs. Do NOT copy from memory or prior products.\nDo NOT extract inventory or stock — stock is set separately in Shopify.\nReturn ONLY valid JSON (no markdown):\n{\n  \"title\": \"\",\n  \"description_plain\": \"\",\n  \"price\": \"\",\n  \"image_url\": \"\",\n  \"vendor\": \"\",\n  \"product_category\": \"\",\n  \"tags\": \"\",\n  \"variants\": []\n}"
             },
             {
               "content": "=RUN ID (this execution only): {{ $json._run_id }}\nSource Product URL: {{ $json.source_product_url }}\nScrape context:\n{{ JSON.stringify($json.scrape_context) }}"
@@ -768,7 +794,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const row = $('Prepare page for scrape').first().json;\nconst ai = $input.first().json;\nlet text = ai.output?.[0]?.content?.[0]?.text || ai.text || ai.message?.content || '';\ntext = String(text).replace(/```json|```/g, '').trim();\nlet scraped;\ntry {\n  scraped = JSON.parse(text);\n} catch (e) {\n  throw new Error(`AI scrape returned invalid JSON: ${text.slice(0, 300)}`);\n}\n\nconst sku = row.validated_sku || row.processing_sku;\nconst price = scraped.price ?? scraped.variant_price ?? row.validated_price;\nconst imageUrl = scraped.image_url || scraped.product_image_url || row.validated_image_url;\nconst title = scraped.title || row.Title || '';\nconst description = scraped.description_plain || scraped.description || row.Description || '';\nconst vendor = scraped.vendor || scraped.brand || row.validated_vendor || '';\nconst category = scraped.product_category || scraped.category || row.validated_category || '';\nconst tags = scraped.tags || '';\nconst inventory = scraped.inventory_quantity ?? row.validated_inventory ?? 10;\n\nreturn [{\n  json: {\n    ...row,\n    Title: title,\n    Description: description,\n    'Product image URL': imageUrl,\n    Price: price,\n    Vendor: vendor,\n    'Product category': category,\n    Tags: tags,\n    SKU: sku,\n    'Inventory quantity': inventory,\n    'Scrape Status': 'SCRAPED',\n    'Source Product URL': row.source_product_url,\n    scraped_raw_description: description,\n    validated_image_url: imageUrl,\n    validated_raw_info: description || title,\n    validated_category: category,\n    validated_vendor: vendor,\n    validated_price: price,\n    validated_sku: sku,\n    validated_inventory: inventory,\n    needs_scrape: false,\n  },\n}];"
+        "jsCode": "const row = $('Prepare page for scrape').first().json;\nconst ai = $input.first().json;\nlet text = ai.output?.[0]?.content?.[0]?.text || ai.text || ai.message?.content || '';\ntext = String(text).replace(/```json|```/g, '').trim();\nlet scraped;\ntry {\n  scraped = JSON.parse(text);\n} catch (e) {\n  throw new Error(`AI scrape returned invalid JSON: ${text.slice(0, 300)}`);\n}\n\nconst sku = row.validated_sku || row.processing_sku;\nconst price = scraped.price ?? scraped.variant_price ?? row.validated_price;\nconst imageUrl = scraped.image_url || scraped.product_image_url || row.validated_image_url;\nconst title = scraped.title || row.Title || '';\nconst description = scraped.description_plain || scraped.description || row.Description || '';\nconst vendor = scraped.vendor || scraped.brand || row.validated_vendor || '';\nconst category = scraped.product_category || scraped.category || row.validated_category || '';\nconst tags = scraped.tags || '';\n// Inventory NOT from scrape — keep sheet value only (set before/after scrape in sheet)\nconst sheetInv = row['Inventory quantity'] ?? row.validated_inventory;\nconst inventory = sheetInv === '' || sheetInv === null || sheetInv === undefined ? null : Number(sheetInv);\n\nreturn [{\n  json: {\n    ...row,\n    Title: title,\n    Description: description,\n    'Product image URL': imageUrl,\n    Price: price,\n    Vendor: vendor,\n    'Product category': category,\n    Tags: tags,\n    SKU: sku,\n    'Scrape Status': 'SCRAPED',\n    'Source Product URL': row.source_product_url,\n    scraped_raw_description: description,\n    validated_image_url: imageUrl,\n    validated_raw_info: description || title,\n    validated_category: category,\n    validated_vendor: vendor,\n    validated_price: price,\n    validated_sku: sku,\n    validated_inventory: inventory,\n    needs_scrape: false,\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -805,7 +831,6 @@
             "Product category": "={{ $('Apply scraped data').item.json['Product category'] }}",
             "Tags": "={{ $('Apply scraped data').item.json.Tags }}",
             "SKU": "={{ $('Apply scraped data').item.json.SKU }}",
-            "Inventory quantity": "={{ $('Apply scraped data').item.json['Inventory quantity'] }}",
             "Scrape Status": "SCRAPED",
             "Source Product URL": "={{ $('Apply scraped data').item.json['Source Product URL'] }}"
           },
@@ -832,7 +857,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const v = $('Validate sheet row').first().json;\nlet merged = { ...v };\ntry {\n  const scraped = $('Apply scraped data').first().json;\n  if (scraped?.validated_sku) merged = { ...merged, ...scraped };\n} catch { /* scrape branch did not run */ }\n\nif (!merged.validated_image_url) {\n  merged.validated_image_url = merged['Product image URL'] || '';\n}\nif (!merged.validated_raw_info) {\n  merged.validated_raw_info = merged.Description || merged.Title || '';\n}\n\nmerged._run_id = merged._run_id || `${Date.now()}-${merged.processing_sku}`;\nreturn [{ json: merged }];"
+        "jsCode": "const v = $('Validate sheet row').first().json;\nlet merged = { ...v };\ntry {\n  const scraped = $('Apply scraped data').first().json;\n  if (scraped?.validated_sku) merged = { ...merged, ...scraped };\n} catch { /* scrape branch did not run */ }\n\nif (!merged.validated_image_url) {\n  merged.validated_image_url = merged['Product image URL'] || '';\n}\nif (!merged.validated_raw_info) {\n  merged.validated_raw_info = merged.Description || merged.Title || '';\n}\n\n// Inventory: SHEET ONLY — scrape never sets stock\nconst sheetInv = merged['Inventory quantity'] ?? merged['Variant Inventory Qty'] ?? merged.validated_inventory;\nmerged.validated_inventory = sheetInv === '' || sheetInv === null || sheetInv === undefined\n  ? 0\n  : Number(sheetInv);\n\n// Per-field AI prompts (optional sheet columns override defaults)\nconst defaults = {\n  title: 'UK fashion product title, max 70 chars, include colour and garment type',\n  description: 'HTML <p> paragraphs: benefits, fabric, fit, care. Facts only — no invented specs',\n  tags: 'Comma-separated tags, max 10, UK fashion search terms',\n  seo_title: 'Google title tag, max 60 chars, include brand or colour',\n  seo_description: 'Meta description, max 160 chars, compelling but factual',\n  image_alt_text: 'Accessibility alt text describing the garment in the image',\n  collection: 'UK fashion category e.g. Men > Shirts > Casual',\n};\nconst pick = (col, key) => String(merged[col] || merged[`Prompt: ${key}`] || '').trim() || defaults[key];\nmerged.ai_field_prompts = {\n  title: pick('Prompt Title', 'title'),\n  description: pick('Prompt Description', 'description'),\n  tags: pick('Prompt Tags', 'tags'),\n  seo_title: pick('Prompt SEO title', 'seo_title'),\n  seo_description: pick('Prompt SEO description', 'seo_description'),\n  image_alt_text: pick('Prompt Image alt', 'image_alt_text'),\n  collection: pick('Prompt Category', 'collection'),\n};\n\nmerged._run_id = merged._run_id || `${Date.now()}-${merged.processing_sku}`;\nreturn [{ json: merged }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1081,6 +1106,17 @@
       ]
     },
     "Create a product": {
+      "main": [
+        [
+          {
+            "node": "Set Shopify inventory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Shopify inventory": {
       "main": [
         [
           {
