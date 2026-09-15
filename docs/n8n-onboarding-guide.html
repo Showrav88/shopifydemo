@@ -297,7 +297,7 @@
           <li>Go to <strong style="color:var(--text)">Products</strong> → click <strong style="color:var(--text)">Import</strong>.</li>
           <li>Click <strong style="color:var(--text)">Download CSV template</strong> — Shopify gives you their full export format with every column.</li>
           <li>Open that CSV in <strong style="color:var(--text)">Google Sheets</strong> (File → Import → Upload).</li>
-          <li>Rename the tab to <code>input_url</code> — the workflow expects this name.</li>
+          <li>Rename the tab to <code>url_input</code> — the workflow expects this name.</li>
         </ol>
 
         <div class="callout">
@@ -372,7 +372,7 @@ Price: (leave empty until you're ready to trigger)</pre>
               <li>n8n → <strong style="color:var(--text)">Credentials</strong> → New → Google Sheets OAuth2</li>
               <li>Sign in with the Google account that owns the sheet</li>
               <li>Open <strong style="color:var(--text)">Google Sheets Trigger</strong> node → select your credential</li>
-              <li>Pick document <code>input_url</code> and sheet tab</li>
+              <li>Pick document <code>url_input</code> and sheet tab</li>
               <li>Trigger column: <strong style="color:var(--text)">Price</strong></li>
               <li>Reconnect same credential on all <strong style="color:var(--text)">Update sheet</strong> nodes (listing, QA score, Shopify URLs, QA failed)</li>
             </ol>

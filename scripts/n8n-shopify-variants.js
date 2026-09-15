@@ -109,11 +109,7 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
   const profileKey = VARIANTS.detectProfile(category, row['Variant profile'] || row.variant_profile);
   const { profile, rows } = VARIANTS.buildVariantRows(row, profileKey);
 
-  const sheetPrice = row['Price'] ?? row.validated_price;
-  const defaultPrice = sheetPrice === '' || sheetPrice === null || sheetPrice === undefined
-    ? '0.00'
-    : String(sheetPrice);
-
+  // Price: always 0.00 at create — client sets sell price in Shopify admin after QA PASS
   const sheetInv = row['Inventory quantity'] ?? row.validated_inventory;
   const totalInv = sheetInv === '' || sheetInv === null || sheetInv === undefined
     ? 0
@@ -145,9 +141,8 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
           }],
         },
       },
-      price_updates: [{
+      inventory_updates: [{
         sku: baseSku,
-        price: defaultPrice,
         inventory_quantity: totalInv,
       }],
     };
@@ -159,7 +154,7 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
   const option1Values = new Set();
   const option2Values = new Set();
   const shopifyVariants = [];
-  const priceUpdates = [];
+  const inventoryUpdates = [];
 
   const perVariantInv = rows.length > 0 && totalInv > 0
     ? Math.max(1, Math.floor(totalInv / rows.length))
@@ -186,18 +181,14 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
 
     shopifyVariants.push(variant);
 
-    const vPrice = r.price !== '' && r.price !== null && r.price !== undefined
-      ? String(r.price)
-      : defaultPrice;
     const vInv = r.qty !== null && r.qty !== undefined && r.qty !== ''
       ? Number(r.qty)
       : perVariantInv;
 
-    priceUpdates.push({
+    inventoryUpdates.push({
       sku: variant.sku,
       option1: variant.option1,
       option2: variant.option2,
-      price: vPrice,
       inventory_quantity: vInv,
     });
   });
@@ -225,7 +216,7 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
     variant_count: shopifyVariants.length,
     variant_profile: profileKey,
     shopify_payload: { product },
-    price_updates: priceUpdates,
+    inventory_updates: inventoryUpdates,
   };
 };
 

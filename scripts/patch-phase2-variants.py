@@ -30,7 +30,7 @@ return [{ json: built }];
 PREPARE_UPDATES_JS = r"""
 const created = $('Create a product').first().json;
 const plan = $('Build Shopify product').first().json;
-const updates = plan.price_updates || [];
+const updates = plan.inventory_updates || plan.price_updates || [];
 const variants = created.variants || [];
 
 if (variants.length === 0) {
@@ -98,7 +98,7 @@ def main():
             node["parameters"]["jsonBody"] = "={{ $('Build Shopify product').item.json.shopify_payload }}"
         elif name == "Prepare variant price updates":
             node["parameters"]["jsCode"] = PREPARE_UPDATES_JS
-        elif name == "Set Shopify price and stock":
+        elif name in ("Set Shopify price and stock", "Set Shopify variant stock"):
             node["parameters"]["url"] = (
                 "=https://8kqexi-2j.myshopify.com/admin/api/2025-01/variants/{{ $json.variant_id }}.json"
             )
