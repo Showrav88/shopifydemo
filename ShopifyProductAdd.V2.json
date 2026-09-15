@@ -466,7 +466,7 @@
         "nodeCredentialType": "shopifyOAuth2Api",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ (() => { const listing = JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()); return { product: { title: listing.title, body_html: listing.description_html, vendor: $('Active product row').item.json.Vendor || $('Active product row').item.json.validated_vendor, product_type: $('Active product row').item.json.validated_category, tags: listing.tags, status: 'draft', variants: [{ price: '0.00', sku: $('Active product row').item.json.validated_sku, inventory_management: 'shopify', inventory_quantity: 0 }] } }; })() }}",
+        "jsonBody": "={{ $('Build Shopify product').item.json.shopify_payload }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -500,12 +500,12 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=https://8kqexi-2j.myshopify.com/admin/api/2025-01/variants/{{ $('Create a product').item.json.variants[0].id }}.json",
+        "url": "=https://8kqexi-2j.myshopify.com/admin/api/2025-01/variants/{{ $json.variant_id }}.json",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "shopifyOAuth2Api",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"variant\": {\n    \"id\": {{ $('Create a product').item.json.variants[0].id }},\n    \"price\": \"{{ String($('Active product row').item.json.Price ?? $('Active product row').item.json.validated_price ?? '0.00') }}\",\n    \"inventory_management\": \"shopify\",\n    \"inventory_quantity\": {{ Number($('Active product row').item.json['Inventory quantity'] ?? $('Active product row').item.json.validated_inventory ?? 0) }}\n  }\n}",
+        "jsonBody": "={\n  \"variant\": {\n    \"id\": {{ $json.variant_id }},\n    \"price\": \"{{ $json.price }}\",\n    \"inventory_management\": \"shopify\",\n    \"inventory_quantity\": {{ $json.inventory_quantity }}\n  }\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -923,6 +923,32 @@
       ],
       "id": "e365b46e-26f2-4445-b020-b408e27af9df",
       "name": "Check text overlap"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Phase 2: Shopify multi-variant builder for n8n Code nodes.\n * One sheet row \u2192 one product with Size/Color (etc.) options from scrape.\n */\n\nconst VARIANTS = {};\n\n// \u2500\u2500\u2500 Profiles: how to name Shopify options per product family \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nVARIANTS.PROFILES = {\n  clothing_alpha: { option1: 'Size', option2: 'Color', sizePattern: 'alpha' },\n  clothing_numeric: { option1: 'Waist', option2: 'Length', sizePattern: 'numeric' },\n  footwear_uk: { option1: 'UK Size', option2: 'Color', sizePattern: 'numeric' },\n  one_size: { option1: null, option2: 'Color', sizePattern: 'one' },\n  color_only: { option1: null, option2: 'Color', sizePattern: 'one' },\n  generic: { option1: 'Size', option2: 'Color', sizePattern: 'any' },\n};\n\nVARIANTS.detectProfile = function detectProfile(category, explicitProfile) {\n  const p = String(explicitProfile || '').trim().toLowerCase();\n  if (p && VARIANTS.PROFILES[p]) return p;\n\n  const c = String(category || '').toLowerCase();\n  if (/shoe|sneaker|boot|footwear|sandal|trainer/.test(c)) return 'footwear_uk';\n  if (/jean|trouser|pant|chino/.test(c)) return 'clothing_numeric';\n  if (/bag|belt|wallet|scarf|hat|cap|accessory|jewel|watch|sock/.test(c)) return 'one_size';\n  if (/dress|shirt|tee|t-shirt|top|jacket|coat|hoodie|sweat|kurta|saree|blouse/.test(c)) return 'clothing_alpha';\n  return 'generic';\n};\n\nVARIANTS.parseList = function parseList(val) {\n  if (!val) return [];\n  if (Array.isArray(val)) return val.map((x) => String(x).trim()).filter(Boolean);\n  return String(val).split(/[,;|/]+/).map((x) => x.trim()).filter(Boolean);\n};\n\nVARIANTS.parseScrapedVariants = function parseScrapedVariants(row) {\n  const raw = row['Scraped variants'] || row.scraped_variants || '';\n  if (!raw) return [];\n  try {\n    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;\n    return Array.isArray(parsed) ? parsed : [];\n  } catch {\n    return [];\n  }\n};\n\nVARIANTS.norm = function norm(v) {\n  return String(v || '').trim();\n};\n\nVARIANTS.slugPart = function slugPart(v) {\n  return String(v || '')\n    .trim()\n    .toUpperCase()\n    .replace(/[^A-Z0-9]+/g, '-')\n    .replace(/^-+|-+$/g, '')\n    .slice(0, 12) || 'VAR';\n};\n\nVARIANTS.buildVariantRows = function buildVariantRows(row, profileKey) {\n  const profile = VARIANTS.PROFILES[profileKey] || VARIANTS.PROFILES.generic;\n  const scraped = VARIANTS.parseScrapedVariants(row);\n  const sizes = VARIANTS.parseList(row.Sizes);\n  const colors = VARIANTS.parseList(row.Colors);\n  const rows = [];\n\n  if (scraped.length > 0) {\n    for (const v of scraped) {\n      const size = VARIANTS.norm(v.size || v.option1 || v.title || '');\n      const color = VARIANTS.norm(v.color || v.option2 || '');\n      const price = v.price ?? v.competitor_price ?? '';\n      const sku = VARIANTS.norm(v.sku || '');\n      const qty = v.inventory ?? v.inventory_quantity ?? v.stock ?? null;\n      if (!size && !color) continue;\n      rows.push({ size, color, price, sku, qty });\n    }\n  }\n\n  if (rows.length === 0 && sizes.length > 0) {\n    const colorList = colors.length > 0 ? colors : [''];\n    for (const size of sizes) {\n      for (const color of colorList) {\n        rows.push({ size, color, price: '', sku: '', qty: null });\n      }\n    }\n  }\n\n  if (rows.length === 0 && colors.length > 0) {\n    for (const color of colors) {\n      rows.push({ size: profile.sizePattern === 'one' ? 'One Size' : '', color, price: '', sku: '', qty: null });\n    }\n  }\n\n  return { profile, rows };\n};\n\nVARIANTS.variantSku = function variantSku(baseSku, size, color, index) {\n  const base = VARIANTS.norm(baseSku) || 'SKU';\n  const parts = [base];\n  if (size && size !== 'One Size') parts.push(VARIANTS.slugPart(size));\n  if (color) parts.push(VARIANTS.slugPart(color));\n  if (parts.length === 1) parts.push(`V${index + 1}`);\n  return parts.join('-').slice(0, 50);\n};\n\nVARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {\n  const category = row.validated_category || row['Product category'] || listing.collection || '';\n  const profileKey = VARIANTS.detectProfile(category, row['Variant profile'] || row.variant_profile);\n  const { profile, rows } = VARIANTS.buildVariantRows(row, profileKey);\n\n  const sheetPrice = row['Price'] ?? row.validated_price;\n  const defaultPrice = sheetPrice === '' || sheetPrice === null || sheetPrice === undefined\n    ? '0.00'\n    : String(sheetPrice);\n\n  const sheetInv = row['Inventory quantity'] ?? row.validated_inventory;\n  const totalInv = sheetInv === '' || sheetInv === null || sheetInv === undefined\n    ? 0\n    : Number(sheetInv);\n\n  const baseSku = row.validated_sku || row.SKU || row.processing_sku || '';\n  const vendor = row.Vendor || row.validated_vendor || '';\n  const productType = category || listing.collection || '';\n\n  // \u2500\u2500 Single variant fallback (no scrape sizes) \u2500\u2500\n  if (rows.length === 0) {\n    return {\n      multi_variant: false,\n      variant_count: 1,\n      variant_profile: profileKey,\n      shopify_payload: {\n        product: {\n          title: listing.title,\n          body_html: listing.description_html,\n          vendor,\n          product_type: productType,\n          tags: listing.tags,\n          status: 'draft',\n          variants: [{\n            price: '0.00',\n            sku: baseSku,\n            inventory_management: 'shopify',\n            inventory_quantity: 0,\n          }],\n        },\n      },\n      price_updates: [{\n        sku: baseSku,\n        price: defaultPrice,\n        inventory_quantity: totalInv,\n      }],\n    };\n  }\n\n  // \u2500\u2500 Multi-variant \u2500\u2500\n  const option1Name = profile.option1;\n  const option2Name = profile.option2;\n  const option1Values = new Set();\n  const option2Values = new Set();\n  const shopifyVariants = [];\n  const priceUpdates = [];\n\n  const perVariantInv = rows.length > 0 && totalInv > 0\n    ? Math.max(1, Math.floor(totalInv / rows.length))\n    : 0;\n\n  rows.forEach((r, i) => {\n    const sizeVal = r.size || (profile.sizePattern === 'one' ? 'One Size' : `Option ${i + 1}`);\n    const colorVal = r.color || '';\n    const opt1 = option1Name ? sizeVal : (colorVal || 'Default');\n    const opt2 = option1Name && option2Name && colorVal ? colorVal : undefined;\n\n    if (option1Name) option1Values.add(opt1);\n    if (opt2 && option2Name) option2Values.add(opt2);\n\n    const variant = {\n      price: '0.00',\n      sku: r.sku || VARIANTS.variantSku(baseSku, sizeVal, colorVal, i),\n      inventory_management: 'shopify',\n      inventory_quantity: 0,\n    };\n\n    if (option1Name) variant.option1 = opt1;\n    if (opt2 && option2Name) variant.option2 = opt2;\n\n    shopifyVariants.push(variant);\n\n    const vPrice = r.price !== '' && r.price !== null && r.price !== undefined\n      ? String(r.price)\n      : defaultPrice;\n    const vInv = r.qty !== null && r.qty !== undefined && r.qty !== ''\n      ? Number(r.qty)\n      : perVariantInv;\n\n    priceUpdates.push({\n      sku: variant.sku,\n      option1: variant.option1,\n      option2: variant.option2,\n      price: vPrice,\n      inventory_quantity: vInv,\n    });\n  });\n\n  const product = {\n    title: listing.title,\n    body_html: listing.description_html,\n    vendor,\n    product_type: productType,\n    tags: listing.tags,\n    status: 'draft',\n    variants: shopifyVariants,\n  };\n\n  if (option1Name && option1Values.size > 0) {\n    product.options = [];\n    product.options.push({ name: option1Name, values: [...option1Values] });\n    if (option2Name && option2Values.size > 0) {\n      product.options.push({ name: option2Name, values: [...option2Values] });\n    }\n  }\n\n  return {\n    multi_variant: shopifyVariants.length > 1,\n    variant_count: shopifyVariants.length,\n    variant_profile: profileKey,\n    shopify_payload: { product },\n    price_updates: priceUpdates,\n  };\n};\n\n\n\nconst row = $('Active product row').first().json;\nconst aiRaw = $('AI write listing').first().json;\nlet listingText = aiRaw.output?.[0]?.content?.[0]?.text || aiRaw.text || '';\nlistingText = String(listingText).replace(/```json|```/g, '').trim();\nlet listing;\ntry {\n  listing = JSON.parse(listingText);\n} catch (e) {\n  throw new Error(`Cannot parse AI listing for Shopify build: ${listingText.slice(0, 200)}`);\n}\n\nconst built = VARIANTS.buildShopifyPayload(row, listing);\nreturn [{ json: built }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -90,
+        -120
+      ],
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Build Shopify product"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst created = $('Create a product').first().json;\nconst plan = $('Build Shopify product').first().json;\nconst updates = plan.price_updates || [];\nconst variants = created.variants || [];\n\nif (variants.length === 0) {\n  throw new Error('Shopify product has no variants after create');\n}\n\nconst bySku = {};\nfor (const u of updates) bySku[u.sku] = u;\n\nconst items = variants.map((v, i) => {\n  const u = bySku[v.sku] || updates[i] || updates[0] || {};\n  return {\n    json: {\n      variant_id: v.id,\n      sku: v.sku,\n      price: String(u.price ?? '0.00'),\n      inventory_quantity: Number(u.inventory_quantity ?? 0),\n      multi_variant: plan.multi_variant,\n      variant_profile: plan.variant_profile,\n      variant_count: plan.variant_count,\n    },\n  };\n});\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        90,
+        -120
+      ],
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Prepare variant price updates"
     }
   ],
   "connections": {
@@ -1147,7 +1173,7 @@
       "main": [
         [
           {
-            "node": "Create a product API",
+            "node": "Build Shopify product",
             "type": "main",
             "index": 0
           }
@@ -1176,7 +1202,7 @@
       "main": [
         [
           {
-            "node": "Set Shopify price and stock",
+            "node": "Prepare variant price updates",
             "type": "main",
             "index": 0
           }
@@ -1243,6 +1269,28 @@
         [
           {
             "node": "Update sheet listing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Shopify product": {
+      "main": [
+        [
+          {
+            "node": "Create a product API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare variant price updates": {
+      "main": [
+        [
+          {
+            "node": "Set Shopify price and stock",
             "type": "main",
             "index": 0
           }
