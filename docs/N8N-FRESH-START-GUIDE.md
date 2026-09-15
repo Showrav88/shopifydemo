@@ -21,7 +21,7 @@ Download **`ShopifyProductAdd.V2.json`** from the repo root, then in n8n:
 
 ## Part A — Google Sheet input data (what YOU type first)
 
-You only need **ONE sheet**: `product_template`. No second spreadsheet required.
+You only need **ONE sheet**: `input_url`. No second spreadsheet required.
 
 ### Quick import (optional)
 
@@ -31,7 +31,7 @@ You only need **ONE sheet**: `product_template`. No second spreadsheet required.
 
 ---
 
-### Your sheet: `product_template` (trigger + all updates)
+### Your sheet: `input_url` (trigger + all updates)
 
 **Row 1 = column headers. Row 2+ = your product data.**
 
@@ -63,7 +63,7 @@ Workflow fills: Tags, SEO title, SEO description, Image alt text, QA Status, AI 
 
 ### Example — row 2
 
-**product_template row 2:**
+**input_url row 2:**
 
 | Column | Value |
 |--------|-------|
