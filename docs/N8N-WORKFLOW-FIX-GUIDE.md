@@ -197,7 +197,7 @@ Match row by `row_number` or `Product ID`.
 
 ## FIX 8 — Column name alignment
 
-Your trigger sheet (`product_template`) uses Shopify export columns. Code node checks:
+Your trigger sheet (`input_url`) uses Shopify export columns. Code node checks:
 
 | Code expects | Trigger sheet has | Fix |
 |--------------|-------------------|-----|
