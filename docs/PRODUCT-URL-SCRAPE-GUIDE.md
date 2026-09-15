@@ -73,3 +73,13 @@ Change **Product URL** on a row → `Scrape Status` resets logic → scrapes aga
 ### Sheet empty after "success" (`[ {} ]`)
 
 Match column was **SKU** while sheet SKU was blank. Fixed by matching on **Product URL** (the value you paste first).
+
+### Photoroom error: `response is HTML, not an image` (e.g. Aarong)
+
+**Cause:** Scrape missed the image. Sites like **aarong.com** (Next.js) put product images in page JSON (`__NEXT_DATA__`, `mcprod.aarong.com/media/catalog/product/...`) — not in `og:image`. Old scraper stripped `<script>` tags before AI saw them.
+
+**Symptom:** `Product image URL` empty → Photoroom got the **product page URL** (`.html`) instead of a `.jpg`.
+
+**Fix (in latest JSON):** **Prepare page for scrape** now extracts `candidate_images` from JSON-LD, og:image, catalog/product URLs, and `__NEXT_DATA__`. **Apply scraped data** picks the first valid direct image URL. Photoroom throws a clear error if still no image.
+
+**Manual fallback:** Paste image URL into **Product image URL** column (e.g. `https://media.aarong.com/media/catalog/product/...jpg`).
