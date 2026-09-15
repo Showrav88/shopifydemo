@@ -80,13 +80,22 @@
 
 ---
 
-## Size / multi-variant (v1 limit)
+## Multi-variant (Phase 2)
 
-| What | Today |
-|------|--------|
-| Scrape | Reads all sizes/colors → **Sizes**, **Colors**, **Scraped variants** columns |
-| Shopify create | **One variant** per row (default title) |
-| Multi-size shop | Future: one row per size OR GraphQL multi-variant |
+| Sheet column | Meaning |
+|--------------|---------|
+| **Sizes** | e.g. `S, M, L, XL` (scrape writes) |
+| **Colors** | e.g. `Black, Navy` (scrape writes) |
+| **Scraped variants** | JSON array from scrape — preferred source |
+| **Variant profile** | Optional override: `clothing_alpha`, `footwear_uk`, `clothing_numeric`, `one_size`, `color_only` |
+| **Price** | Your sell price — applied to **all** variants (unless variant JSON has price) |
+| **Inventory quantity** | Total stock — **split evenly** across variants |
+
+**Auto profile** from Product category: shirts → `clothing_alpha`, shoes → `footwear_uk`, bags → `one_size`.
+
+**Shopify gets:** `options` (Size, Color, etc.) + one variant per size/color combo with unique SKU (`BASE-S-BLACK`).
+
+**Fallback:** no sizes/colors scraped → single variant (same as v1).
 
 ---
 
