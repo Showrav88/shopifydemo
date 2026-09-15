@@ -109,9 +109,9 @@ Price is **not** updated by workflow — set manually in Shopify after reviewing
 
 ```
 1. Paste Product URL          → scrape fills competitor price + sizes + description
-2. You set Price              → your margin (not competitor price)
-3. You set Inventory quantity → stock you ordered
-4. Run completes              → draft on Shopify + price + stock applied
+2. Run completes              → draft on Shopify at £0.00 (+ stock if Inventory quantity filled)
+3. Review QA PASS             → check listing quality score ≥ 90
+4. You set sell price         → manually in Shopify admin (sheet Price is reference only)
 ```
 
-If **Price** or **Inventory** empty at run time → Shopify gets `0` until you fill sheet and re-trigger.
+If **Inventory quantity** is empty → variants stay at 0 stock until you set stock in sheet or Shopify admin.
