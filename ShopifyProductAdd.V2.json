@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## ShopifyProductAdd.V2 + Product URL scrape\n\n**START:** Paste **Product URL** \u2192 scrape \u2192 listing \u2192 Shopify draft.\n\n**Per-field AI prompts (optional sheet columns):**\n`Prompt Title` | `Prompt Description` | `Prompt Tags` | `Prompt SEO title` | `Prompt SEO description` | `Prompt Image alt` | `Prompt Category`\nLeave blank = sensible UK fashion defaults in **Active product row**.\n\n**Price + stock:** scrape saves **Competitor price/currency** only. YOU set **Price** + **Inventory quantity** \u2192 **Set Shopify price and stock** after draft create.\n\n**4 AI steps:** scrape \u2192 Analyze image \u2192 AI write listing \u2192 QA\n**Unpin** trigger before manual test.\n\n**QA:** Check text overlap (code %) \u2192 AI QA score listing \u2192 pass needs score\u226590 AND overlap_fail=false."
+        "content": "## ShopifyProductAdd.V2 + Product URL scrape\n\n**START:** Paste **Product URL** \u2192 scrape \u2192 listing \u2192 Shopify draft.\n\n**Per-field AI prompts (optional sheet columns):**\n`Prompt Title` | `Prompt Description` | `Prompt Tags` | `Prompt SEO title` | `Prompt SEO description` | `Prompt Image alt` | `Prompt Category`\nLeave blank = sensible UK fashion defaults in **Active product row**.\n\n**Price:** workflow leaves \u00a30.00 \u2014 client sets sell price in Shopify admin after QA PASS. **Stock:** optional sheet Inventory quantity \u2192 split across variants. **Sheet:** url_input / url_input.csv\n\n**4 AI steps:** scrape \u2192 Analyze image \u2192 AI write listing \u2192 QA\n**Unpin** trigger before manual test.\n\n**QA:** Check text overlap (code %) \u2192 AI QA score listing \u2192 pass needs score\u226590 AND overlap_fail=false."
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -40,13 +40,13 @@
           "__rl": true,
           "value": "1ayWn9AcmgLqmxaL6BOzHzzuZSSVwhqbJCCtzIcwXaZ4",
           "mode": "list",
-          "cachedResultName": "input_url"
+          "cachedResultName": "url_input"
         },
         "sheetName": {
           "__rl": true,
           "value": 1922248105,
           "mode": "list",
-          "cachedResultName": "input_url.csv"
+          "cachedResultName": "url_input.csv"
         },
         "options": {
           "columnsToWatch": [
@@ -217,7 +217,7 @@
           "parameters": [
             {
               "name": "key",
-              "value": "REPLACE_IMGBB_KEY"
+              "value": "8e71e83fe03de0cd6e22c480fe344e9b"
             }
           ]
         },
@@ -287,17 +287,18 @@
           "__rl": true,
           "value": "1ayWn9AcmgLqmxaL6BOzHzzuZSSVwhqbJCCtzIcwXaZ4",
           "mode": "list",
-          "cachedResultName": "input_url"
+          "cachedResultName": "url_input"
         },
         "sheetName": {
           "__rl": true,
           "value": 1922248105,
           "mode": "list",
-          "cachedResultName": "input_url.csv"
+          "cachedResultName": "url_input.csv"
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
+            "Product URL": "={{ $('Active product row').item.json['Product URL'] || $('Active product row').item.json.source_product_url }}",
             "Title": "={{ JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).title }}",
             "Product category": "={{ $('Active product row').item.json.validated_category || JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).collection }}",
             "Description": "={{ JSON.parse($('AI write listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).description_html }}",
@@ -308,7 +309,7 @@
             "SKU": "={{ $('Active product row').item.json.validated_sku }}"
           },
           "matchingColumns": [
-            "SKU"
+            "Product URL"
           ]
         },
         "options": {}
@@ -372,17 +373,18 @@
           "__rl": true,
           "value": "1ayWn9AcmgLqmxaL6BOzHzzuZSSVwhqbJCCtzIcwXaZ4",
           "mode": "list",
-          "cachedResultName": "input_url"
+          "cachedResultName": "url_input"
         },
         "sheetName": {
           "__rl": true,
           "value": 1922248105,
           "mode": "list",
-          "cachedResultName": "input_url.csv"
+          "cachedResultName": "url_input.csv"
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
+            "Product URL": "={{ $('Active product row').item.json['Product URL'] || $('Active product row').item.json.source_product_url }}",
             "AI Score": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).quality_score }}",
             "SEO title": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).seo_title }}",
             "SEO description": "={{ JSON.parse($json.output[0].content[0].text.replace(/```json|```/g, '').trim()).meta_description }}",
@@ -394,7 +396,7 @@
             "QA Issues": "={{ (() => { const q = JSON.parse($('AI QA score listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()); const o = $('Check text overlap').item.json; return [o.overlap_summary, ...(q.issues || [])].filter(Boolean).join(' | '); })() }}"
           },
           "matchingColumns": [
-            "SKU"
+            "Product URL"
           ]
         },
         "options": {}
@@ -505,7 +507,7 @@
         "nodeCredentialType": "shopifyOAuth2Api",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"variant\": {\n    \"id\": {{ $json.variant_id }},\n    \"price\": \"{{ $json.price }}\",\n    \"inventory_management\": \"shopify\",\n    \"inventory_quantity\": {{ $json.inventory_quantity }}\n  }\n}",
+        "jsonBody": "={\n  \"variant\": {\n    \"id\": {{ $json.variant_id }},\n    \"inventory_management\": \"shopify\",\n    \"inventory_quantity\": {{ $json.inventory_quantity }}\n  }\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -515,7 +517,7 @@
         -120
       ],
       "id": "a1b2c3d4-e5f6-7890-inventory-set01",
-      "name": "Set Shopify price and stock",
+      "name": "Set Shopify variant stock",
       "credentials": {
         "shopifyOAuth2Api": {
           "id": "RECONNECT_ME",
@@ -602,17 +604,18 @@
           "__rl": true,
           "value": "1ayWn9AcmgLqmxaL6BOzHzzuZSSVwhqbJCCtzIcwXaZ4",
           "mode": "list",
-          "cachedResultName": "input_url"
+          "cachedResultName": "url_input"
         },
         "sheetName": {
           "__rl": true,
           "value": 1922248105,
           "mode": "list",
-          "cachedResultName": "input_url.csv"
+          "cachedResultName": "url_input.csv"
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
+            "Product URL": "={{ $('Active product row').item.json['Product URL'] || $('Active product row').item.json.source_product_url }}",
             "QA Status": "={{ $('Shopify image result').item.json.shopify_image_ready ? 'PASS' : 'PASS_NO_IMAGE' }}",
             "URL handle": "={{ $('Create a product').item.json.handle }}",
             "Shopify Product URL": "=https://8kqexi-2j.myshopify.com/products/{{ $('Create a product').item.json.handle }}",
@@ -623,7 +626,7 @@
             "SKU": "={{ $('Active product row').item.json.validated_sku }}"
           },
           "matchingColumns": [
-            "SKU"
+            "Product URL"
           ]
         },
         "options": {}
@@ -650,17 +653,18 @@
           "__rl": true,
           "value": "1ayWn9AcmgLqmxaL6BOzHzzuZSSVwhqbJCCtzIcwXaZ4",
           "mode": "list",
-          "cachedResultName": "input_url"
+          "cachedResultName": "url_input"
         },
         "sheetName": {
           "__rl": true,
           "value": 1922248105,
           "mode": "list",
-          "cachedResultName": "input_url.csv"
+          "cachedResultName": "url_input.csv"
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
+            "Product URL": "={{ $('Active product row').item.json['Product URL'] || $('Active product row').item.json.source_product_url }}",
             "QA Status": "={{ $('Check text overlap').item.json.overlap_fail ? 'FAIL_COPY' : 'FAIL' }}",
             "AI Score": "={{ Number(JSON.parse($('AI QA score listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()).quality_score) }}",
             "SKU": "={{ $('Active product row').item.json.validated_sku }}",
@@ -668,7 +672,7 @@
             "QA Issues": "={{ (() => { const q = JSON.parse($('AI QA score listing').item.json.output[0].content[0].text.replace(/```json|```/g, '').trim()); const o = $('Check text overlap').item.json; return [o.overlap_summary, ...(q.issues || [])].filter(Boolean).join(' | '); })() }}"
           },
           "matchingColumns": [
-            "SKU"
+            "Product URL"
           ]
         },
         "options": {}
@@ -850,13 +854,13 @@
           "__rl": true,
           "value": "1ayWn9AcmgLqmxaL6BOzHzzuZSSVwhqbJCCtzIcwXaZ4",
           "mode": "list",
-          "cachedResultName": "input_url"
+          "cachedResultName": "url_input"
         },
         "sheetName": {
           "__rl": true,
           "value": 1922248105,
           "mode": "list",
-          "cachedResultName": "input_url.csv"
+          "cachedResultName": "url_input.csv"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -926,7 +930,7 @@
     },
     {
       "parameters": {
-        "jsCode": "/**\n * Phase 2: Shopify multi-variant builder for n8n Code nodes.\n * One sheet row \u2192 one product with Size/Color (etc.) options from scrape.\n */\n\nconst VARIANTS = {};\n\n// \u2500\u2500\u2500 Profiles: how to name Shopify options per product family \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nVARIANTS.PROFILES = {\n  clothing_alpha: { option1: 'Size', option2: 'Color', sizePattern: 'alpha' },\n  clothing_numeric: { option1: 'Waist', option2: 'Length', sizePattern: 'numeric' },\n  footwear_uk: { option1: 'UK Size', option2: 'Color', sizePattern: 'numeric' },\n  one_size: { option1: null, option2: 'Color', sizePattern: 'one' },\n  color_only: { option1: null, option2: 'Color', sizePattern: 'one' },\n  generic: { option1: 'Size', option2: 'Color', sizePattern: 'any' },\n};\n\nVARIANTS.detectProfile = function detectProfile(category, explicitProfile) {\n  const p = String(explicitProfile || '').trim().toLowerCase();\n  if (p && VARIANTS.PROFILES[p]) return p;\n\n  const c = String(category || '').toLowerCase();\n  if (/shoe|sneaker|boot|footwear|sandal|trainer/.test(c)) return 'footwear_uk';\n  if (/jean|trouser|pant|chino/.test(c)) return 'clothing_numeric';\n  if (/bag|belt|wallet|scarf|hat|cap|accessory|jewel|watch|sock/.test(c)) return 'one_size';\n  if (/dress|shirt|tee|t-shirt|top|jacket|coat|hoodie|sweat|kurta|saree|blouse/.test(c)) return 'clothing_alpha';\n  return 'generic';\n};\n\nVARIANTS.parseList = function parseList(val) {\n  if (!val) return [];\n  if (Array.isArray(val)) return val.map((x) => String(x).trim()).filter(Boolean);\n  return String(val).split(/[,;|/]+/).map((x) => x.trim()).filter(Boolean);\n};\n\nVARIANTS.parseScrapedVariants = function parseScrapedVariants(row) {\n  const raw = row['Scraped variants'] || row.scraped_variants || '';\n  if (!raw) return [];\n  try {\n    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;\n    return Array.isArray(parsed) ? parsed : [];\n  } catch {\n    return [];\n  }\n};\n\nVARIANTS.norm = function norm(v) {\n  return String(v || '').trim();\n};\n\nVARIANTS.slugPart = function slugPart(v) {\n  return String(v || '')\n    .trim()\n    .toUpperCase()\n    .replace(/[^A-Z0-9]+/g, '-')\n    .replace(/^-+|-+$/g, '')\n    .slice(0, 12) || 'VAR';\n};\n\nVARIANTS.buildVariantRows = function buildVariantRows(row, profileKey) {\n  const profile = VARIANTS.PROFILES[profileKey] || VARIANTS.PROFILES.generic;\n  const scraped = VARIANTS.parseScrapedVariants(row);\n  const sizes = VARIANTS.parseList(row.Sizes);\n  const colors = VARIANTS.parseList(row.Colors);\n  const rows = [];\n\n  if (scraped.length > 0) {\n    for (const v of scraped) {\n      const size = VARIANTS.norm(v.size || v.option1 || v.title || '');\n      const color = VARIANTS.norm(v.color || v.option2 || '');\n      const price = v.price ?? v.competitor_price ?? '';\n      const sku = VARIANTS.norm(v.sku || '');\n      const qty = v.inventory ?? v.inventory_quantity ?? v.stock ?? null;\n      if (!size && !color) continue;\n      rows.push({ size, color, price, sku, qty });\n    }\n  }\n\n  if (rows.length === 0 && sizes.length > 0) {\n    const colorList = colors.length > 0 ? colors : [''];\n    for (const size of sizes) {\n      for (const color of colorList) {\n        rows.push({ size, color, price: '', sku: '', qty: null });\n      }\n    }\n  }\n\n  if (rows.length === 0 && colors.length > 0) {\n    for (const color of colors) {\n      rows.push({ size: profile.sizePattern === 'one' ? 'One Size' : '', color, price: '', sku: '', qty: null });\n    }\n  }\n\n  return { profile, rows };\n};\n\nVARIANTS.variantSku = function variantSku(baseSku, size, color, index) {\n  const base = VARIANTS.norm(baseSku) || 'SKU';\n  const parts = [base];\n  if (size && size !== 'One Size') parts.push(VARIANTS.slugPart(size));\n  if (color) parts.push(VARIANTS.slugPart(color));\n  if (parts.length === 1) parts.push(`V${index + 1}`);\n  return parts.join('-').slice(0, 50);\n};\n\nVARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {\n  const category = row.validated_category || row['Product category'] || listing.collection || '';\n  const profileKey = VARIANTS.detectProfile(category, row['Variant profile'] || row.variant_profile);\n  const { profile, rows } = VARIANTS.buildVariantRows(row, profileKey);\n\n  const sheetPrice = row['Price'] ?? row.validated_price;\n  const defaultPrice = sheetPrice === '' || sheetPrice === null || sheetPrice === undefined\n    ? '0.00'\n    : String(sheetPrice);\n\n  const sheetInv = row['Inventory quantity'] ?? row.validated_inventory;\n  const totalInv = sheetInv === '' || sheetInv === null || sheetInv === undefined\n    ? 0\n    : Number(sheetInv);\n\n  const baseSku = row.validated_sku || row.SKU || row.processing_sku || '';\n  const vendor = row.Vendor || row.validated_vendor || '';\n  const productType = category || listing.collection || '';\n\n  // \u2500\u2500 Single variant fallback (no scrape sizes) \u2500\u2500\n  if (rows.length === 0) {\n    return {\n      multi_variant: false,\n      variant_count: 1,\n      variant_profile: profileKey,\n      shopify_payload: {\n        product: {\n          title: listing.title,\n          body_html: listing.description_html,\n          vendor,\n          product_type: productType,\n          tags: listing.tags,\n          status: 'draft',\n          variants: [{\n            price: '0.00',\n            sku: baseSku,\n            inventory_management: 'shopify',\n            inventory_quantity: 0,\n          }],\n        },\n      },\n      price_updates: [{\n        sku: baseSku,\n        price: defaultPrice,\n        inventory_quantity: totalInv,\n      }],\n    };\n  }\n\n  // \u2500\u2500 Multi-variant \u2500\u2500\n  const option1Name = profile.option1;\n  const option2Name = profile.option2;\n  const option1Values = new Set();\n  const option2Values = new Set();\n  const shopifyVariants = [];\n  const priceUpdates = [];\n\n  const perVariantInv = rows.length > 0 && totalInv > 0\n    ? Math.max(1, Math.floor(totalInv / rows.length))\n    : 0;\n\n  rows.forEach((r, i) => {\n    const sizeVal = r.size || (profile.sizePattern === 'one' ? 'One Size' : `Option ${i + 1}`);\n    const colorVal = r.color || '';\n    const opt1 = option1Name ? sizeVal : (colorVal || 'Default');\n    const opt2 = option1Name && option2Name && colorVal ? colorVal : undefined;\n\n    if (option1Name) option1Values.add(opt1);\n    if (opt2 && option2Name) option2Values.add(opt2);\n\n    const variant = {\n      price: '0.00',\n      sku: r.sku || VARIANTS.variantSku(baseSku, sizeVal, colorVal, i),\n      inventory_management: 'shopify',\n      inventory_quantity: 0,\n    };\n\n    if (option1Name) variant.option1 = opt1;\n    if (opt2 && option2Name) variant.option2 = opt2;\n\n    shopifyVariants.push(variant);\n\n    const vPrice = r.price !== '' && r.price !== null && r.price !== undefined\n      ? String(r.price)\n      : defaultPrice;\n    const vInv = r.qty !== null && r.qty !== undefined && r.qty !== ''\n      ? Number(r.qty)\n      : perVariantInv;\n\n    priceUpdates.push({\n      sku: variant.sku,\n      option1: variant.option1,\n      option2: variant.option2,\n      price: vPrice,\n      inventory_quantity: vInv,\n    });\n  });\n\n  const product = {\n    title: listing.title,\n    body_html: listing.description_html,\n    vendor,\n    product_type: productType,\n    tags: listing.tags,\n    status: 'draft',\n    variants: shopifyVariants,\n  };\n\n  if (option1Name && option1Values.size > 0) {\n    product.options = [];\n    product.options.push({ name: option1Name, values: [...option1Values] });\n    if (option2Name && option2Values.size > 0) {\n      product.options.push({ name: option2Name, values: [...option2Values] });\n    }\n  }\n\n  return {\n    multi_variant: shopifyVariants.length > 1,\n    variant_count: shopifyVariants.length,\n    variant_profile: profileKey,\n    shopify_payload: { product },\n    price_updates: priceUpdates,\n  };\n};\n\n\n\nconst row = $('Active product row').first().json;\nconst aiRaw = $('AI write listing').first().json;\nlet listingText = aiRaw.output?.[0]?.content?.[0]?.text || aiRaw.text || '';\nlistingText = String(listingText).replace(/```json|```/g, '').trim();\nlet listing;\ntry {\n  listing = JSON.parse(listingText);\n} catch (e) {\n  throw new Error(`Cannot parse AI listing for Shopify build: ${listingText.slice(0, 200)}`);\n}\n\nconst built = VARIANTS.buildShopifyPayload(row, listing);\nreturn [{ json: built }];\n"
+        "jsCode": "/**\n * Phase 2: Shopify multi-variant builder for n8n Code nodes.\n * One sheet row \u2192 one product with Size/Color (etc.) options from scrape.\n */\n\nconst VARIANTS = {};\n\n// \u2500\u2500\u2500 Profiles: how to name Shopify options per product family \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nVARIANTS.PROFILES = {\n  clothing_alpha: { option1: 'Size', option2: 'Color', sizePattern: 'alpha' },\n  clothing_numeric: { option1: 'Waist', option2: 'Length', sizePattern: 'numeric' },\n  footwear_uk: { option1: 'UK Size', option2: 'Color', sizePattern: 'numeric' },\n  one_size: { option1: null, option2: 'Color', sizePattern: 'one' },\n  color_only: { option1: null, option2: 'Color', sizePattern: 'one' },\n  generic: { option1: 'Size', option2: 'Color', sizePattern: 'any' },\n};\n\nVARIANTS.detectProfile = function detectProfile(category, explicitProfile) {\n  const p = String(explicitProfile || '').trim().toLowerCase();\n  if (p && VARIANTS.PROFILES[p]) return p;\n\n  const c = String(category || '').toLowerCase();\n  if (/shoe|sneaker|boot|footwear|sandal|trainer/.test(c)) return 'footwear_uk';\n  if (/jean|trouser|pant|chino/.test(c)) return 'clothing_numeric';\n  if (/bag|belt|wallet|scarf|hat|cap|accessory|jewel|watch|sock/.test(c)) return 'one_size';\n  if (/dress|shirt|tee|t-shirt|top|jacket|coat|hoodie|sweat|kurta|saree|blouse/.test(c)) return 'clothing_alpha';\n  return 'generic';\n};\n\nVARIANTS.parseList = function parseList(val) {\n  if (!val) return [];\n  if (Array.isArray(val)) return val.map((x) => String(x).trim()).filter(Boolean);\n  return String(val).split(/[,;|/]+/).map((x) => x.trim()).filter(Boolean);\n};\n\nVARIANTS.parseScrapedVariants = function parseScrapedVariants(row) {\n  const raw = row['Scraped variants'] || row.scraped_variants || '';\n  if (!raw) return [];\n  try {\n    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;\n    return Array.isArray(parsed) ? parsed : [];\n  } catch {\n    return [];\n  }\n};\n\nVARIANTS.norm = function norm(v) {\n  return String(v || '').trim();\n};\n\nVARIANTS.slugPart = function slugPart(v) {\n  return String(v || '')\n    .trim()\n    .toUpperCase()\n    .replace(/[^A-Z0-9]+/g, '-')\n    .replace(/^-+|-+$/g, '')\n    .slice(0, 12) || 'VAR';\n};\n\nVARIANTS.buildVariantRows = function buildVariantRows(row, profileKey) {\n  const profile = VARIANTS.PROFILES[profileKey] || VARIANTS.PROFILES.generic;\n  const scraped = VARIANTS.parseScrapedVariants(row);\n  const sizes = VARIANTS.parseList(row.Sizes);\n  const colors = VARIANTS.parseList(row.Colors);\n  const rows = [];\n\n  if (scraped.length > 0) {\n    for (const v of scraped) {\n      const size = VARIANTS.norm(v.size || v.option1 || v.title || '');\n      const color = VARIANTS.norm(v.color || v.option2 || '');\n      const price = v.price ?? v.competitor_price ?? '';\n      const sku = VARIANTS.norm(v.sku || '');\n      const qty = v.inventory ?? v.inventory_quantity ?? v.stock ?? null;\n      if (!size && !color) continue;\n      rows.push({ size, color, price, sku, qty });\n    }\n  }\n\n  if (rows.length === 0 && sizes.length > 0) {\n    const colorList = colors.length > 0 ? colors : [''];\n    for (const size of sizes) {\n      for (const color of colorList) {\n        rows.push({ size, color, price: '', sku: '', qty: null });\n      }\n    }\n  }\n\n  if (rows.length === 0 && colors.length > 0) {\n    for (const color of colors) {\n      rows.push({ size: profile.sizePattern === 'one' ? 'One Size' : '', color, price: '', sku: '', qty: null });\n    }\n  }\n\n  return { profile, rows };\n};\n\nVARIANTS.variantSku = function variantSku(baseSku, size, color, index) {\n  const base = VARIANTS.norm(baseSku) || 'SKU';\n  const parts = [base];\n  if (size && size !== 'One Size') parts.push(VARIANTS.slugPart(size));\n  if (color) parts.push(VARIANTS.slugPart(color));\n  if (parts.length === 1) parts.push(`V${index + 1}`);\n  return parts.join('-').slice(0, 50);\n};\n\nVARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {\n  const category = row.validated_category || row['Product category'] || listing.collection || '';\n  const profileKey = VARIANTS.detectProfile(category, row['Variant profile'] || row.variant_profile);\n  const { profile, rows } = VARIANTS.buildVariantRows(row, profileKey);\n\n  // Price: always 0.00 at create \u2014 client sets sell price in Shopify admin after QA PASS\n  const sheetInv = row['Inventory quantity'] ?? row.validated_inventory;\n  const totalInv = sheetInv === '' || sheetInv === null || sheetInv === undefined\n    ? 0\n    : Number(sheetInv);\n\n  const baseSku = row.validated_sku || row.SKU || row.processing_sku || '';\n  const vendor = row.Vendor || row.validated_vendor || '';\n  const productType = category || listing.collection || '';\n\n  // \u2500\u2500 Single variant fallback (no scrape sizes) \u2500\u2500\n  if (rows.length === 0) {\n    return {\n      multi_variant: false,\n      variant_count: 1,\n      variant_profile: profileKey,\n      shopify_payload: {\n        product: {\n          title: listing.title,\n          body_html: listing.description_html,\n          vendor,\n          product_type: productType,\n          tags: listing.tags,\n          status: 'draft',\n          variants: [{\n            price: '0.00',\n            sku: baseSku,\n            inventory_management: 'shopify',\n            inventory_quantity: 0,\n          }],\n        },\n      },\n      inventory_updates: [{\n        sku: baseSku,\n        inventory_quantity: totalInv,\n      }],\n    };\n  }\n\n  // \u2500\u2500 Multi-variant \u2500\u2500\n  const option1Name = profile.option1;\n  const option2Name = profile.option2;\n  const option1Values = new Set();\n  const option2Values = new Set();\n  const shopifyVariants = [];\n  const inventoryUpdates = [];\n\n  const perVariantInv = rows.length > 0 && totalInv > 0\n    ? Math.max(1, Math.floor(totalInv / rows.length))\n    : 0;\n\n  rows.forEach((r, i) => {\n    const sizeVal = r.size || (profile.sizePattern === 'one' ? 'One Size' : `Option ${i + 1}`);\n    const colorVal = r.color || '';\n    const opt1 = option1Name ? sizeVal : (colorVal || 'Default');\n    const opt2 = option1Name && option2Name && colorVal ? colorVal : undefined;\n\n    if (option1Name) option1Values.add(opt1);\n    if (opt2 && option2Name) option2Values.add(opt2);\n\n    const variant = {\n      price: '0.00',\n      sku: r.sku || VARIANTS.variantSku(baseSku, sizeVal, colorVal, i),\n      inventory_management: 'shopify',\n      inventory_quantity: 0,\n    };\n\n    if (option1Name) variant.option1 = opt1;\n    if (opt2 && option2Name) variant.option2 = opt2;\n\n    shopifyVariants.push(variant);\n\n    const vInv = r.qty !== null && r.qty !== undefined && r.qty !== ''\n      ? Number(r.qty)\n      : perVariantInv;\n\n    inventoryUpdates.push({\n      sku: variant.sku,\n      option1: variant.option1,\n      option2: variant.option2,\n      inventory_quantity: vInv,\n    });\n  });\n\n  const product = {\n    title: listing.title,\n    body_html: listing.description_html,\n    vendor,\n    product_type: productType,\n    tags: listing.tags,\n    status: 'draft',\n    variants: shopifyVariants,\n  };\n\n  if (option1Name && option1Values.size > 0) {\n    product.options = [];\n    product.options.push({ name: option1Name, values: [...option1Values] });\n    if (option2Name && option2Values.size > 0) {\n      product.options.push({ name: option2Name, values: [...option2Values] });\n    }\n  }\n\n  return {\n    multi_variant: shopifyVariants.length > 1,\n    variant_count: shopifyVariants.length,\n    variant_profile: profileKey,\n    shopify_payload: { product },\n    inventory_updates: inventoryUpdates,\n  };\n};\n\n\n/**\n * Phase 3: Shopify product organization \u2014 taxonomy category + collections.\n */\n\nconst ORG = {};\n\n// Override via sheet column \"Shopify Category\" (full GID). Auto-map is best-effort.\nORG.TAXONOMY_GIDS = {\n  shirt: 'gid://shopify/TaxonomyCategory/aa-1-13-8',\n  shirts: 'gid://shopify/TaxonomyCategory/aa-1-13-8',\n  tshirt: 'gid://shopify/TaxonomyCategory/aa-1-13-7',\n  't-shirt': 'gid://shopify/TaxonomyCategory/aa-1-13-7',\n  dress: 'gid://shopify/TaxonomyCategory/aa-1-13-1',\n  dresses: 'gid://shopify/TaxonomyCategory/aa-1-13-1',\n  jean: 'gid://shopify/TaxonomyCategory/aa-1-13-4',\n  jeans: 'gid://shopify/TaxonomyCategory/aa-1-13-4',\n  trouser: 'gid://shopify/TaxonomyCategory/aa-1-13-11',\n  pant: 'gid://shopify/TaxonomyCategory/aa-1-13-11',\n  jacket: 'gid://shopify/TaxonomyCategory/aa-1-13-3',\n  coat: 'gid://shopify/TaxonomyCategory/aa-1-13-2',\n  shoe: 'gid://shopify/TaxonomyCategory/aa-1-13-9',\n  shoes: 'gid://shopify/TaxonomyCategory/aa-1-13-9',\n  sneaker: 'gid://shopify/TaxonomyCategory/aa-1-13-9',\n  bag: 'gid://shopify/TaxonomyCategory/aa-1-5-3',\n  accessory: 'gid://shopify/TaxonomyCategory/aa-1-1',\n};\n\nORG.slugify = function slugify(text) {\n  return String(text || '')\n    .toLowerCase()\n    .replace(/[^a-z0-9]+/g, '-')\n    .replace(/^-+|-+$/g, '');\n};\n\nORG.resolveTaxonomyGid = function resolveTaxonomyGid(row, listing) {\n  const explicit = String(row['Shopify Category'] || row.shopify_category_gid || '').trim();\n  if (explicit.startsWith('gid://shopify/TaxonomyCategory/')) return explicit;\n\n  const hay = [\n    row['Product category'],\n    row.validated_category,\n    listing?.collection,\n    listing?.tags,\n  ].join(' ').toLowerCase();\n\n  for (const [key, gid] of Object.entries(ORG.TAXONOMY_GIDS)) {\n    if (hay.includes(key)) return gid;\n  }\n  return '';\n};\n\nORG.resolveCollectionHandle = function resolveCollectionHandle(row, listing) {\n  const explicit = String(row.Collection || row.collection_handle || '').trim();\n  if (explicit) return ORG.slugify(explicit);\n\n  const path = String(listing?.collection || row['Product category'] || '').trim();\n  if (!path) return '';\n\n  const parts = path.split(/>|\\/|,/).map((p) => p.trim()).filter(Boolean);\n  if (parts.length >= 2) {\n    return ORG.slugify(`${parts[0]}-${parts[parts.length - 1]}`);\n  }\n  return ORG.slugify(parts[0] || path);\n};\n\nORG.enrichProduct = function enrichProduct(product, row, listing) {\n  const categoryGid = ORG.resolveTaxonomyGid(row, listing);\n  if (categoryGid) product.category = categoryGid;\n\n  const collectionHandle = ORG.resolveCollectionHandle(row, listing);\n  if (collectionHandle) {\n    const tag = `collection:${collectionHandle}`;\n    const existing = String(product.tags || '');\n    product.tags = existing ? `${existing}, ${tag}` : tag;\n  }\n\n  return {\n    category_gid: categoryGid,\n    collection_handle: ORG.resolveCollectionHandle(row, listing),\n  };\n};\n\n\nconst row = $('Active product row').first().json;\nconst aiRaw = $('AI write listing').first().json;\nlet listingText = aiRaw.output?.[0]?.content?.[0]?.text || aiRaw.text || '';\nlistingText = String(listingText).replace(/```json|```/g, '').trim();\nlet listing;\ntry {\n  listing = JSON.parse(listingText);\n} catch (e) {\n  throw new Error(`Cannot parse AI listing for Shopify build: ${listingText.slice(0, 200)}`);\n}\n\nconst built = VARIANTS.buildShopifyPayload(row, listing);\nconst org = ORG.enrichProduct(built.shopify_payload.product, row, listing);\nbuilt.category_gid = org.category_gid;\nbuilt.collection_handle = org.collection_handle;\nreturn [{ json: built }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -939,7 +943,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst created = $('Create a product').first().json;\nconst plan = $('Build Shopify product').first().json;\nconst updates = plan.price_updates || [];\nconst variants = created.variants || [];\n\nif (variants.length === 0) {\n  throw new Error('Shopify product has no variants after create');\n}\n\nconst bySku = {};\nfor (const u of updates) bySku[u.sku] = u;\n\nconst items = variants.map((v, i) => {\n  const u = bySku[v.sku] || updates[i] || updates[0] || {};\n  return {\n    json: {\n      variant_id: v.id,\n      sku: v.sku,\n      price: String(u.price ?? '0.00'),\n      inventory_quantity: Number(u.inventory_quantity ?? 0),\n      multi_variant: plan.multi_variant,\n      variant_profile: plan.variant_profile,\n      variant_count: plan.variant_count,\n    },\n  };\n});\n\nreturn items;\n"
+        "jsCode": "\nconst created = $('Create a product').first().json;\nconst plan = $('Build Shopify product').first().json;\nconst updates = plan.inventory_updates || [];\nconst variants = created.variants || [];\n\nif (variants.length === 0) {\n  throw new Error('Shopify product has no variants after create');\n}\n\nconst bySku = {};\nfor (const u of updates) bySku[u.sku] = u;\n\nconst items = [];\nfor (let i = 0; i < variants.length; i++) {\n  const v = variants[i];\n  const u = bySku[v.sku] || updates[i] || updates[0] || {};\n  const qty = Number(u.inventory_quantity ?? 0);\n  if (qty <= 0) continue;\n  items.push({\n    json: {\n      variant_id: v.id,\n      sku: v.sku,\n      inventory_quantity: qty,\n      multi_variant: plan.multi_variant,\n      variant_profile: plan.variant_profile,\n      variant_count: plan.variant_count,\n    },\n  });\n}\n\nif (items.length === 0) {\n  return [{ json: { skipped: true, reason: 'no inventory \u2014 set stock in sheet or Shopify admin' } }];\n}\nreturn items;\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -948,7 +952,140 @@
         -120
       ],
       "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
-      "name": "Prepare variant price updates"
+      "name": "Prepare variant stock updates"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst plan = $('Build Shopify product').first().json;\nconst productId = $('Create a product').first().json.id;\nconst handle = String(plan.collection_handle || '').trim();\nreturn [{ json: { product_id: productId, collection_handle: handle, has_collection: !!handle } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        -120
+      ],
+      "id": "d4e5f6a7-b8c9-4012-d345-6789abcdef02",
+      "name": "Plan Shopify collection"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "has-variant-stock",
+              "leftValue": "={{ $json.variant_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        160,
+        -120
+      ],
+      "id": "a7b8c9d0-e1f2-3456-a789-bcdef0123457",
+      "name": "Has variant stock"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "has-collection-handle",
+              "leftValue": "={{ $json.has_collection }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        280,
+        -120
+      ],
+      "id": "b8c9d0e1-f2a3-4567-b890-cdef01234568",
+      "name": "Has collection handle"
+    },
+    {
+      "parameters": {
+        "url": "=https://8kqexi-2j.myshopify.com/admin/api/2025-01/custom_collections.json?handle={{ $('Plan Shopify collection').item.json.collection_handle }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "shopifyOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        400,
+        -200
+      ],
+      "id": "e5f6a7b8-c9d0-4123-e456-789abcdef013",
+      "name": "Get collection by handle",
+      "credentials": {
+        "shopifyOAuth2Api": {
+          "id": "RECONNECT_ME",
+          "name": "Shopify account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://8kqexi-2j.myshopify.com/admin/api/2025-01/collects.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "shopifyOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { collect: { product_id: $('Plan Shopify collection').item.json.product_id, collection_id: $json.custom_collections[0].id } } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        520,
+        -200
+      ],
+      "id": "f6a7b8c9-d0e1-4234-f567-89abcdef0124",
+      "name": "Add to Shopify collection",
+      "credentials": {
+        "shopifyOAuth2Api": {
+          "id": "RECONNECT_ME",
+          "name": "Shopify account"
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -1202,18 +1339,7 @@
       "main": [
         [
           {
-            "node": "Prepare variant price updates",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Set Shopify price and stock": {
-      "main": [
-        [
-          {
-            "node": "Download ImgBB for Shopify",
+            "node": "Prepare variant stock updates",
             "type": "main",
             "index": 0
           }
@@ -1286,11 +1412,91 @@
         ]
       ]
     },
-    "Prepare variant price updates": {
+    "Prepare variant stock updates": {
       "main": [
         [
           {
-            "node": "Set Shopify price and stock",
+            "node": "Has variant stock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Shopify variant stock": {
+      "main": [
+        [
+          {
+            "node": "Plan Shopify collection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has variant stock": {
+      "main": [
+        [
+          {
+            "node": "Set Shopify variant stock",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Plan Shopify collection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan Shopify collection": {
+      "main": [
+        [
+          {
+            "node": "Has collection handle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has collection handle": {
+      "main": [
+        [
+          {
+            "node": "Get collection by handle",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download ImgBB for Shopify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get collection by handle": {
+      "main": [
+        [
+          {
+            "node": "Add to Shopify collection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to Shopify collection": {
+      "main": [
+        [
+          {
+            "node": "Download ImgBB for Shopify",
             "type": "main",
             "index": 0
           }

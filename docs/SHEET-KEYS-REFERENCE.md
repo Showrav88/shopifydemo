@@ -5,8 +5,10 @@
 | Sheet column | Required? | Used for | Goes to Shopify? |
 |--------------|-----------|----------|------------------|
 | **Product URL** | Start here | Triggers scrape | No (reference only) |
-| **Price** | Before publish | **Your UK sell price** | Yes — **after** draft create |
-| **Inventory quantity** | Before publish | Stock you ordered | Yes — **after** draft create |
+| **Price** | Reference only | Your planned sell price — **set manually in Shopify admin after QA PASS** | No (workflow leaves £0.00) |
+| **Inventory quantity** | Optional | Stock — applied to variants if &gt; 0 | Yes — if filled |
+| **Shopify Category** | Optional | Shopify taxonomy GID (or auto-mapped from Product category) | Yes — on create |
+| **Collection** | Optional | Collection handle e.g. `mens-shirts` | Yes — if collection exists in store |
 | **SKU** | Optional | Auto if empty: `CATEGORY-XXXXXX` (4-letter category code + 6 random letters/numbers) | Yes — variant SKU |
 | **Prompt Title** … **Prompt Category** | Optional | How AI writes each field | Via AI output |
 | Product image URL | Manual mode | Image for Photoroom | Image upload |
@@ -67,16 +69,20 @@
 | `product.product_type` | Product category |
 | `product.tags` | AI → `tags` |
 | `product.status` | always `draft` |
-| `variants[0].sku` | SKU |
-| `variants[0].price` | `0` at create → **Set Shopify price and stock** |
-| `variants[0].inventory_quantity` | `0` at create → **Set Shopify price and stock** |
+| `options` | From **Build Shopify product** (Size, Color, UK Size, etc.) |
+| `variants[]` | One per size/color from **Scraped variants** / Sizes / Colors |
+| `variants[].sku` | Base SKU + size/color suffix |
+| `variants[].price` | Always `0.00` at create — **client sets in Shopify admin** |
+| `variants[].inventory_quantity` | Split from sheet **Inventory quantity** (if &gt; 0) |
+| `category` | **Shopify Category** GID or auto-mapped |
 
-## Set Shopify price and stock (after draft)
+## Set Shopify variant stock (after draft)
 
 | JSON key | Sheet column |
 |----------|--------------|
-| `variant.price` | **Price** (your sell price) |
-| `variant.inventory_quantity` | **Inventory quantity** |
+| `variant.inventory_quantity` | **Inventory quantity** (split across variants) |
+
+Price is **not** updated by workflow — set manually in Shopify after reviewing the draft.
 
 ---
 
@@ -88,8 +94,8 @@
 | **Colors** | e.g. `Black, Navy` (scrape writes) |
 | **Scraped variants** | JSON array from scrape — preferred source |
 | **Variant profile** | Optional override: `clothing_alpha`, `footwear_uk`, `clothing_numeric`, `one_size`, `color_only` |
-| **Price** | Your sell price — applied to **all** variants (unless variant JSON has price) |
-| **Inventory quantity** | Total stock — **split evenly** across variants |
+| **Price** | Reference for you — **not pushed to Shopify** (set price in admin after PASS) |
+| **Inventory quantity** | Total stock — split evenly across variants (only if &gt; 0) |
 
 **Auto profile** from Product category: shirts → `clothing_alpha`, shoes → `footwear_uk`, bags → `one_size`.
 
@@ -103,9 +109,9 @@
 
 ```
 1. Paste Product URL          → scrape fills competitor price + sizes + description
-2. You set Price              → your margin (not competitor price)
-3. You set Inventory quantity → stock you ordered
-4. Run completes              → draft on Shopify + price + stock applied
+2. Run completes              → draft on Shopify at £0.00 (+ stock if Inventory quantity filled)
+3. Review QA PASS             → check listing quality score ≥ 90
+4. You set sell price         → manually in Shopify admin (sheet Price is reference only)
 ```
 
-If **Price** or **Inventory** empty at run time → Shopify gets `0` until you fill sheet and re-trigger.
+If **Inventory quantity** is empty → variants stay at 0 stock until you set stock in sheet or Shopify admin.

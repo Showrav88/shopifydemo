@@ -374,13 +374,13 @@ def main():
                     "__rl": True,
                     "value": "1ayWn9AcmgLqmxaL6BOzHzzuZSSVwhqbJCCtzIcwXaZ4",
                     "mode": "list",
-                    "cachedResultName": "input_url",
+                    "cachedResultName": "url_input",
                 },
                 "sheetName": {
                     "__rl": True,
                     "value": 1922248105,
                     "mode": "list",
-                    "cachedResultName": "input_url.csv",
+                    "cachedResultName": "url_input.csv",
                 },
                 "columns": {
                     "mappingMode": "defineBelow",
