@@ -832,7 +832,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Only sheet columns \u2014 keeps Google Sheets node clean (no validated_sku, _run_id, etc.)\nconst s = $input.first().json;\nconst productUrl = String(s['Product URL'] || s['Source Product URL'] || s.source_product_url || '').trim();\nif (!productUrl) {\n  throw new Error('Product URL is empty. Paste a URL in the sheet Product URL column first.');\n}\n\nreturn [{\n  json: {\n    'Product URL': productUrl,\n    'Title': s.Title || '',\n    'Description': s.Description || '',\n    'Product image URL': s['Product image URL'] || '',\n    'Competitor price': s['Competitor price'] ?? '',\n    'Competitor currency': s['Competitor currency'] ?? '',\n    'Sizes': s.Sizes || '',\n    'Colors': s.Colors || '',\n    'Scraped variants': s['Scraped variants'] || '',\n    'Vendor': s.Vendor || '',\n    'Product category': s['Product category'] || '',\n    'Tags': s.Tags || '',\n    'SKU': s.SKU || '',\n    'Scrape Status': 'SCRAPED',\n    'Source Product URL': s['Source Product URL'] || productUrl,\n  },\n}];"
+        "jsCode": "// Only sheet columns \u2014 keeps Google Sheets node clean (no validated_sku, _run_id, etc.)\nconst s = $input.first().json;\nconst productUrl = String(s['Product URL'] || s['Source Product URL'] || s.source_product_url || '').trim();\nif (!productUrl) {\n  throw new Error('Product URL is empty. Paste a URL in the sheet Product URL column first.');\n}\n\nreturn [{\n  json: {\n    'Product URL': productUrl,\n    'Title': s.Title || '',\n    'Description': s.Description || '',\n    'Product image URL': s['Product image URL'] || '',\n    'Competitor price': s['Competitor price'] ?? '',\n    'Competitor currency': s['Competitor currency'] ?? '',\n    'Sizes': s.Sizes || '',\n    'Colors': s.Colors || '',\n    'Scraped variants': s['Scraped variants'] || '',\n    'Vendor': s.Vendor || '',\n    'Product category': s['Product category'] || '',\n    'Tags': s.Tags || '',\n    'SKU': s.SKU || '',\n    'Scrape Status': s['Scrape Status'] || 'SCRAPED',\n    'Source Product URL': s['Source Product URL'] || productUrl,\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -859,7 +859,24 @@
           "cachedResultName": "product_template.csv"
         },
         "columns": {
-          "mappingMode": "autoMapInputData",
+          "mappingMode": "defineBelow",
+          "value": {
+            "Product URL": "={{ $json['Product URL'] }}",
+            "Title": "={{ $json.Title }}",
+            "Description": "={{ $json.Description }}",
+            "Product image URL": "={{ $json['Product image URL'] }}",
+            "Competitor price": "={{ $json['Competitor price'] }}",
+            "Competitor currency": "={{ $json['Competitor currency'] }}",
+            "Sizes": "={{ $json.Sizes }}",
+            "Colors": "={{ $json.Colors }}",
+            "Scraped variants": "={{ $json['Scraped variants'] }}",
+            "Vendor": "={{ $json.Vendor }}",
+            "Product category": "={{ $json['Product category'] }}",
+            "Tags": "={{ $json.Tags }}",
+            "SKU": "={{ $json.SKU }}",
+            "Scrape Status": "={{ $json['Scrape Status'] }}",
+            "Source Product URL": "={{ $json['Source Product URL'] }}"
+          },
           "matchingColumns": [
             "Product URL"
           ]
