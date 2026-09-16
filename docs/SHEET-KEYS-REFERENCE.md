@@ -105,13 +105,24 @@ Price is **not** updated by workflow — set manually in Shopify after reviewing
 
 ---
 
-## Typical workflow
+## Typical workflow (two phases)
+
+### Phase 1 — automation (paste URL only)
 
 ```
-1. Paste Product URL          → scrape fills competitor price + sizes + description
-2. Run completes              → draft on Shopify at £0.00 (+ stock if Inventory quantity filled)
-3. Review QA PASS             → check listing quality score ≥ 90
-4. You set sell price         → manually in Shopify admin (sheet Price is reference only)
+1. Paste Product URL          → scrape + AI listing + QA
+2. Status = READY_FOR_CLIENT  → workflow stops; review sheet row
 ```
 
-If **Inventory quantity** is empty → variants stay at 0 stock until you set stock in sheet or Shopify admin.
+### Phase 2 — client then automation (coming next)
+
+```
+3. Client fills Price, Inventory quantity, Sizes (confirm/override)
+4. Client sets Approve = YES  → Shopify draft created with client values
+```
+
+| Status value | Meaning |
+|--------------|---------|
+| `READY_FOR_CLIENT` | QA passed — client fills price/stock/sizes |
+| `NEEDS_REVIEW` | QA failed — fix listing or re-run |
+| `APPROVED` | Client ready for Shopify push (Phase 2) |
