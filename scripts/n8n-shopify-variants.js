@@ -104,16 +104,36 @@ VARIANTS.variantSku = function variantSku(baseSku, size, color, index) {
   return parts.join('-').slice(0, 50);
 };
 
+VARIANTS.resolvePrice = function resolvePrice(row) {
+  const sheet = row['Price'] ?? row['Variant Price'] ?? row.validated_price;
+  if (sheet !== null && sheet !== undefined && String(sheet).trim() !== '') {
+    const n = Number(String(sheet).replace(/[^0-9.]/g, ''));
+    if (!Number.isNaN(n) && n > 0) return n.toFixed(2);
+  }
+  const comp = row['Competitor price'] ?? row.competitor_price;
+  if (comp !== null && comp !== undefined && String(comp).trim() !== '') {
+    const n = Number(String(comp).replace(/[^0-9.]/g, ''));
+    if (!Number.isNaN(n) && n > 0) return n.toFixed(2);
+  }
+  return '0.00';
+};
+
+VARIANTS.resolveInventory = function resolveInventory(row) {
+  const sheetInv = row['Inventory quantity'] ?? row.validated_inventory ?? row['Variant Inventory Qty'];
+  if (sheetInv !== '' && sheetInv !== null && sheetInv !== undefined) {
+    const n = Number(sheetInv);
+    if (!Number.isNaN(n) && n > 0) return n;
+  }
+  return 10;
+};
+
 VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
   const category = row.validated_category || row['Product category'] || listing.collection || '';
   const profileKey = VARIANTS.detectProfile(category, row['Variant profile'] || row.variant_profile);
   const { profile, rows } = VARIANTS.buildVariantRows(row, profileKey);
 
-  // Price: always 0.00 at create — client sets sell price in Shopify admin after QA PASS
-  const sheetInv = row['Inventory quantity'] ?? row.validated_inventory;
-  const totalInv = sheetInv === '' || sheetInv === null || sheetInv === undefined
-    ? 0
-    : Number(sheetInv);
+  const sellPrice = VARIANTS.resolvePrice(row);
+  const totalInv = VARIANTS.resolveInventory(row);
 
   const baseSku = row.validated_sku || row.SKU || row.processing_sku || '';
   const vendor = row.Vendor || row.validated_vendor || '';
@@ -134,7 +154,7 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
           tags: listing.tags,
           status: 'draft',
           variants: [{
-            price: '0.00',
+            price: sellPrice,
             sku: baseSku,
             inventory_management: 'shopify',
             inventory_quantity: 0,
@@ -170,7 +190,7 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
     if (opt2 && option2Name) option2Values.add(opt2);
 
     const variant = {
-      price: '0.00',
+      price: sellPrice,
       sku: r.sku || VARIANTS.variantSku(baseSku, sizeVal, colorVal, i),
       inventory_management: 'shopify',
       inventory_quantity: 0,

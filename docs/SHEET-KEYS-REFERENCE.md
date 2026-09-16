@@ -105,13 +105,18 @@ Price is **not** updated by workflow — set manually in Shopify after reviewing
 
 ---
 
-## Typical workflow
+## Typical workflow — full auto test (Product URL only)
 
 ```
-1. Paste Product URL          → scrape fills competitor price + sizes + description
-2. Run completes              → draft on Shopify at £0.00 (+ stock if Inventory quantity filled)
-3. Review QA PASS             → check listing quality score ≥ 90
-4. You set sell price         → manually in Shopify admin (sheet Price is reference only)
+1. Paste Product URL          → scrape + AI listing + QA
+2. Auto price                 → Competitor price (if sheet Price empty)
+3. Auto stock                 → 10 units (if sheet Inventory quantity empty)
+4. Shopify draft created      → Status = LIVE_DRAFT
 ```
 
-If **Inventory quantity** is empty → variants stay at 0 stock until you set stock in sheet or Shopify admin.
+| Status value | Meaning |
+|--------------|---------|
+| `LIVE_DRAFT` | Product created on Shopify |
+| `NEEDS_REVIEW` | QA failed — fix or re-run |
+
+Override anytime via sheet **Price** or **Inventory quantity** before re-trigger.
