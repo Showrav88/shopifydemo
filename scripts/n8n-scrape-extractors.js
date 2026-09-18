@@ -186,12 +186,102 @@ SCRAPE_EXTRACTORS.extractHtmlTitle = function extractHtmlTitle(html) {
   return t.trim();
 };
 
+/** Walk embedded JSON (e.g. Mango __NEXT_DATA__) for color + size variant trees. */
+SCRAPE_EXTRACTORS.findColorSizeProduct = function findColorSizeProduct(node, depth = 0) {
+  if (!node || typeof node !== 'object' || depth > 14) return null;
+  if (Array.isArray(node.colors) && node.colors.length > 0) {
+    const first = node.colors[0];
+    if (first && typeof first === 'object' && Array.isArray(first.sizes) && first.sizes.length > 0) {
+      return node;
+    }
+  }
+  const values = Array.isArray(node) ? node : Object.values(node);
+  for (const child of values) {
+    if (child && typeof child === 'object') {
+      const found = SCRAPE_EXTRACTORS.findColorSizeProduct(child, depth + 1);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+SCRAPE_EXTRACTORS.parseColorSizeProduct = function parseColorSizeProduct(product) {
+  const colors = [];
+  const sizes = new Set();
+  const variants = [];
+  const images = [];
+
+  for (const color of product.colors || []) {
+    const colorLabel = SCRAPE_EXTRACTORS.cleanText(color.label || color.name || color.id || '');
+    if (colorLabel) colors.push(colorLabel);
+
+    const colorImages = color.images || [];
+    for (const img of colorImages) {
+      const url = typeof img === 'string' ? img : (img.url || img.src || '');
+      if (url) images.push(url);
+    }
+    if (color.image) images.push(color.image);
+
+    for (const size of color.sizes || []) {
+      const sizeLabel = SCRAPE_EXTRACTORS.cleanText(size.label || size.name || size.id || '');
+      if (sizeLabel) sizes.add(sizeLabel);
+      variants.push({
+        size: sizeLabel,
+        color: colorLabel,
+        length: '',
+        sku: String(size.sku || size.id || '').trim(),
+        price: String(color.price || size.price || product.price || '').trim(),
+      });
+    }
+  }
+
+  const title = SCRAPE_EXTRACTORS.cleanText(product.name || product.title || product.productName || '');
+  const price = String(product.price || product.prices?.price || '').trim();
+  const currency = String(product.currency || product.prices?.currency || '').trim();
+
+  return {
+    title,
+    competitor_price: price,
+    competitor_currency: currency,
+    vendor: SCRAPE_EXTRACTORS.cleanText(product.brand || product.brandName || 'Mango'),
+    colors: [...new Set(colors)],
+    sizes: [...sizes],
+    variants,
+    candidate_images: [...new Set(images)].slice(0, 10),
+    image_url: images[0] || '',
+  };
+};
+
 SCRAPE_EXTRACTORS.extractNextData = function extractNextData(html, baseUrl) {
   const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i);
   if (!m) return null;
   try {
     const data = JSON.parse(m[1]);
     const blob = JSON.stringify(data);
+
+    const colorSizeProduct = SCRAPE_EXTRACTORS.findColorSizeProduct(data);
+    if (colorSizeProduct) {
+      const parsed = SCRAPE_EXTRACTORS.parseColorSizeProduct(colorSizeProduct);
+      if (parsed.title || parsed.variants.length || parsed.candidate_images.length) {
+        return {
+          source: 'next_data',
+          confidence: 0.88,
+          title: parsed.title,
+          description: '',
+          image_url: SCRAPE_EXTRACTORS.absolutizeUrl(parsed.image_url, baseUrl),
+          competitor_price: parsed.competitor_price,
+          competitor_currency: parsed.competitor_currency,
+          vendor: parsed.vendor,
+          product_category: '',
+          sku: '',
+          sizes: parsed.sizes,
+          colors: parsed.colors,
+          variants: parsed.variants,
+          candidate_images: parsed.candidate_images.map((u) => SCRAPE_EXTRACTORS.absolutizeUrl(u, baseUrl)),
+        };
+      }
+    }
+
     const titlePatterns = [
       /"name"\s*:\s*"([^"\\]{3,200})"/,
       /"title"\s*:\s*"([^"\\]{3,200})"/,
@@ -210,6 +300,9 @@ SCRAPE_EXTRACTORS.extractNextData = function extractNextData(html, baseUrl) {
       images.push(im[0].replace(/\\\//g, '/'));
     }
     for (const im of blob.matchAll(/https?:\/\/[^"\\]+?\/(?:catalog|media)\/product\/[^"\\]+?\.(?:jpe?g|png|webp|gif)[^"\\]*/gi)) {
+      images.push(im[0]);
+    }
+    for (const im of blob.matchAll(/https?:\/\/media\.mango\.com\/[^"\\]+/gi)) {
       images.push(im[0]);
     }
     const priceM = blob.match(/"price"\s*:\s*"?([0-9]+(?:\.[0-9]{1,2})?)"?/);

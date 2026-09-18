@@ -90,7 +90,7 @@ const botBypassed = Boolean(row.scrape_context?.bot_protection_bypassed);
 
 
 def patch_prepare_wrapper(wrapper: str) -> str:
-    if "snippet.scrape_method" in wrapper:
+    if "scrape_method: scrapeMethod" in wrapper or "snippet.scrape_method" in wrapper:
         return wrapper
     return wrapper.replace(
         "  html_excerpt: body.replace",
@@ -102,8 +102,7 @@ def main():
     # Refresh extractors in prepare/apply
     prep = ROOT / "scripts" / "patch-production-scrape.py"
     prep_text = prep.read_text()
-    old = 'PREPARE_WRAPPER = r"""\nconst row = $('
-    if "snippet.scrape_method" not in prep_text:
+    if "scrape_method: scrapeMethod" not in prep_text and "snippet.scrape_method" not in prep_text:
         # patch prepare in production scrape script permanently
         prep.write_text(prep_text.replace(
             "  html_excerpt: body.replace",

@@ -59,12 +59,6 @@ const snippet = {
   og_image: structured.image_url || SCRAPE.meta(body, 'og:image'),
   candidate_images: candidateImages.slice(0, 10),
   json_ld: SCRAPE.extractJsonLd(body).slice(0, 3),
-
-const scrapeMethod = http.scrape_method || row.scrape_method_planned || row.fetch_method || 'http';
-snippet.scrape_method = scrapeMethod;
-snippet.bot_protection_bypassed = Boolean(http.bot_protection_bypassed);
-snippet.bot_protection_expected = Boolean(row.bot_protection_expected);
-
   html_excerpt: body.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\s+/g, ' ').slice(0, 8000),
 };
 
