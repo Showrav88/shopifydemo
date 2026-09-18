@@ -27,12 +27,9 @@ Spreadsheet
 | Products column | You type? | What happens |
 |-----------------|-----------|--------------|
 | **Prompt ID** (col R) | ✅ Yes | e.g. `mango-linen-qa90` — blank = library uses `default` |
-| **Prompt Title … Prompt Category** | Optional | Type here to **override**; leave blank = use **Suggested Prompt*** at end |
-| **Suggested Prompt*** (last 7 cols) | ❌ Never | Formulas from **PromptLibrary** — **hide these columns** |
+| **Prompt Title … Prompt Category** (S–Y) | No | Formulas pull from **PromptLibrary** by Prompt ID |
 
-**Vendor/category** use columns **C–F** (LookupTables formulas) — not Suggested columns.
-
-Only **AI prompts** use Suggested Prompt* columns at the end (hide them).
+No separate Suggested* columns — same pattern as Vendor/category in C–F.
 
 n8n reads the **computed** prompt text when the row triggers — same as before, but prompts live on one shared tab.
 

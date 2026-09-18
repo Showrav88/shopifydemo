@@ -5,49 +5,42 @@
 | Column | You type |
 |--------|----------|
 | **A** Product URL | ✅ Paste URL |
-| **R** Prompt ID | Optional — e.g. `mango-linen-qa90` |
+| **R** Prompt ID | Optional — e.g. `mango-linen-qa90` (blank = `default`) |
 
-Everything else is automatic.
-
----
-
-## Vendor / category / collection (columns C–F)
-
-**Not pre-stored text.** These are **formulas** that read **LookupTables** using:
-
-1. **URL** — e.g. `mango.com` → Vendor `Mango`, `/men/shirts/linen/` → category keywords  
-2. **Title + Description** (columns G–H) — after n8n scrape, formulas **recalculate** with better keyword match  
-
-```
-Paste URL in A
-    → C shows Mango (from domain in LookupTables)
-    → D–F show category from URL keywords (/shirts/, /linen/, /men/)
-n8n scrapes → writes Title in G, Description in H
-    → C–F formulas recalculate (may improve match)
-n8n re-reads row before Shopify → uses latest C–F values
-```
-
-**You do not need Suggested Vendor columns** — lookup lives in **C–F directly**.
-
-To override: click cell C (or D/E/F) → **Delete** → type your value.
+No **Suggested*** columns. Formulas live in the real columns.
 
 ---
 
-## Title / Description / image / sizes (columns G+)
+## Lookup (columns C–F)
 
-Filled by **n8n scrape** — not LookupTables.
+Formulas read **LookupTables** using URL + Title + Description:
+
+| Column | Source |
+|--------|--------|
+| **C** Vendor | URL domain (`mango.com` → Mango) |
+| **D** Product category | URL/title keywords |
+| **E** Variant profile | URL/title keywords |
+| **F** Collection | URL/title keywords |
+
+After n8n scrapes Title (G) and Description (H), C–F recalculate with better matches.
 
 ---
 
-## AI prompts
+## AI prompts (columns S–Y)
 
-| Column | How it fills |
-|--------|----------------|
-| **R** Prompt ID | You type — picks row in **PromptLibrary** tab |
-| **S–Y** Prompt Title … | Optional override (usually leave blank) |
-| **Last 7 cols** Suggested Prompt* | Formulas from **PromptLibrary** — **hide these** |
+Formulas read **PromptLibrary** using **Prompt ID** (column R):
 
-n8n uses S–Y if you typed there; else **Suggested Prompt***.
+| Column | Source |
+|--------|--------|
+| **S–Y** Prompt Title … Prompt Category | PromptLibrary row matching Prompt ID |
+
+Leave **Prompt ID** blank → library uses `default` prompts.
+
+---
+
+## Scrape output (columns G+)
+
+Title, Description, image, sizes, etc. — filled by **n8n scrape**, not formulas.
 
 ---
 
@@ -55,8 +48,6 @@ n8n uses S–Y if you typed there; else **Suggested Prompt***.
 
 | Tab | Role |
 |-----|------|
-| **Master_Sheetv1** | Your products |
-| **LookupTables** | Rules for C–F (vendor, category, collection keywords) |
-| **PromptLibrary** | AI instruction templates for prompts |
-
-**PromptLibrary column names stay** `Prompt Title`, `Prompt Description`, etc. — do not rename to Suggested*.
+| **Master_Sheetv1** | Products — paste URL + Prompt ID |
+| **LookupTables** | Rules for C–F |
+| **PromptLibrary** | Templates for S–Y (keep names: `Prompt Title`, etc.) |

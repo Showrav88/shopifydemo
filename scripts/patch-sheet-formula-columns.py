@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Protect lookup formula columns from n8n overwrites."""
+"""Protect formula columns from n8n overwrites."""
 import json
 from pathlib import Path
 
@@ -11,13 +11,13 @@ FORMULA_COLUMNS = {
     "Product category",
     "Variant profile",
     "Collection",
-    "Suggested Prompt Title",
-    "Suggested Prompt Description",
-    "Suggested Prompt Tags",
-    "Suggested Prompt SEO title",
-    "Suggested Prompt SEO description",
-    "Suggested Prompt Image alt",
-    "Suggested Prompt Category",
+    "Prompt Title",
+    "Prompt Description",
+    "Prompt Tags",
+    "Prompt SEO title",
+    "Prompt SEO description",
+    "Prompt Image alt",
+    "Prompt Category",
 }
 
 
@@ -45,7 +45,7 @@ def main():
         prep["parameters"]["jsCode"] = js
 
     WORKFLOW.write_text(json.dumps(data, indent=2) + "\n")
-    print("Patched workflow: C–F + Suggested Prompt* protected from overwrites")
+    print("Patched workflow: formula columns protected")
 
 
 if __name__ == "__main__":
