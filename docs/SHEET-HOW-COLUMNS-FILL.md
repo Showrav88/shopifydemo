@@ -42,6 +42,8 @@ Leave **Prompt ID** blank → library uses `default` prompts.
 
 Title, Description, image, sizes, etc. — filled by **n8n scrape**, not formulas.
 
+After scrape writes Title/Description, n8n **re-reads the sheet row** so C–F lookup formulas (with new keywords) flow into Shopify.
+
 ---
 
 ## Tabs
