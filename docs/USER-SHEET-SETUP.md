@@ -30,7 +30,36 @@ All sheet update nodes match on **Product URL** from the Google Sheets trigger r
 
 ## Do you need to change your sheet columns?
 
-**No** — if your Row 1 headers match `sheet-input-template.csv`, you are fine. The workflow matches columns **by name**, not position. You do not need to rearrange columns.
+**Add 2 new columns** from `sheet-input-template.csv` (insert after Product URL):
+
+| Column | You type? | What it means |
+|--------|-----------|---------------|
+| **Force browser** | Optional | Set `YES` to force Browserless on any URL (override bot protection) |
+| **Scrape method** | No — workflow writes | `http`, `browser`, `shopify_json`, or `blocked` |
+
+### Bot protection — how it is recorded (no separate column needed)
+
+| Column | Value when bot-blocked | Meaning |
+|--------|---------------------|---------|
+| **Scrape Status** | `NEEDS_BROWSER` | Site blocked HTTP scraper (Macy's, etc.) |
+| **Scrape Status** | `SCRAPED_BROWSER` | Browserless succeeded |
+| **Scrape Status** | `SCRAPED_PARTIAL` | Image OK but variants need browser |
+| **Scrape method** | `browser` | Used Browserless |
+| **Scrape method** | `http` | Plain HTTP (free, fast) |
+| **QA Issues** | Message | Explains what to do next |
+
+### How to override bot protection
+
+1. **Automatic** — Macy's, Mango, Express route to Browserless when credential is set
+2. **Force browser = YES** — on any row, forces Browserless even for unknown sites
+3. **Re-trigger** — clear `Scrape Status`, paste URL again; rows with `NEEDS_BROWSER` auto-retry with browser
+4. **Manual** — paste **Product image URL** directly and skip scrape image step
+
+### Browserless credential (one-time in n8n)
+
+| Credential type | Name in n8n | Value |
+|-----------------|-------------|-------|
+| HTTP Query Auth | `Browserless API` | Query param `token` = your [browserless.io](https://www.browserless.io) API key |
 
 | Column | Required? | Notes |
 |--------|-----------|-------|
@@ -38,4 +67,3 @@ All sheet update nodes match on **Product URL** from the Google Sheets trigger r
 | **Sizes**, **Colors**, **Scraped variants** | Auto-filled by scrape | Lengths for jeans live inside **Scraped variants** JSON |
 | **Variant profile** | Optional | e.g. `clothing_numeric` for jeans (Waist + Length + Color) |
 | **Approve** | Optional | Not used in full-auto mode — safe to hide |
-| **Lengths** | Not needed | Stored in Scraped variants; add only if you want to read inseams in the sheet |

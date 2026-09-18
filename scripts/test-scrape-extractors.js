@@ -56,6 +56,8 @@ assert(imgs.length > 0 && imgs[0].includes('lululemon'), 'srcset images extracte
 // ── fetch strategy routing ──
 assert(SCRAPE.pickFetchStrategy('https://www.everlane.com/products/jean') === 'shopify_json', 'Everlane → shopify_json');
 assert(SCRAPE.pickFetchStrategy('https://www.macys.com/shop/product/foo') === 'browser', 'Macys → browser');
+assert(SCRAPE.isForceBrowser({ 'Force browser': 'YES' }), 'Force browser YES');
+assert(SCRAPE.pickFetchStrategy('https://everlane.com/products/jean', { forceBrowser: true }) === 'browser', 'Force overrides shopify');
 assert(SCRAPE.pickFetchStrategy('https://www.aarong.com/shirt.html') === 'http', 'Aarong → http');
 assert(SCRAPE.isBotBlocked('<html>Checking your browser before accessing</html>'), 'bot block detected');
 assert(SCRAPE.needsBrowserRetry({}, '<html>Checking your browser</html>', 'https://x.com'), 'retry on bot block');
