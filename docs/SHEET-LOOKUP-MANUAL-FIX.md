@@ -10,9 +10,11 @@ In Google Sheets you **cannot type over a formula** in the same cell — Delete 
 | Columns | What |
 |---------|------|
 | **C–F** | Vendor, Product category, Variant profile, Collection — **blank, you type here** |
-| **Last 4 columns** | Suggested Vendor … Suggested Collection — **formulas only** (hide these) |
+| **R** | **Prompt ID** — you type e.g. `mango-linen-qa90` (blank = `default`) |
+| **S–Y** | Prompt Title … Prompt Category — **blank, optional override** |
+| **Last 11 columns** | Suggested Vendor … + Suggested Prompt* — **formulas only** (hide these) |
 
-n8n uses: **your C–F value if filled**, else **Suggested*** from lookup.
+n8n uses: **your typed value if filled**, else **Suggested*** from lookup / PromptLibrary.
 
 ## Fix your existing sheet (no full wipe)
 

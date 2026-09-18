@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
-"""Stop n8n sheet writes from overwriting Suggested* lookup formula columns."""
+"""Stop n8n from overwriting Suggested* formula columns (lookup + prompts)."""
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 WORKFLOW = ROOT / "ShopifyProductAdd.V2.json"
 
-# Formulas live on Suggested* columns — Vendor/Category/Collection are manual overrides.
 FORMULA_COLUMNS = {
     "Suggested Vendor",
     "Suggested Product category",
     "Suggested Variant profile",
     "Suggested Collection",
+    "Suggested Prompt Title",
+    "Suggested Prompt Description",
+    "Suggested Prompt Tags",
+    "Suggested Prompt SEO title",
+    "Suggested Prompt SEO description",
+    "Suggested Prompt Image alt",
+    "Suggested Prompt Category",
 }
 
 
@@ -39,7 +45,7 @@ def main():
         prep["parameters"]["jsCode"] = js
 
     WORKFLOW.write_text(json.dumps(data, indent=2) + "\n")
-    print("Patched workflow: Suggested* columns protected; Vendor/Category stay manual")
+    print("Patched workflow: Suggested* columns protected")
 
 
 if __name__ == "__main__":

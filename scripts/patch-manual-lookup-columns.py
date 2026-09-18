@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Manual Vendor/Category cols + Suggested* formula fallback in workflow."""
+"""Manual Vendor + Prompt cols; Suggested* formula fallback in workflow."""
 import json
 from pathlib import Path
 
@@ -16,25 +16,26 @@ function pickManualOrSuggested(manualKey, suggestedKey) {
   return String(fresh[suggestedKey] ?? row[suggestedKey] ?? '').trim();
 }
 
-row.Vendor = pickManualOrSuggested('Vendor', 'Suggested Vendor');
-row['Product category'] = pickManualOrSuggested('Product category', 'Suggested Product category');
-row['Variant profile'] = pickManualOrSuggested('Variant profile', 'Suggested Variant profile');
-row.Collection = pickManualOrSuggested('Collection', 'Suggested Collection');
-
-const promptKeys = [
-  'Prompt ID',
-  'Prompt Title',
-  'Prompt Description',
-  'Prompt Tags',
-  'Prompt SEO title',
-  'Prompt SEO description',
-  'Prompt Image alt',
-  'Prompt Category',
+const lookupPairs = [
+  ['Vendor', 'Suggested Vendor'],
+  ['Product category', 'Suggested Product category'],
+  ['Variant profile', 'Suggested Variant profile'],
+  ['Collection', 'Suggested Collection'],
+  ['Prompt Title', 'Suggested Prompt Title'],
+  ['Prompt Description', 'Suggested Prompt Description'],
+  ['Prompt Tags', 'Suggested Prompt Tags'],
+  ['Prompt SEO title', 'Suggested Prompt SEO title'],
+  ['Prompt SEO description', 'Suggested Prompt SEO description'],
+  ['Prompt Image alt', 'Suggested Prompt Image alt'],
+  ['Prompt Category', 'Suggested Prompt Category'],
 ];
-for (const key of promptKeys) {
-  const v = String(fresh[key] ?? '').trim();
-  if (v) row[key] = v;
+for (const [manual, suggested] of lookupPairs) {
+  row[manual] = pickManualOrSuggested(manual, suggested);
 }
+
+const promptId = String(fresh['Prompt ID'] ?? row['Prompt ID'] ?? '').trim();
+if (promptId) row['Prompt ID'] = promptId;
+
 return [{ json: row }];
 """
 
@@ -45,6 +46,13 @@ function resolveLookupFields(obj) {
     ['Product category', 'Suggested Product category'],
     ['Variant profile', 'Suggested Variant profile'],
     ['Collection', 'Suggested Collection'],
+    ['Prompt Title', 'Suggested Prompt Title'],
+    ['Prompt Description', 'Suggested Prompt Description'],
+    ['Prompt Tags', 'Suggested Prompt Tags'],
+    ['Prompt SEO title', 'Suggested Prompt SEO title'],
+    ['Prompt SEO description', 'Suggested Prompt SEO description'],
+    ['Prompt Image alt', 'Suggested Prompt Image alt'],
+    ['Prompt Category', 'Suggested Prompt Category'],
   ];
   for (const [manual, suggested] of pairs) {
     const m = String(obj[manual] ?? '').trim();
@@ -55,9 +63,6 @@ function resolveLookupFields(obj) {
 }
 """
 
-ACTIVE_MARKER = "merged.needs_browser_site = browserDomain"
-ACTIVE_INJECT = "merged = resolveLookupFields(merged);\n\nmerged.needs_browser_site = browserDomain"
-
 
 def main():
     data = json.loads(WORKFLOW.read_text())
@@ -67,15 +72,19 @@ def main():
 
     active = next(n for n in data["nodes"] if n.get("name") == "Active product row")
     js = active["parameters"]["jsCode"]
-    if "resolveLookupFields" not in js:
+    if "function resolveLookupFields" not in js:
         js = js.replace(
             "merged.needs_browser_site = browserDomain",
-            RESOLVE_SNIPPET + ACTIVE_INJECT,
+            RESOLVE_SNIPPET + "merged = resolveLookupFields(merged);\n\nmerged.needs_browser_site = browserDomain",
         )
-        active["parameters"]["jsCode"] = js
+    else:
+        start = js.find("function resolveLookupFields")
+        end = js.find("}\n", start) + 2
+        js = js[:start] + RESOLVE_SNIPPET.strip() + "\n\n" + js[end:]
+    active["parameters"]["jsCode"] = js
 
     WORKFLOW.write_text(json.dumps(data, indent=2) + "\n")
-    print("Patched workflow: manual Vendor/Category with Suggested* fallback")
+    print("Patched workflow: manual Prompt ID/prompts with Suggested* fallback")
 
 
 if __name__ == "__main__":

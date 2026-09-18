@@ -26,10 +26,11 @@ Spreadsheet
 
 | Products column | You type? | What happens |
 |-----------------|-----------|--------------|
-| **Prompt ID** | Optional | e.g. `mango-linen-qa90` or `default` |
-| **Prompt Title … Prompt Category** | No | Formulas pull text from **PromptLibrary** by Prompt ID |
+| **Prompt ID** (col R) | ✅ Yes | e.g. `mango-linen-qa90` — blank = library uses `default` |
+| **Prompt Title … Prompt Category** | Optional | Type here to **override**; leave blank = use **Suggested Prompt*** at end |
+| **Suggested Prompt*** (last 7 cols) | ❌ Never | Formulas from **PromptLibrary** — **hide these columns** |
 
-If **Prompt ID** is blank, formulas use `default`.
+Same pattern as Vendor: you edit the main columns; lookup lives in hidden Suggested* columns at the end.
 
 n8n reads the **computed** prompt text when the row triggers — same as before, but prompts live on one shared tab.
 
