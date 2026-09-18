@@ -24,6 +24,11 @@ SCRAPE_EXTRACTORS.isDirectImageUrl = function isDirectImageUrl(url) {
   if (/\/wp-content\/uploads\//i.test(u)) return true;
   if (/\/media\/catalog\/product\//i.test(u)) return true;
   if (/\/cdn\/shop\//i.test(u)) return true;
+  // Scene7 / Lululemon and similar CDNs (no file extension)
+  if (/\/is\/image\//i.test(u)) return true;
+  if (/images\.(lululemon|scene7)\./i.test(u)) return true;
+  if (/scene7\.com/i.test(u)) return true;
+  if (/[?&](?:wid|width|hei|height|fmt|format)=/i.test(u) && /\/(?:is\/image|images?)\//i.test(u)) return true;
   return false;
 };
 
@@ -226,11 +231,109 @@ SCRAPE_EXTRACTORS.extractNextData = function extractNextData(html, baseUrl) {
   }
 };
 
+SCRAPE_EXTRACTORS.classifyOption = function classifyOption(optionName) {
+  const n = String(optionName || '').toLowerCase();
+  if (/color|colour|shade|wash|hue/.test(n)) return 'color';
+  if (/length|inseam|height|hem/.test(n)) return 'length';
+  if (/size|waist|width|uk|us|eu|fit/.test(n)) return 'size';
+  return 'other';
+};
+
+SCRAPE_EXTRACTORS.splitVariantTitle = function splitVariantTitle(title) {
+  const parts = String(title || '').split(/\s*\/\s*/).map((x) => x.trim()).filter(Boolean);
+  let size = '';
+  let color = '';
+  let length = '';
+
+  for (const p of parts) {
+    if (/\d+(?:\.\d+)?\s*(?:"|''|inch|\bin\b|inseam)/i.test(p) || /^\d+(?:\.\d+)?"$/.test(p)) {
+      length = p;
+    } else if (/^(xx?s|xx?l|[0-5]x|xs|s|m|l|xl|xxl|xxxl|one\s*size)$/i.test(p)) {
+      size = p;
+    } else if (/^\d{2,3}$/.test(p) && Number(p) >= 20 && Number(p) <= 54) {
+      size = p;
+    } else if (/[a-z]/i.test(p) && !/^\d+(?:\.\d+)?$/.test(p)) {
+      color = color ? `${color} / ${p}` : p;
+    }
+  }
+
+  return { size, color, length };
+};
+
+SCRAPE_EXTRACTORS.parseShopifyVariants = function parseShopifyVariants(product) {
+  const p = product?.product || product;
+  if (!p?.variants?.length) {
+    return { variants: [], sizes: [], colors: [], lengths: [] };
+  }
+
+  const optionNames = (p.options || []).map((o) => o.name || '');
+  const optionKinds = optionNames.map(SCRAPE_EXTRACTORS.classifyOption);
+
+  const variants = [];
+  const sizes = new Set();
+  const colors = new Set();
+  const lengths = new Set();
+
+  for (const v of p.variants) {
+    const opts = [v.option1, v.option2, v.option3].filter((x) => x !== null && x !== undefined && x !== '');
+    let size = '';
+    let color = '';
+    let length = '';
+
+    opts.forEach((val, i) => {
+      const kind = optionKinds[i] || 'other';
+      if (kind === 'color') color = val;
+      else if (kind === 'length') length = val;
+      else if (kind === 'size') size = val;
+    });
+
+    if (!size && !color && !length && v.title) {
+      const split = SCRAPE_EXTRACTORS.splitVariantTitle(v.title);
+      size = split.size;
+      color = split.color;
+      length = split.length;
+    }
+
+    if (!size && opts.length === 1) size = opts[0];
+    if (!color && opts.length === 2 && !length) {
+      const split = SCRAPE_EXTRACTORS.splitVariantTitle(v.title || `${opts[0]} / ${opts[1]}`);
+      if (split.color) color = split.color;
+      if (split.size && !size) size = split.size;
+    }
+
+    if (size) sizes.add(size);
+    if (color) colors.add(color);
+    if (length) lengths.add(length);
+
+    variants.push({
+      size,
+      color,
+      length,
+      title: v.title,
+      sku: v.sku,
+      price: v.price,
+      option1: v.option1,
+      option2: v.option2,
+      option3: v.option3,
+    });
+  }
+
+  return {
+    variants,
+    sizes: [...sizes],
+    colors: [...colors],
+    lengths: [...lengths],
+  };
+};
+
 SCRAPE_EXTRACTORS.normalizeShopifyProduct = function normalizeShopifyProduct(json, baseUrl) {
   const p = json?.product;
   if (!p) return null;
   const v = p.variants?.[0] || {};
   const img = p.images?.[0]?.src || p.image?.src || '';
+  const parsed = SCRAPE_EXTRACTORS.parseShopifyVariants(json);
+  const allImages = (p.images || []).map((i) => SCRAPE_EXTRACTORS.absolutizeUrl(i.src, baseUrl)).filter(Boolean);
+
   return {
     source: 'shopify_json',
     confidence: 0.98,
@@ -242,12 +345,11 @@ SCRAPE_EXTRACTORS.normalizeShopifyProduct = function normalizeShopifyProduct(jso
     vendor: SCRAPE_EXTRACTORS.cleanText(p.vendor || ''),
     product_category: SCRAPE_EXTRACTORS.cleanText(p.product_type || ''),
     sku: String(v.sku || '').trim(),
-    sizes: (p.variants || []).map((x) => x.title).filter(Boolean),
-    variants: (p.variants || []).map((x) => ({
-      size: x.title,
-      sku: x.sku,
-      price: x.price,
-    })),
+    sizes: parsed.sizes.length ? parsed.sizes : (p.variants || []).map((x) => x.title).filter(Boolean),
+    colors: parsed.colors,
+    lengths: parsed.lengths,
+    variants: parsed.variants,
+    candidate_images: allImages.slice(0, 10),
   };
 };
 
@@ -275,9 +377,22 @@ SCRAPE_EXTRACTORS.extractProductImages = function extractProductImages(html, bas
   function rank(url) {
     if (/\/catalog\/product\//i.test(url) || /\/media\/catalog\/product\//i.test(url)) return 0;
     if (/\/cdn\/shop\//i.test(url)) return 1;
-    if (/\/wp-content\/uploads\//i.test(url)) return 2;
+    if (/\/is\/image\//i.test(url)) return 2;
+    if (/\/wp-content\/uploads\//i.test(url)) return 3;
     if (/\/catalog\/category\//i.test(url)) return 9;
     return 5;
+  }
+
+  function addFromSrcset(srcset) {
+    const entries = String(srcset || '').split(',').map((s) => s.trim()).filter(Boolean);
+    const sorted = entries
+      .map((entry) => {
+        const [url, descriptor] = entry.split(/\s+/);
+        const w = descriptor && descriptor.endsWith('w') ? Number(descriptor.replace('w', '')) : 0;
+        return { url, w };
+      })
+      .sort((a, b) => b.w - a.w);
+    for (const { url } of sorted) add(url);
   }
 
   for (const prop of ['og:image', 'twitter:image', 'og:image:url']) {
@@ -294,6 +409,8 @@ SCRAPE_EXTRACTORS.extractProductImages = function extractProductImages(html, bas
     /https?:\/\/[^"'\\s<>]+?\/media\/catalog\/product\/[^"'\\s<>]+?\.(?:jpe?g|png|webp|gif)(?:\?[^"'\\s<>]*)?/gi,
     /https?:\/\/[^"'\\s<>]+?\/wp-content\/uploads\/[^"'\\s<>]+?\.(?:jpe?g|png|webp|gif)(?:\?[^"'\\s<>]*)?/gi,
     /https?:\/\/[^"'\\s<>]+?\/cdn\/shop\/[^"'\\s<>]+?\.(?:jpe?g|png|webp|gif)(?:\?[^"'\\s<>]*)?/gi,
+    /https?:\/\/[^"'\\s<>]+?\/is\/image\/[^"'\\s<>]+/gi,
+    /https?:\/\/images\.[^"'\\s<>]+?\/[^"'\\s<>]+/gi,
   ];
   for (const re of patterns) {
     for (const m of html.matchAll(re)) add(m[0]);
@@ -304,6 +421,8 @@ SCRAPE_EXTRACTORS.extractProductImages = function extractProductImages(html, bas
     for (const u of next.candidate_images) add(u);
   }
 
+  for (const m of html.matchAll(/(?:srcset|data-srcset)=["']([^"']+)["']/gi)) addFromSrcset(m[1]);
+  for (const m of html.matchAll(/<source[^>]+srcset=["']([^"']+)["']/gi)) addFromSrcset(m[1]);
   for (const m of html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)) add(m[1]);
   for (const m of html.matchAll(/<img[^>]+data-src=["']([^"']+)["']/gi)) add(m[1]);
 
@@ -364,6 +483,8 @@ SCRAPE_EXTRACTORS.mergeExtractions = function mergeExtractions(layers, baseUrl) 
     set('product_category', layer.product_category, src);
     set('sku', layer.sku, src);
     if (layer.sizes?.length) set('sizes', layer.sizes, src);
+    if (layer.colors?.length) set('colors', layer.colors, src);
+    if (layer.lengths?.length) set('lengths', layer.lengths, src);
     if (layer.variants?.length) set('variants', layer.variants, src);
     if (layer.candidate_images?.length && !byField.candidate_images) {
       byField.candidate_images = layer.candidate_images;
