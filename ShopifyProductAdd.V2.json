@@ -169,11 +169,12 @@
         "resource": "image",
         "operation": "analyze",
         "text": "Analyze this fashion product image. Extract ONLY what you can visibly verify. Do NOT invent specifications.\n\nReturn JSON only:\n{\n  \"verified_facts\": [],\n  \"color\": \"\",\n  \"material\": \"\",\n  \"product_type\": \"\",\n  \"gender\": \"\"\n}",
-        "inputType": "base64",
-        "binaryPropertyName": "data",
+        "inputType": "url",
         "options": {
-          "simplify": true
-        }
+          "simplify": true,
+          "detail": "low"
+        },
+        "imageUrls": "={{ $('Active product row').first().json['Product image URL'] || $('Active product row').first().json.validated_image_url }}"
       },
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 2.3,
@@ -1280,7 +1281,7 @@
       "main": [
         [
           {
-            "node": "Remove background Photoroom",
+            "node": "Analyze image",
             "type": "main",
             "index": 0
           }
@@ -1291,7 +1292,7 @@
       "main": [
         [
           {
-            "node": "Analyze image",
+            "node": "Restore image binary",
             "type": "main",
             "index": 0
           }
@@ -1302,7 +1303,7 @@
       "main": [
         [
           {
-            "node": "Restore image binary",
+            "node": "Remove background Photoroom",
             "type": "main",
             "index": 0
           }
