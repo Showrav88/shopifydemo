@@ -1,20 +1,19 @@
 # Lookup tables — one CSV, same Google Sheet
 
-## One file to import (not 4 separate files)
+## Two CSV files, one Google Spreadsheet
 
-Import **one** file into your **same** product spreadsheet:
-
-| File | Tab name in Google Sheet |
-|------|--------------------------|
-| **`sheet-lookup-tables.csv`** | **Lookup Tables** |
-
-Put it in the **same Google Sheet** as your product rows (the sheet that has `Product URL`, `Title`, etc.). Different **tab**, same **spreadsheet** — not a separate Google Sheet file.
+| File | Tab name | Purpose |
+|------|----------|---------|
+| **`sheet-input-template.csv`** | **Products** | Paste **Product URL** here (your input) |
+| **`sheet-lookup-tables.csv`** | **Lookup Tables** | Rules that auto-fill names when input columns are empty |
 
 ```
 Your Google Spreadsheet (one file)
-├── Sheet1 (or "Products")     ← Product URL rows — workflow trigger
-└── Lookup Tables              ← import sheet-lookup-tables.csv here
+├── Products                   ← sheet-input-template.csv
+└── Lookup Tables              ← sheet-lookup-tables.csv
 ```
+
+Full import steps: **`docs/SHEET-FULL-SETUP.md`**
 
 ### How to import
 

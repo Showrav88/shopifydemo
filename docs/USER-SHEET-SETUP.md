@@ -20,9 +20,20 @@ Name your n8n credentials **exactly** like this so re-import auto-connects:
 
 You do **not** need to re-pick the spreadsheet on each import — ID is baked into JSON.
 
+## Full sheet setup (Products + Lookup)
+
+Import **two** CSV files into the **same** spreadsheet:
+
+| File | Tab name |
+|------|----------|
+| `sheet-input-template.csv` | **Products** (paste URLs here) |
+| `sheet-lookup-tables.csv` | **Lookup Tables** (auto-fill rules) |
+
+See **`docs/SHEET-FULL-SETUP.md`** for step-by-step. URL-only: paste **Product URL**, leave Vendor / Product category / Collection empty → lookup fills them (Phase 5c).
+
 ## Row 1 headers
 
-Copy from `sheet-input-template.csv`. Must include **Product URL** and **SKU**.
+Copy from `sheet-input-template.csv`. Must include **Product URL**. SKU auto-generates if empty.
 
 ## How matching works
 
