@@ -20,13 +20,14 @@ Name your n8n credentials **exactly** like this so re-import auto-connects:
 
 You do **not** need to re-pick the spreadsheet on each import — ID is baked into JSON.
 
-## Google Sheet setup — ONE file
+## Google Sheet setup — 2 tabs, 1 spreadsheet
 
-Import **`sheet-master.csv`** only. See **`docs/SHEET-MASTER-GUIDE.md`**.
+| File | Tab name |
+|------|----------|
+| `sheet-products.csv` | **Products** — paste URLs, delete rows freely |
+| `sheet-lookup-tables.csv` | **Lookup Tables** — rules only, never delete |
 
-- Paste **Product URL** in column A
-- **Suggested** columns (C–F) auto-fill from lookup rules in the same sheet (hide columns AU–BH)
-- After scrape, Title/Description improve suggestions; n8n sends to Shopify (Phase 5c copies Suggested → final columns)
+See **`docs/SHEET-MASTER-GUIDE.md`**. Suggested columns (C–F) connect to Lookup tab via formulas.
 
 ## Row 1 headers
 

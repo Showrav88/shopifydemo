@@ -1,116 +1,112 @@
-# One Google Sheet file — `sheet-master.csv`
+# Google Sheet setup — 2 tabs, 1 spreadsheet (professional)
 
-This is **the only file** you import. One tab. Paste a **Product URL** — the sheet suggests Vendor, Category, Collection automatically.
+Use **one Google Spreadsheet** with **two tabs** connected by formulas.  
+Delete product rows anytime — **lookup data never gets deleted**.
 
-## Import (one time)
+## Files to import
 
-1. Google Sheets → **File → Import**
-2. Upload **`sheet-master.csv`**
-3. **Insert new sheet** or replace existing
-4. Rename tab to **Products** (optional)
-5. **Hide columns AU–BH** (lookup rules — right side of sheet)  
-   Select columns AU–BH → Right-click → **Hide columns**
+| File | Tab name in Google Sheets | Purpose |
+|------|---------------------------|---------|
+| **`sheet-products.csv`** | **Products** | Paste Product URL here — add/delete rows freely |
+| **`sheet-lookup-tables.csv`** | **Lookup Tables** | Rules only — edit keywords, **do not delete rows** |
 
-You do **not** need `sheet-input-template.csv` or `sheet-lookup-tables.csv` anymore — everything is inside `sheet-master.csv`.
-
----
-
-## What you do
-
-| Step | Action |
-|------|--------|
-| 1 | Paste **Product URL** in column **A** (any row from 2 down) |
-| 2 | Watch **Suggested** columns fill (C–F) from URL immediately |
-| 3 | Workflow runs → fills **Title**, **Description** (columns L, M) |
-| 4 | **Suggested** columns update again using title + description |
-| 5 | Workflow sends product to **Shopify** |
-
-**You only type column A** (Product URL). Optional: **Force browser** column B = `YES`.
+Same spreadsheet file. Two imports → two tabs.
 
 ---
 
-## Column map (left side — your view)
+## Step-by-step import
 
-| Col | Name | You type? | Who fills |
-|-----|------|-----------|-----------|
-| **A** | Product URL | ✅ Yes | You |
-| **B** | Force browser | Optional | You |
-| **C** | Suggested Vendor | No | **Sheet formula** (from URL domain) |
-| **D** | Suggested Category | No | **Sheet formula** (URL + title + description) |
-| **E** | Suggested Collection | No | **Sheet formula** |
-| **F** | Suggested Variant profile | No | **Sheet formula** |
-| **G** | Vendor | Optional override | You, or n8n copies from **C** |
-| **H** | Product category | Optional override | You, or n8n copies from **D** |
-| **I** | Variant profile | Optional override | You, or n8n copies from **F** |
-| **J** | Collection | Optional override | You, or n8n copies from **E** |
-| **L** | Title | No | **Scrape** → sheet updates → suggestions improve |
-| **M** | Description | No | **Scrape** |
-| … | Sizes, Colors, QA, Shopify URL | No | **Workflow** |
+### 1. Create or open your spreadsheet
+
+### 2. Import Products tab
+
+- **File → Import** → `sheet-products.csv`
+- **Insert new sheet** (or replace Sheet1)
+- Rename tab: **`Products`**
+
+### 3. Import Lookup tab (same spreadsheet)
+
+- **File → Import** → `sheet-lookup-tables.csv`
+- **Insert new sheet**
+- Rename tab: **`Lookup Tables`** (name must match exactly — formulas use this)
+
+### 4. Check formulas work
+
+On **Products** tab row 2 (Mango example URL):
+
+| Column | Should show |
+|--------|-------------|
+| C Suggested Vendor | `Mango` |
+| E Suggested Collection | `mens-shirts` (from URL `/shirts/`) |
+
+If formulas show `#REF!` → Lookup tab is not named **`Lookup Tables`**.
 
 ---
 
-## How lookup works in ONE sheet
+## What you do day to day
+
+| Action | Where |
+|--------|-------|
+| Paste **Product URL** | **Products** tab, column A |
+| Add new product | **Insert row** on Products tab (formulas copy down) |
+| Delete finished product | **Delete row** on Products tab only — safe |
+| Edit lookup rules | **Lookup Tables** tab — add keyword rows at bottom |
+| Never | Delete rows on Lookup Tables tab |
+
+---
+
+## How tabs connect
 
 ```
-Column A (URL)  ──┐
-Column L (Title) ─┼──► Formulas in C–F search hidden lookup rules (cols AU–BH)
-Column M (Desc)  ──┘
-                           │
-                           ▼
-              Suggested Vendor / Category / Collection
-                           │
-              n8n scrape writes Title ──► formulas recalculate
-                           │
-              n8n copies Suggested → final columns (Phase 5c)
-                           │
-                           ▼
-                     Shopify draft
+┌─────────────────────────────┐     ┌──────────────────────────────┐
+│  Products tab               │     │  Lookup Tables tab           │
+│  A: Product URL  (you type) │────►│  keyword → vendor            │
+│  C–F: Suggested  (formulas) │◄────│  keyword → category          │
+│  L: Title        (n8n)      │────►│  keyword → collection        │
+│  M: Description  (n8n)      │     │  (static rules, 193 rows)    │
+└─────────────────────────────┘     └──────────────────────────────┘
+              │
+              ▼
+         n8n workflow → Shopify
 ```
 
-Lookup rules live in **columns AU–BH** (same rows as the sheet). Hidden from view. Edit there to add keywords (same data as old lookup table).
+**Suggested** columns (C–F) use formulas like:
+
+`=INDEX('Lookup Tables'!$K:$K, MATCH(... SEARCH in URL/title ...))`
+
+When n8n writes **Title** (column L), suggestions in D and E **update automatically**.
 
 ---
 
-## Flow timeline
+## Column guide (Products tab)
 
-| When | What happens |
-|------|----------------|
-| **Paste URL** | Suggested Vendor = `Mango` (from domain). Collection may hint from `/shirts/` in URL |
-| **After scrape** | Title = `Regular-fit 100% linen shirt` → Suggested Category updates to `Men > Shirts > Linen` |
-| **Phase 5c (n8n)** | If Vendor/Category/Collection empty → copy from Suggested columns |
-| **Shopify** | Uses Product category, Collection, Vendor for product_type and collection |
-
----
-
-## Override
-
-Type directly in **G, H, I, J** (Vendor, Product category, Variant profile, Collection). Your value wins over Suggested.
+| Col | Name | You type? |
+|-----|------|-----------|
+| A | Product URL | ✅ Yes |
+| B | Force browser | Optional |
+| C–F | Suggested … | Formulas (auto) |
+| G–J | Vendor, Category, Collection | Optional override |
+| L–M | Title, Description | n8n scrape |
+| Rest | Sizes, QA, Shopify URL | n8n workflow |
 
 ---
 
-## Edit lookup rules
+## Professional layout tips
 
-1. Unhide columns **AU–BH**
-2. Filter **lk_table** column:
-   - `vendor_map` — domain → vendor
-   - `product_type_map` — keyword → product type
-   - `collection_map` — keyword → collection handle
-3. Add a new row with keyword + handles
-4. Hide columns again
+1. **Freeze row 1** on both tabs (View → Freeze → 1 row)
+2. **Hide** prompt columns you don't use (columns U onward)
+3. **Color** column A header yellow = "input here"
+4. **Color** columns C–F header light blue = "auto suggestions"
+5. Keep **Lookup Tables** tab at the end — don't use it daily
 
 ---
 
-## n8n connection
+## n8n (Phase 5c)
 
-| Status | What |
-|--------|------|
-| **Today** | Formulas work in Google Sheets after import. Re-import `ShopifyProductAdd.V2.json` |
-| **Phase 5c** | n8n copies Suggested → final columns after scrape, before Shopify |
-
-Same spreadsheet ID — one tab, no second file.
+After scrape, n8n will copy **Suggested** → **Vendor / Product category / Collection** if those are still empty, then create Shopify draft.
 
 ---
 
-## Delete example rows
+## Do NOT use `sheet-master.csv`
 
-Rows 2–3 have sample URLs. Delete or replace before live use.
+The old single-tab file mixed product rows with lookup data — deleting a product row deleted lookup rules. **Deprecated.** Use `sheet-products.csv` + `sheet-lookup-tables.csv` instead.
