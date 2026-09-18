@@ -167,15 +167,18 @@ VARIANTS.resolveInventory = function resolveInventory(row) {
 };
 
 VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
-  const category = row.validated_category || row['Product category'] || listing.collection || '';
-  const profileKey = VARIANTS.detectProfile(category, row['Variant profile'] || row.variant_profile);
+  const category = row.validated_category || row['Product category'] || row['Suggested Category'] || listing.collection || '';
+  const profileKey = VARIANTS.detectProfile(
+    category,
+    row['Variant profile'] || row['Suggested Variant profile'] || row.variant_profile
+  );
   const { profile, rows } = VARIANTS.buildVariantRows(row, profileKey);
 
   const sellPrice = VARIANTS.resolvePrice(row);
   const totalInv = VARIANTS.resolveInventory(row);
 
   const baseSku = row.validated_sku || row.SKU || row.processing_sku || '';
-  const vendor = row.Vendor || row.validated_vendor || '';
+  const vendor = row.Vendor || row.validated_vendor || row['Suggested Vendor'] || '';
   const productType = category || listing.collection || '';
 
   // ── Single variant fallback (no scrape sizes) ──
