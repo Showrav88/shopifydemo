@@ -16,7 +16,7 @@
     },
     {
       "parameters": {
-        "content": "## Sheet \u2014 you only type Product URL\n\n| Product URL | Paste once \u2014 everything else is automatic |\n\nWorkflow writes: Title, Description, Sizes, Price (from competitor), stock, Shopify URLs"
+        "content": "## Sheet columns (Master_Sheetv1)\n\n**You type:** A URL | B Force browser | C-F lookup | G-H scrape | R Prompt ID | S-Y prompts\n\n**Formula cols (never write from n8n):** Collection, Product category, Prompt Category, Prompt Description, Prompt Image alt, Prompt SEO description, Prompt SEO title, Prompt Tags, Prompt Title, Variant profile, Vendor\n\n**Tabs:** LookupTables + PromptLibrary + this sheet\n\n**Total columns:** 41"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -932,7 +932,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nfunction isDirectImageUrl(url) {\n  const u = String(url || '').trim().replace(/&amp;/g, '&');\n  if (!u.startsWith('http')) return false;\n  if (/\\.html(?:\\?|$|#)/i.test(u)) return false;\n  if (/\\.(jpe?g|png|webp|gif|avif)(\\?|$|#)/i.test(u)) return true;\n  if (/\\/catalog\\/product\\//i.test(u)) return true;\n  if (/\\/wp-content\\/uploads\\//i.test(u)) return true;\n  if (/\\/media\\/catalog\\/product\\//i.test(u)) return true;\n  if (/\\/cdn\\/shop\\//i.test(u)) return true;\n  if (/\\/is\\/image\\//i.test(u)) return true;\n  if (/images\\.(lululemon|scene7)\\./i.test(u)) return true;\n  if (/scene7\\.com/i.test(u)) return true;\n  if (/media\\.mango\\.com/i.test(u)) return true;\n  if (/media\\.mango\\.com/i.test(u)) return true;\n  if (/media\\.mango\\.com/i.test(u)) return true;\n  if (/media\\.mango\\.com/i.test(u)) return true;\n  if (/media\\.mango\\.com/i.test(u)) return true;\n  if (/media\\.mango\\.com/i.test(u)) return true;\n  if (/[?&](?:wid|width|hei|height|fmt|format)=/i.test(u) && /\\/(?:is\\/image|images?)\\//i.test(u)) return true;\n  return false;\n}\n\nfunction pickImageUrl(merged) {\n  const tryOne = (u) => (isDirectImageUrl(u) ? String(u).trim().replace(/&amp;/g, '&') : '');\n  const tryList = (arr) => {\n    for (const u of arr || []) {\n      const ok = tryOne(u);\n      if (ok) return ok;\n    }\n    return '';\n  };\n\n  let img = tryList([merged.validated_image_url, merged['Product image URL'], merged.image_url]);\n  if (img) return img;\n\n  try {\n    const scraped = $('Apply scraped data').first().json;\n    img = tryList([scraped?.validated_image_url, scraped?.['Product image URL'], scraped?.image_url]);\n    if (img) return img;\n    if (scraped && typeof scraped === 'object') merged = { ...merged, ...scraped };\n  } catch { /* scrape branch did not run this execution */ }\n\n  const ctx = { ...(merged.scrape_context || {}) };\n  try {\n    const prep = $('Prepare page for scrape').first().json;\n    if (prep?.scrape_context) Object.assign(ctx, prep.scrape_context);\n  } catch { /* prepare did not run */ }\n\n  const structured = ctx.structured || {};\n  return tryList([\n    structured.image_url,\n    ctx.og_image,\n    ...(structured.candidate_images || []),\n    ...(ctx.candidate_images || []),\n  ]);\n}\n\nconst v = $('Validate sheet row').first().json;\nlet merged = { ...v };\ntry {\n  const scraped = $('Apply scraped data').first().json;\n  if (scraped && typeof scraped === 'object') merged = { ...merged, ...scraped };\n} catch { /* scrape branch did not run */ }\n\nconst resolvedImage = pickImageUrl(merged);\nif (resolvedImage) {\n  merged.validated_image_url = resolvedImage;\n  merged['Product image URL'] = resolvedImage;\n} else {\n  merged.validated_image_url = '';\n  if (!isDirectImageUrl(merged['Product image URL'])) merged['Product image URL'] = '';\n}\nif (!merged.validated_raw_info) {\n  merged.validated_raw_info = merged.Description || merged.Title || '';\n}\n\n// Sell price + stock: SHEET ONLY \u2014 competitor price is reference only\nconst sheetPrice = merged['Price'] ?? merged['Variant Price'] ?? merged.validated_price;\nmerged.validated_price = sheetPrice === '' || sheetPrice === null || sheetPrice === undefined ? null : String(sheetPrice);\nconst sheetInv = merged['Inventory quantity'] ?? merged['Variant Inventory Qty'] ?? merged.validated_inventory;\nmerged.validated_inventory = sheetInv === '' || sheetInv === null || sheetInv === undefined ? 0 : Number(sheetInv);\n\n// Per-field AI prompts (optional sheet columns override defaults)\nconst defaults = {\n  title: 'Write a completely NEW original title. Same product facts but different words. Never copy competitor phrasing. Max 70 chars UK fashion.',\n  description: 'Rewrite in your own words \u2014 new sentences only. Keep factual specs (material, fit, colour). Do NOT copy competitor text (copyright). HTML <p> tags.',\n  tags: 'Original search tags only \u2014 not copied from source. Max 10 UK fashion keywords.',\n  seo_title: 'Original Google title, max 60 chars. Paraphrase \u2014 do not copy source.',\n  seo_description: 'Original meta description, max 160 chars. New wording, same facts.',\n  image_alt_text: 'Original alt text describing what you see in the image.',\n  collection: 'UK fashion category path e.g. Men > Shirts > Casual',\n};\nconst pick = (col, key) => String(merged[col] || merged[`Prompt: ${key}`] || '').trim() || defaults[key];\nmerged.ai_field_prompts = {\n  title: pick('Prompt Title', 'title'),\n  description: pick('Prompt Description', 'description'),\n  tags: pick('Prompt Tags', 'tags'),\n  seo_title: pick('Prompt SEO title', 'seo_title'),\n  seo_description: pick('Prompt SEO description', 'seo_description'),\n  image_alt_text: pick('Prompt Image alt', 'image_alt_text'),\n  collection: pick('Prompt Category', 'collection'),\n};\n\n\nmerged.has_valid_image = Boolean(resolvedImage);\n\nfunction browserDomain(url) {\n  const host = String(url || '').replace(/^https?:\\/\\//, '').split('/')[0].replace(/^www\\./, '').toLowerCase();\n  const hard = ['macys.com', 'mango.com', 'express.com', 'nordstrom.com', 'zara.com', 'hm.com', 'asos.com'];\n  return hard.some((d) => host === d || host.endsWith('.' + d));\n}\n  return obj;\n}\n\n  return obj;\n}\nmerged.needs_browser_site = browserDomain(merged['Product URL'] || merged.source_product_url || '');\n\nmerged._run_id = merged._run_id || `${Date.now()}-${merged.processing_sku}`;\nreturn [{ json: merged }];"
+        "jsCode": "const SHEET_FORMULA_KEYS = [\n  'Vendor',\n  'Product category',\n  'Variant profile',\n  'Collection',\n  'Prompt ID',\n  'Prompt Title',\n  'Prompt Description',\n  'Prompt Tags',\n  'Prompt SEO title',\n  'Prompt SEO description',\n  'Prompt Image alt',\n  'Prompt Category',\n];\n\nfunction overlaySheetFormulas(target, source) {\n  if (!source || typeof source !== 'object') return target;\n  for (const key of SHEET_FORMULA_KEYS) {\n    const v = String(source[key] ?? '').trim();\n    if (v) target[key] = v;\n  }\n  return target;\n}\n\n\nfunction isDirectImageUrl(url) {\n  const u = String(url || '').trim().replace(/&amp;/g, '&');\n  if (!u.startsWith('http')) return false;\n  if (/\\.html(?:\\?|$|#)/i.test(u)) return false;\n  if (/\\.(jpe?g|png|webp|gif|avif)(\\?|$|#)/i.test(u)) return true;\n  if (/\\/catalog\\/product\\//i.test(u)) return true;\n  if (/\\/wp-content\\/uploads\\//i.test(u)) return true;\n  if (/\\/media\\/catalog\\/product\\//i.test(u)) return true;\n  if (/\\/cdn\\/shop\\//i.test(u)) return true;\n  if (/\\/is\\/image\\//i.test(u)) return true;\n  if (/images\\.(lululemon|scene7)\\./i.test(u)) return true;\n  if (/scene7\\.com/i.test(u)) return true;\n  if (/media\\.mango\\.com/i.test(u)) return true;\n  if (/media\\.mango\\.com/i.test(u)) return true;\n  if (/media\\.mango\\.com/i.test(u)) return true;\n  if (/media\\.mango\\.com/i.test(u)) return true;\n  if (/media\\.mango\\.com/i.test(u)) return true;\n  if (/media\\.mango\\.com/i.test(u)) return true;\n  if (/[?&](?:wid|width|hei|height|fmt|format)=/i.test(u) && /\\/(?:is\\/image|images?)\\//i.test(u)) return true;\n  return false;\n}\n\nfunction pickImageUrl(merged) {\n  const tryOne = (u) => (isDirectImageUrl(u) ? String(u).trim().replace(/&amp;/g, '&') : '');\n  const tryList = (arr) => {\n    for (const u of arr || []) {\n      const ok = tryOne(u);\n      if (ok) return ok;\n    }\n    return '';\n  };\n\n  let img = tryList([merged.validated_image_url, merged['Product image URL'], merged.image_url]);\n  if (img) return img;\n\n  try {\n    const scraped = $('Apply scraped data').first().json;\n    img = tryList([scraped?.validated_image_url, scraped?.['Product image URL'], scraped?.image_url]);\n    if (img) return img;\n    if (scraped && typeof scraped === 'object') merged = { ...merged, ...scraped };\n  } catch { /* scrape branch did not run this execution */ }\n\n  const ctx = { ...(merged.scrape_context || {}) };\n  try {\n    const prep = $('Prepare page for scrape').first().json;\n    if (prep?.scrape_context) Object.assign(ctx, prep.scrape_context);\n  } catch { /* prepare did not run */ }\n\n  const structured = ctx.structured || {};\n  return tryList([\n    structured.image_url,\n    ctx.og_image,\n    ...(structured.candidate_images || []),\n    ...(ctx.candidate_images || []),\n  ]);\n}\n\nconst v = $('Validate sheet row').first().json;\nlet merged = { ...v };\ntry {\n  const freshRow = $('Re-read sheet after scrape').first().json;\n  merged = overlaySheetFormulas(merged, freshRow);\n} catch { /* scrape write + re-read did not run */ }\ntry {\n  const scraped = $('Apply scraped data').first().json;\n  if (scraped && typeof scraped === 'object') merged = { ...merged, ...scraped };\n} catch { /* scrape branch did not run */ }\n\nconst resolvedImage = pickImageUrl(merged);\nif (resolvedImage) {\n  merged.validated_image_url = resolvedImage;\n  merged['Product image URL'] = resolvedImage;\n} else {\n  merged.validated_image_url = '';\n  if (!isDirectImageUrl(merged['Product image URL'])) merged['Product image URL'] = '';\n}\nif (!merged.validated_raw_info) {\n  merged.validated_raw_info = merged.Description || merged.Title || '';\n}\n\n// Sell price + stock: SHEET ONLY \u2014 competitor price is reference only\nconst sheetPrice = merged['Price'] ?? merged['Variant Price'] ?? merged.validated_price;\nmerged.validated_price = sheetPrice === '' || sheetPrice === null || sheetPrice === undefined ? null : String(sheetPrice);\nconst sheetInv = merged['Inventory quantity'] ?? merged['Variant Inventory Qty'] ?? merged.validated_inventory;\nmerged.validated_inventory = sheetInv === '' || sheetInv === null || sheetInv === undefined ? 0 : Number(sheetInv);\n\n// Per-field AI prompts (optional sheet columns override defaults)\nconst defaults = {\n  title: 'Write a completely NEW original title. Same product facts but different words. Never copy competitor phrasing. Max 70 chars UK fashion.',\n  description: 'Rewrite in your own words \u2014 new sentences only. Keep factual specs (material, fit, colour). Do NOT copy competitor text (copyright). HTML <p> tags.',\n  tags: 'Original search tags only \u2014 not copied from source. Max 10 UK fashion keywords.',\n  seo_title: 'Original Google title, max 60 chars. Paraphrase \u2014 do not copy source.',\n  seo_description: 'Original meta description, max 160 chars. New wording, same facts.',\n  image_alt_text: 'Original alt text describing what you see in the image.',\n  collection: 'UK fashion category path e.g. Men > Shirts > Casual',\n};\nconst pick = (col, key) => String(merged[col] || merged[`Prompt: ${key}`] || '').trim() || defaults[key];\nmerged.ai_field_prompts = {\n  title: pick('Prompt Title', 'title'),\n  description: pick('Prompt Description', 'description'),\n  tags: pick('Prompt Tags', 'tags'),\n  seo_title: pick('Prompt SEO title', 'seo_title'),\n  seo_description: pick('Prompt SEO description', 'seo_description'),\n  image_alt_text: pick('Prompt Image alt', 'image_alt_text'),\n  collection: pick('Prompt Category', 'collection'),\n};\n\n\nmerged.has_valid_image = Boolean(resolvedImage);\n\nfunction browserDomain(url) {\n  const host = String(url || '').replace(/^https?:\\/\\//, '').split('/')[0].replace(/^www\\./, '').toLowerCase();\n  const hard = ['macys.com', 'mango.com', 'express.com', 'nordstrom.com', 'zara.com', 'hm.com', 'asos.com'];\n  return hard.some((d) => host === d || host.endsWith('.' + d));\n}\n  return obj;\n}\n\n  return obj;\n}\nmerged.needs_browser_site = browserDomain(merged['Product URL'] || merged.source_product_url || '');\n\nmerged._run_id = merged._run_id || `${Date.now()}-${merged.processing_sku}`;\nreturn [{ json: merged }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1427,7 +1427,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const base = $('Active product row').first().json;\nconst row = { ...base };\nconst fresh = $('Re-read sheet row').first().json;\n\nconst refreshKeys = [\n  'Vendor',\n  'Product category',\n  'Variant profile',\n  'Collection',\n  'Prompt ID',\n  'Prompt Title',\n  'Prompt Description',\n  'Prompt Tags',\n  'Prompt SEO title',\n  'Prompt SEO description',\n  'Prompt Image alt',\n  'Prompt Category',\n];\nfor (const key of refreshKeys) {\n  const v = String(fresh[key] ?? '').trim();\n  if (v) row[key] = v;\n}\n\nreturn [{ json: row }];\n"
+        "jsCode": "const SHEET_FORMULA_KEYS = [\n  'Vendor',\n  'Product category',\n  'Variant profile',\n  'Collection',\n  'Prompt ID',\n  'Prompt Title',\n  'Prompt Description',\n  'Prompt Tags',\n  'Prompt SEO title',\n  'Prompt SEO description',\n  'Prompt Image alt',\n  'Prompt Category',\n];\n\nfunction overlaySheetFormulas(target, source) {\n  if (!source || typeof source !== 'object') return target;\n  for (const key of SHEET_FORMULA_KEYS) {\n    const v = String(source[key] ?? '').trim();\n    if (v) target[key] = v;\n  }\n  return target;\n}\n\nconst base = $('Active product row').first().json;\nconst row = { ...base };\nconst fresh = $('Re-read sheet row').first().json;\nrow = overlaySheetFormulas(row, fresh);\nreturn [{ json: row }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1437,6 +1437,51 @@
       ],
       "id": "a9b8c7d6-e5f4-3210-abcd-ef9876543210",
       "name": "Merge refreshed lookup"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "1iV7qRLtQ0hLrDUd6MA8cJCLz36kliDB28C3Y1rvX8JQ",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "2126173338",
+          "mode": "id"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Product URL",
+              "lookupValue": "={{ $('Google Sheets Trigger').first().json['Product URL'] }}"
+            }
+          ]
+        },
+        "options": {
+          "outputFormatting": {
+            "values": {
+              "general": "UNFORMATTED_VALUE",
+              "date": "FORMATTED_STRING"
+            }
+          },
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -340,
+        -40
+      ],
+      "id": "c7d8e9f0-a1b2-3456-7890-abcdef123456",
+      "name": "Re-read sheet after scrape",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets account"
+        }
+      }
     }
   ],
   "connections": {
@@ -1551,7 +1596,7 @@
       "main": [
         [
           {
-            "node": "Active product row",
+            "node": "Re-read sheet after scrape",
             "type": "main",
             "index": 0
           }
@@ -1972,6 +2017,17 @@
         [
           {
             "node": "Build Shopify product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-read sheet after scrape": {
+      "main": [
+        [
+          {
+            "node": "Active product row",
             "type": "main",
             "index": 0
           }
