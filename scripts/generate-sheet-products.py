@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate sheet-products.csv — lookup in C–F; Suggested Prompt* at end only."""
+"""Generate sheet-products.csv — lookup + prompts via formulas; no Suggested* columns."""
 import csv
 from pathlib import Path
 
@@ -8,17 +8,6 @@ OUT = ROOT / "sheet-products.csv"
 LOOKUP = "LookupTables"
 PROMPTS = "PromptLibrary"
 ROWS = 50
-
-# AI prompts only — hide these columns in Sheets. Vendor/category live in C–F.
-SUGGESTED_PROMPTS = [
-    "Suggested Prompt Title",
-    "Suggested Prompt Description",
-    "Suggested Prompt Tags",
-    "Suggested Prompt SEO title",
-    "Suggested Prompt SEO description",
-    "Suggested Prompt Image alt",
-    "Suggested Prompt Category",
-]
 
 HEADER = [
     "Product URL",
@@ -62,17 +51,16 @@ HEADER = [
     "Generated Image URL",
     "Shopify Image URL",
     "Shopify Product URL",
-    *SUGGESTED_PROMPTS,
 ]
 
-PROMPT_LIB_COLS = {
-    "Suggested Prompt Title": "C",
-    "Suggested Prompt Description": "D",
-    "Suggested Prompt Tags": "E",
-    "Suggested Prompt SEO title": "F",
-    "Suggested Prompt SEO description": "G",
-    "Suggested Prompt Image alt": "H",
-    "Suggested Prompt Category": "I",
+PROMPT_COLS = {
+    "Prompt Title": "C",
+    "Prompt Description": "D",
+    "Prompt Tags": "E",
+    "Prompt SEO title": "F",
+    "Prompt SEO description": "G",
+    "Prompt Image alt": "H",
+    "Prompt Category": "I",
 }
 
 GENDER_FILTER = (
@@ -127,9 +115,8 @@ def build_row(sheet_row: int, url: str = "", prompt_id: str = "") -> list:
     row[4] = priority_lookup(sheet_row, "product_type_map", "G")
     row[5] = priority_lookup(sheet_row, "collection_map", "H")
     row[HEADER.index("Prompt ID")] = prompt_id
-    prompt_base = len(HEADER) - len(SUGGESTED_PROMPTS)
-    for i, name in enumerate(SUGGESTED_PROMPTS):
-        row[prompt_base + i] = prompt_formula(sheet_row, PROMPT_LIB_COLS[name])
+    for col_name, lib_col in PROMPT_COLS.items():
+        row[HEADER.index(col_name)] = prompt_formula(sheet_row, lib_col)
     return row
 
 
@@ -142,7 +129,7 @@ def main():
 
     with OUT.open("w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerows(rows)
-    print(f"Wrote {OUT} — C–F lookup formulas; Suggested Prompt* at end only")
+    print(f"Wrote {OUT} — no Suggested* columns; URL + Prompt ID drive formulas")
 
 
 if __name__ == "__main__":
