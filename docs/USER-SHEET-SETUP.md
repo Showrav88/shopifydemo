@@ -20,20 +20,17 @@ Name your n8n credentials **exactly** like this so re-import auto-connects:
 
 You do **not** need to re-pick the spreadsheet on each import — ID is baked into JSON.
 
-## Full sheet setup (Products + Lookup)
+## Google Sheet setup — ONE file
 
-Import **two** CSV files into the **same** spreadsheet:
+Import **`sheet-master.csv`** only. See **`docs/SHEET-MASTER-GUIDE.md`**.
 
-| File | Tab name |
-|------|----------|
-| `sheet-input-template.csv` | **Products** (paste URLs here) |
-| `sheet-lookup-tables.csv` | **Lookup Tables** (auto-fill rules) |
-
-See **`docs/SHEET-FULL-SETUP.md`** for step-by-step. URL-only: paste **Product URL**, leave Vendor / Product category / Collection empty → lookup fills them (Phase 5c).
+- Paste **Product URL** in column A
+- **Suggested** columns (C–F) auto-fill from lookup rules in the same sheet (hide columns AU–BH)
+- After scrape, Title/Description improve suggestions; n8n sends to Shopify (Phase 5c copies Suggested → final columns)
 
 ## Row 1 headers
 
-Copy from `sheet-input-template.csv`. Must include **Product URL**. SKU auto-generates if empty.
+Copy from `sheet-master.csv` row 1 headers. Must include **Product URL**. SKU auto-generates if empty.
 
 ## How matching works
 
@@ -79,8 +76,4 @@ All sheet update nodes match on **Product URL** from the Google Sheets trigger r
 | **Variant profile** | Optional | e.g. `clothing_numeric` for jeans (Waist + Length + Color) |
 | **Approve** | Optional | Not used in full-auto mode — safe to hide |
 
-## Lookup tab (optional — one CSV, same spreadsheet)
-
-Import **`sheet-lookup-tables.csv`** as a new tab named **Lookup Tables** in the **same** Google Sheet as your product rows. See **`docs/LOOKUP-SHEETS-GUIDE.md`**.
-
-Workflow reads this tab automatically in **Phase 5c** (not connected yet). Until then, fill **Collection** and **Product category** manually on each row.
+Lookup rules are **inside** `sheet-master.csv` (columns AU–BH, hidden). No second tab needed.
