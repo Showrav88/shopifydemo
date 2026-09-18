@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate sheet-products.csv — manual cols + Suggested* formulas at end."""
+"""Generate sheet-products.csv — lookup in C–F; Suggested Prompt* at end only."""
 import csv
 from pathlib import Path
 
@@ -9,13 +9,7 @@ LOOKUP = "LookupTables"
 PROMPTS = "PromptLibrary"
 ROWS = 50
 
-SUGGESTED_LOOKUP = [
-    "Suggested Vendor",
-    "Suggested Product category",
-    "Suggested Variant profile",
-    "Suggested Collection",
-]
-
+# AI prompts only — hide these columns in Sheets. Vendor/category live in C–F.
 SUGGESTED_PROMPTS = [
     "Suggested Prompt Title",
     "Suggested Prompt Description",
@@ -25,8 +19,6 @@ SUGGESTED_PROMPTS = [
     "Suggested Prompt Image alt",
     "Suggested Prompt Category",
 ]
-
-SUGGESTED_ALL = SUGGESTED_LOOKUP + SUGGESTED_PROMPTS
 
 HEADER = [
     "Product URL",
@@ -70,7 +62,7 @@ HEADER = [
     "Generated Image URL",
     "Shopify Image URL",
     "Shopify Product URL",
-    *SUGGESTED_ALL,
+    *SUGGESTED_PROMPTS,
 ]
 
 PROMPT_LIB_COLS = {
@@ -121,7 +113,6 @@ def vendor_formula(r: int) -> str:
 
 
 def prompt_formula(r: int, lib_col: str) -> str:
-    """Uses manual Prompt ID in column R; blank → default in PromptLibrary."""
     return (
         f'=IF($A{r}="","",IFERROR(INDEX(FILTER({PROMPTS}!{lib_col}$2:{lib_col}$500,'
         f'{PROMPTS}!$A$2:$A$500=IF($R{r}="","default",$R{r})),1),""))'
@@ -131,13 +122,12 @@ def prompt_formula(r: int, lib_col: str) -> str:
 def build_row(sheet_row: int, url: str = "", prompt_id: str = "") -> list:
     row = [""] * len(HEADER)
     row[0] = url
+    row[2] = vendor_formula(sheet_row)
+    row[3] = priority_lookup(sheet_row, "product_type_map", "F")
+    row[4] = priority_lookup(sheet_row, "product_type_map", "G")
+    row[5] = priority_lookup(sheet_row, "collection_map", "H")
     row[HEADER.index("Prompt ID")] = prompt_id
-    base = len(HEADER) - len(SUGGESTED_ALL)
-    row[base] = vendor_formula(sheet_row)
-    row[base + 1] = priority_lookup(sheet_row, "product_type_map", "F")
-    row[base + 2] = priority_lookup(sheet_row, "product_type_map", "G")
-    row[base + 3] = priority_lookup(sheet_row, "collection_map", "H")
-    prompt_base = base + len(SUGGESTED_LOOKUP)
+    prompt_base = len(HEADER) - len(SUGGESTED_PROMPTS)
     for i, name in enumerate(SUGGESTED_PROMPTS):
         row[prompt_base + i] = prompt_formula(sheet_row, PROMPT_LIB_COLS[name])
     return row
@@ -152,7 +142,7 @@ def main():
 
     with OUT.open("w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerows(rows)
-    print(f"Wrote {OUT} — manual C–F + Prompt ID/R–Y; Suggested* formulas at end")
+    print(f"Wrote {OUT} — C–F lookup formulas; Suggested Prompt* at end only")
 
 
 if __name__ == "__main__":

@@ -30,7 +30,9 @@ Spreadsheet
 | **Prompt Title … Prompt Category** | Optional | Type here to **override**; leave blank = use **Suggested Prompt*** at end |
 | **Suggested Prompt*** (last 7 cols) | ❌ Never | Formulas from **PromptLibrary** — **hide these columns** |
 
-Same pattern as Vendor: you edit the main columns; lookup lives in hidden Suggested* columns at the end.
+**Vendor/category** use columns **C–F** (LookupTables formulas) — not Suggested columns.
+
+Only **AI prompts** use Suggested Prompt* columns at the end (hide them).
 
 n8n reads the **computed** prompt text when the row triggers — same as before, but prompts live on one shared tab.
 
