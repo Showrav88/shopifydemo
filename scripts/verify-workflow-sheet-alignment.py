@@ -62,6 +62,8 @@ def main() -> int:
 
     merge = next(n for n in data["nodes"] if n.get("name") == "Merge refreshed lookup")
     merge_js = merge["parameters"]["jsCode"]
+    if "const row = { ...base }" in merge_js and "row = overlaySheetFormulas" in merge_js:
+        errors.append("Merge refreshed lookup uses const row but reassigns it (use let row)")
     for key in REQUIRED_REFRESH_KEYS:
         if key not in merge_js:
             errors.append(f"Merge refreshed lookup missing refresh key: {key}")
