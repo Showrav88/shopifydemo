@@ -38,6 +38,7 @@ ORG.resolveTaxonomyGid = function resolveTaxonomyGid(row, listing) {
 
   const hay = [
     row['Product category'],
+    row['Suggested Category'],
     row.validated_category,
     listing?.collection,
     listing?.tags,
@@ -50,10 +51,14 @@ ORG.resolveTaxonomyGid = function resolveTaxonomyGid(row, listing) {
 };
 
 ORG.resolveCollectionHandle = function resolveCollectionHandle(row, listing) {
-  const explicit = String(row.Collection || row.collection_handle || '').trim();
+  const explicit = String(
+    row.Collection || row['Suggested Collection'] || row.collection_handle || ''
+  ).trim();
   if (explicit) return ORG.slugify(explicit);
 
-  const path = String(listing?.collection || row['Product category'] || '').trim();
+  const path = String(
+    listing?.collection || row['Product category'] || row['Suggested Category'] || ''
+  ).trim();
   if (!path) return '';
 
   const parts = path.split(/>|\/|,/).map((p) => p.trim()).filter(Boolean);

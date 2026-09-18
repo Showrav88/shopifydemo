@@ -2,12 +2,9 @@ step,action,detail
 1,Import sheet-lookup-tables.csv FIRST,Tab name MUST be exactly: LookupTables (no space)
 2,File → Import → Insert new sheet,Rename tab to LookupTables
 3,Import sheet-master-sheetv1.csv SECOND,Tab name MUST be exactly: Master_Sheetv1
-4,n8n workflow points at Master_Sheetv1 tab,gid 2126173338 — spreadsheet 1iV7qRLtQ0hLrDUd6MA8cJCLz36kliDB28C3Y1rvX8JQ
-5,Paste Product URL in column A only,Columns C–F are formulas — do not paste over them
-6,Click Master_Sheetv1 row 2 column C,Should show Mango in Suggested Vendor (not blank not #REF!)
-7,If you see #REF! error,LookupTables tab is missing or wrong name — fix step 1–2
-8,If formulas show as plain text,Select column C → Data → Split text to columns is OFF; re-import CSV
-9,After n8n scrape Title appears in column L,Suggested Category and Collection update automatically
-10,You do NOT need n8n for Suggested Vendor,Works from URL domain immediately (e.g. mango.com → Mango)
-11,Delete product rows on Master_Sheetv1 only,Safe — never delete rows on LookupTables tab
-12,n8n writes columns G onward,Vendor Title Description etc. — leaves formula columns C–F alone
+4,Formulas are in row 2 only (columns C–F),MAP formulas auto-fill every row when you paste a URL in column A
+5,To remove a product CLEAR column A,Do NOT delete the row — deleting rows removes the MAP formulas in row 2
+6,Click Master_Sheetv1 row 2 column C,Should show Mango when URL is in column A
+7,Suggested columns C–F are for YOU only,Shopify never sees these names — n8n uses Vendor (G) and Collection (J)
+8,If Suggested Collection shows mens-shirts,n8n adds product to that Shopify collection on PASS
+9,LookupTables tab is never deleted,Only add new keyword rows at the bottom
