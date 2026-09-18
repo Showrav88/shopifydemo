@@ -23,7 +23,7 @@ collection_map,top,any,20,women,,,womens-tops,womens-tops,,,,,Broad word — low
 collection_map,tee,any,10,women,,,womens-tops,womens-tops,,,,,
 collection_map,t-shirt,any,10,women,,,womens-tops,womens-tops,,,,,
 collection_map,tank,any,10,women,,,womens-tops,womens-tops,,,,,
-collection_map,shirt,any,15,women,,,womens-tops,womens-tops,,,,,Women's shirts
+collection_map,shirt,any,40,women,,,womens-tops,womens-tops,,,,,Women's shirts — low priority
 collection_map,sweater,any,10,women,,,womens-tops,womens-tops,,,,,
 collection_map,cardigan,any,10,women,,,womens-tops,womens-tops,,,,,
 collection_map,hoodie,any,10,women,,,womens-outerwear,womens-outerwear,,,,,Outerwear not tops
@@ -112,7 +112,7 @@ product_type_map,midi dress,title,5,women,Women > Dresses > Midi,clothing_alpha,
 product_type_map,maxi dress,title,5,women,Women > Dresses > Maxi,clothing_alpha,womens-dresses,,dress,,,,
 product_type_map,jumpsuit,any,10,women,Women > Jumpsuits > Casual,clothing_alpha,womens-dresses,,dress,,,,
 product_type_map,blouse,any,10,women,Women > Tops > Blouse,clothing_alpha,womens-tops,,shirt,,,,
-product_type_map,shirt,any,12,women,Women > Tops > Shirt,clothing_alpha,womens-tops,,shirt,,,,
+product_type_map,shirt,any,40,women,Women > Tops > Shirt,clothing_alpha,womens-tops,,shirt,,,,Generic — low priority; URL gender rules win
 product_type_map,tee,any,10,women,Women > Tops > T-Shirt,clothing_alpha,womens-tops,,t-shirt,,,,
 product_type_map,jean,any,10,women,Women > Jeans > Straight,clothing_numeric,womens-bottoms,,jean,,,,
 product_type_map,pant,any,12,women,Women > Pants > Casual,clothing_alpha,womens-bottoms,,pant,,,,
@@ -162,11 +162,13 @@ product_type_map,baby,any,5,kids,Kids > Baby > Clothing,clothing_alpha,kids,,shi
 product_type_map,/kids/,url,3,kids,Kids > Clothing > Casual,clothing_alpha,kids,,shirt,,,,
 product_type_map,/boys/,url,3,kids,Kids > Boys > Clothing,clothing_alpha,kids,,shirt,,,,
 product_type_map,/girls/,url,3,kids,Kids > Girls > Clothing,clothing_alpha,kids,,shirt,,,,
-product_type_map,/shirts/,url,8,men,Men > Shirts > Casual,clothing_alpha,mens-shirts,,shirt,,,,
-product_type_map,/linen/,url,8,men,Men > Shirts > Linen,clothing_alpha,mens-shirts,,shirt,,,,
+product_type_map,/linen/,url,2,men,Men > Shirts > Linen,clothing_alpha,mens-shirts,,shirt,,,,
+product_type_map,/shirts/,url,3,men,Men > Shirts > Casual,clothing_alpha,mens-shirts,,shirt,,,,
 product_type_map,/dresses/,url,8,women,Women > Dresses > Casual,clothing_alpha,womens-dresses,,dress,,,,
-product_type_map,/men/,url,3,men,,,,,,,,,Gender hint only
-product_type_map,/women/,url,3,women,,,,,,,,,Gender hint only
+product_type_map,/men/,url,4,men,Men > Shirts > Casual,clothing_alpha,mens-shirts,,shirt,,,URL gender fallback
+product_type_map,/women/,url,2,women,Women > Tops > Shirt,clothing_alpha,womens-tops,,shirt,,,URL gender + default women's tops
+product_type_map,for men,title,4,men,Men > Shirts > Casual,clothing_alpha,mens-shirts,,shirt,,,Title contains for men
+product_type_map,men's,title,4,men,Men > Shirts > Casual,clothing_alpha,mens-shirts,,shirt,,,Title contains men's
 vendor_map,,,,,,,,,,Zara,zara.com,,
 vendor_map,,,,,,,,,,Mango,shop.mango.com,,
 vendor_map,,,,,,,,,,Mango,mango.com,,
