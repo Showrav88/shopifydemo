@@ -25,7 +25,8 @@ You do **not** need to re-pick the spreadsheet on each import — ID is baked in
 | File | Tab name |
 |------|----------|
 | `sheet-products.csv` | **Products** — paste URLs, delete rows freely |
-| `sheet-lookup-tables.csv` | **Lookup Tables** — rules only, never delete |
+| `sheet-lookup-tables.csv` | **LookupTables** — import FIRST, never delete rows |
+| `sheet-setup-readme.csv` | **README** — setup instructions (optional) |
 
 See **`docs/SHEET-MASTER-GUIDE.md`**. Suggested columns (C–F) connect to Lookup tab via formulas.
 
