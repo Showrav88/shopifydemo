@@ -7,9 +7,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 WORKFLOW = ROOT / "ShopifyProductAdd.V2.json"
 
-# User sheet: https://docs.google.com/spreadsheets/d/1_GFtwtZR4RlpDGsEGsG6oJ1c-ztvlW1PIRi_WOHUgZo/edit?gid=975501836
-SPREADSHEET_ID = "1_GFtwtZR4RlpDGsEGsG6oJ1c-ztvlW1PIRi_WOHUgZo"
-SHEET_GID = "975501836"
+# User sheet: https://docs.google.com/spreadsheets/d/1iV7qRLtQ0hLrDUd6MA8cJCLz36kliDB28C3Y1rvX8JQ/edit?gid=2126173338
+SPREADSHEET_ID = "1iV7qRLtQ0hLrDUd6MA8cJCLz36kliDB28C3Y1rvX8JQ"
+SHEET_GID = "2126173338"
 
 TRIGGER_URL = "={{ $('Google Sheets Trigger').first().json['Product URL'] }}"
 SKU_VALIDATE = "={{ $('Validate sheet row').first().json.validated_sku }}"
