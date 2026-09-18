@@ -24,15 +24,17 @@
 3. **Insert new sheet**
 4. Rename tab to **`LookupTables`** (exactly — no space)
 
-### Step 2 — Products tab SECOND
+### Step 2 — Prompt Library SECOND
+
+1. **File → Import → Upload** `sheet-prompt-library.csv`
+2. **Insert new sheet**
+3. Rename tab to **`PromptLibrary`**
+
+### Step 3 — Products tab THIRD
 
 1. **File → Import → Upload** `sheet-products.csv`
 2. **Insert new sheet**
-3. Rename tab to **`Products`**
-
-### Step 3 — README tab (optional)
-
-1. Import `sheet-setup-readme.csv` → tab **`README`**
+3. Rename tab to **`Master_Sheetv1`** (or **Products** — match your n8n trigger tab)
 
 ### Step 4 — Test
 
@@ -49,12 +51,12 @@ If **#REF!** → go back to Step 1, check tab name is `LookupTables`.
 ```
 One Google Spreadsheet (one file, multiple tabs)
 │
-├── Products          ← you work here (paste URLs, delete rows OK)
-├── LookupTables      ← rules only (never delete rows)
-└── README            ← instructions (optional)
+├── Master_Sheetv1    ← you work here (paste URLs, delete rows OK)
+├── LookupTables      ← vendor / category / collection rules (never delete rows)
+└── PromptLibrary     ← AI prompt templates (never delete rows)
 ```
 
-**Connected:** Products columns C–F use formulas that read `LookupTables` tab.
+**Connected:** Products columns C–F read `LookupTables`. **Prompt ID** + Prompt columns read `PromptLibrary`. See **`docs/PROMPT-LIBRARY-GUIDE.md`**.
 
 ---
 
@@ -100,5 +102,5 @@ Errors only appear when:
 | File | Tab name |
 |------|----------|
 | `sheet-lookup-tables.csv` | **LookupTables** |
-| `sheet-products.csv` | **Products** |
-| `sheet-setup-readme.csv` | **README** |
+| `sheet-prompt-library.csv` | **PromptLibrary** |
+| `sheet-products.csv` | **Master_Sheetv1** |
