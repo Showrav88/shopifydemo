@@ -27,6 +27,7 @@ SCRAPE_EXTRACTORS.isDirectImageUrl = function isDirectImageUrl(url) {
   // Scene7 / Lululemon and similar CDNs (no file extension)
   if (/\/is\/image\//i.test(u)) return true;
   if (/images\.(lululemon|scene7)\./i.test(u)) return true;
+  if (/media\.mango\.com/i.test(u)) return true;
   if (/scene7\.com/i.test(u)) return true;
   if (/[?&](?:wid|width|hei|height|fmt|format)=/i.test(u) && /\/(?:is\/image|images?)\//i.test(u)) return true;
   return false;
