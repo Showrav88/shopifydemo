@@ -36,6 +36,7 @@ return [{
     Status: 'NEEDS_BROWSER',
     'QA Status': 'BLOCKED_NO_IMAGE',
     'QA Issues': issue,
+    'Scrape method': 'blocked',
     'Product image URL': '',
   },
 }];
@@ -67,6 +68,8 @@ def main():
     data = json.loads(path.read_text())
 
     apply_status = r"""
+const scrapeMethodUsed = row.scrape_context?.scrape_method || row.scrape_method_planned || row.fetch_method || 'http';
+const botBypassed = Boolean(row.scrape_context?.bot_protection_bypassed);
 const productUrl = row.source_product_url || row['Product URL'] || '';
 const fetchStrategy = SCRAPE.pickFetchStrategy(productUrl);
 const variantList = structured.variants || scraped.variants || [];
@@ -76,6 +79,8 @@ const hasColors = (Array.isArray(colorsArr) ? colorsArr.length : 0) > 0 || Strin
 let scrapeStatus = 'SCRAPED';
 if (!imageUrl) {
   scrapeStatus = fetchStrategy === 'browser' ? 'NEEDS_BROWSER' : 'SCRAPED_NO_IMAGE';
+} else if (scrapeMethodUsed === 'browser' && botBypassed) {
+  scrapeStatus = 'SCRAPED_BROWSER';
 } else if (fetchStrategy === 'browser' && !hasVariants && !hasSizes && !hasColors) {
   scrapeStatus = 'SCRAPED_PARTIAL';
 }
@@ -90,12 +95,14 @@ if (!imageUrl) {
             node["parameters"]["jsCode"] = code
         elif name == "Validate sheet row":
             node["parameters"]["jsCode"] = patch_is_direct_image_url(node["parameters"]["jsCode"])
+        elif name == "Prepare scrape blocked":
+            node["parameters"]["jsCode"] = PREPARE_BLOCKED_JS.strip()
         elif name == "Apply scraped data":
             code = node["parameters"]["jsCode"]
             if "let scrapeStatus = 'SCRAPED'" not in code:
                 code = code.replace(
                     "'Scrape Status': imageUrl ? 'SCRAPED' : 'SCRAPED_NO_IMAGE',",
-                    "'Scrape Status': scrapeStatus,",
+                    "'Scrape Status': scrapeStatus,\n    'Scrape method': scrapeMethodUsed,",
                 )
                 insert_at = "const extractionSources = structured._sources || {};"
                 code = code.replace(insert_at, insert_at + "\n" + apply_status)
