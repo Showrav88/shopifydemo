@@ -27,6 +27,7 @@ SCRAPE_EXTRACTORS.isDirectImageUrl = function isDirectImageUrl(url) {
   // Scene7 / Lululemon and similar CDNs (no file extension)
   if (/\/is\/image\//i.test(u)) return true;
   if (/images\.(lululemon|scene7)\./i.test(u)) return true;
+  if (/media\.mango\.com/i.test(u)) return true;
   if (/scene7\.com/i.test(u)) return true;
   if (/[?&](?:wid|width|hei|height|fmt|format)=/i.test(u) && /\/(?:is\/image|images?)\//i.test(u)) return true;
   return false;
@@ -592,7 +593,14 @@ SCRAPE_EXTRACTORS.isBotBlocked = function isBotBlocked(html) {
  * - http: plain HTTP fetch (fast, free) — default for most sites
  * - browser: Browserless/Playwright — only for known hard domains
  */
-SCRAPE_EXTRACTORS.pickFetchStrategy = function pickFetchStrategy(url) {
+SCRAPE_EXTRACTORS.isForceBrowser = function isForceBrowser(row) {
+  const raw = String(row?.['Force browser'] || row?.force_browser || '').trim();
+  return /^(yes|true|1|browser|force)$/i.test(raw);
+};
+
+SCRAPE_EXTRACTORS.pickFetchStrategy = function pickFetchStrategy(url, opts = {}) {
+  if (opts.forceBrowser || SCRAPE_EXTRACTORS.isForceBrowser(opts.row)) return 'browser';
+
   const host = SCRAPE_EXTRACTORS.hostname(url);
   const isShopify = SCRAPE_EXTRACTORS.isShopifyProductUrl(url);
 

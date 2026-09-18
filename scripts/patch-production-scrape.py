@@ -44,16 +44,27 @@ const shopifyLayer = await tryShopifyJson(productUrl);
 const structured = SCRAPE.buildStructuredProduct(body, productUrl, shopifyLayer);
 const candidateImages = structured.candidate_images || [];
 
+const scrapeMethod = http.scrape_method || row.scrape_method_planned || row.fetch_method || 'http';
+
 const snippet = {
   product_url: productUrl,
   run_id: row._run_id,
   structured,
   extraction_sources: structured._sources || {},
+  scrape_method: scrapeMethod,
+  bot_protection_bypassed: Boolean(http.bot_protection_bypassed),
+  bot_protection_expected: Boolean(row.bot_protection_expected),
   og_title: structured.title || SCRAPE.meta(body, 'og:title'),
   og_description: structured.description || SCRAPE.meta(body, 'og:description'),
   og_image: structured.image_url || SCRAPE.meta(body, 'og:image'),
   candidate_images: candidateImages.slice(0, 10),
   json_ld: SCRAPE.extractJsonLd(body).slice(0, 3),
+
+const scrapeMethod = http.scrape_method || row.scrape_method_planned || row.fetch_method || 'http';
+snippet.scrape_method = scrapeMethod;
+snippet.bot_protection_bypassed = Boolean(http.bot_protection_bypassed);
+snippet.bot_protection_expected = Boolean(row.bot_protection_expected);
+
   html_excerpt: body.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\s+/g, ' ').slice(0, 8000),
 };
 
