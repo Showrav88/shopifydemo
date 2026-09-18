@@ -68,15 +68,8 @@ All sheet update nodes match on **Product URL** from the Google Sheets trigger r
 | **Variant profile** | Optional | e.g. `clothing_numeric` for jeans (Waist + Length + Color) |
 | **Approve** | Optional | Not used in full-auto mode — safe to hide |
 
-## Lookup tabs (optional — import from `lookup/*.csv`)
+## Lookup tab (optional — one CSV, same spreadsheet)
 
-Add 4 extra tabs for auto-fill when **Product category** / **Collection** / **Vendor** are empty. See **`docs/LOOKUP-SHEETS-GUIDE.md`**.
+Import **`sheet-lookup-tables.csv`** as a new tab named **Lookup Tables** in the **same** Google Sheet as your product rows. See **`docs/LOOKUP-SHEETS-GUIDE.md`**.
 
-| Tab name | CSV file |
-|----------|----------|
-| Shopify Collections | `lookup/lookup-shopify-collections.csv` |
-| Collection Map | `lookup/lookup-collection-map.csv` |
-| Product Type Map | `lookup/lookup-product-type-map.csv` |
-| Vendor Map | `lookup/lookup-vendor-domain-map.csv` |
-
-Workflow wiring (read lookups automatically) ships in **Phase 5c**. Until then, use the cheat sheet in the guide or fill columns manually.
+Workflow reads this tab automatically in **Phase 5c** (not connected yet). Until then, fill **Collection** and **Product category** manually on each row.
