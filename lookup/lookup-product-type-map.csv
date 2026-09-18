@@ -1,74 +1,55 @@
 keyword,match_where,priority,gender,product_type,variant_profile,collection_handle,shopify_taxonomy_keyword,notes
-dress,any,10,women,Women > Dresses > Casual,clothing_alpha,womens-dresses,dress,Default women's dress
-midi dress,title,5,women,Women > Dresses > Midi,clothing_alpha,womens-dresses,dress,Higher priority — specific
+dress,any,10,women,Women > Dresses > Casual,clothing_alpha,womens-dresses,dress,
+midi dress,title,5,women,Women > Dresses > Midi,clothing_alpha,womens-dresses,dress,
 maxi dress,title,5,women,Women > Dresses > Maxi,clothing_alpha,womens-dresses,dress,
-mini dress,title,5,women,Women > Dresses > Mini,clothing_alpha,womens-dresses,dress,
 jumpsuit,any,10,women,Women > Jumpsuits > Casual,clothing_alpha,womens-dresses,dress,
 blouse,any,10,women,Women > Tops > Blouse,clothing_alpha,womens-tops,shirt,
-shirt,any,12,women,Women > Tops > Shirt,clothing_alpha,womens-tops,shirt,Women's shirt
+shirt,any,12,women,Women > Tops > Shirt,clothing_alpha,womens-tops,shirt,
 tee,any,10,women,Women > Tops > T-Shirt,clothing_alpha,womens-tops,t-shirt,
-t-shirt,any,10,women,Women > Tops > T-Shirt,clothing_alpha,womens-tops,t-shirt,
-tank,any,10,women,Women > Tops > Tank,clothing_alpha,womens-tops,t-shirt,
-sweater,any,10,women,Women > Tops > Sweater,clothing_alpha,womens-tops,shirt,
-cardigan,any,10,women,Women > Tops > Cardigan,clothing_alpha,womens-tops,shirt,
-hoodie,any,10,women,Women > Tops > Hoodie,clothing_alpha,womens-tops,shirt,
-jean,any,10,women,Women > Jeans > Straight,clothing_numeric,womens-bottoms,jean,Waist + length if scraped
-skinny jean,title,5,women,Women > Jeans > Skinny,clothing_numeric,womens-bottoms,jean,
-straight jean,title,5,women,Women > Jeans > Straight,clothing_numeric,womens-bottoms,jean,
-wide leg,title,8,women,Women > Jeans > Wide Leg,clothing_numeric,womens-bottoms,jean,
+jean,any,10,women,Women > Jeans > Straight,clothing_numeric,womens-bottoms,jean,
 pant,any,12,women,Women > Pants > Casual,clothing_alpha,womens-bottoms,pant,
-trouser,any,10,women,Women > Pants > Trousers,clothing_alpha,womens-bottoms,pant,
-chino,any,10,women,Women > Pants > Chinos,clothing_alpha,womens-bottoms,pant,
 skirt,any,10,women,Women > Skirts > Casual,clothing_alpha,womens-bottoms,dress,
-legging,any,10,women,Women > Activewear > Leggings,clothing_alpha,womens-activewear,pant,Lululemon
-sports bra,any,10,women,Women > Activewear > Sports Bra,clothing_alpha,womens-activewear,shirt,
+legging,any,10,women,Women > Pants > Leggings,clothing_alpha,womens-bottoms,pant,
 bodysuit,any,10,women,Women > Intimates > Bodysuit,clothing_alpha,womens-intimates,shirt,Skims
 bra,any,10,women,Women > Intimates > Bra,clothing_alpha,womens-intimates,shirt,
 underwear,any,10,women,Women > Intimates > Underwear,clothing_alpha,womens-intimates,shirt,
-brief,any,12,women,Women > Intimates > Brief,clothing_alpha,womens-intimates,shirt,
-thong,any,12,women,Women > Intimates > Thong,clothing_alpha,womens-intimates,shirt,
-jacket,any,10,women,Women > Outerwear > Jacket,clothing_alpha,womens-outerwear,jacket,
-coat,any,10,women,Women > Outerwear > Coat,clothing_alpha,womens-outerwear,coat,
-blazer,any,10,women,Women > Outerwear > Blazer,clothing_alpha,womens-outerwear,jacket,
+jacket,any,10,women,Women > Tops > Jacket,clothing_alpha,womens-tops,jacket,No womens-outerwear yet
+coat,any,10,women,Women > Tops > Coat,clothing_alpha,womens-tops,coat,
 boot,any,10,women,Women > Shoes > Boots,footwear_uk,womens-shoes,shoe,
 sneaker,any,10,women,Women > Shoes > Sneakers,footwear_uk,womens-shoes,shoe,
-heel,any,10,women,Women > Shoes > Heels,footwear_uk,womens-shoes,shoe,
-sandal,any,10,women,Women > Shoes > Sandals,footwear_uk,womens-shoes,shoe,
-linen shirt,title,5,men,Men > Shirts > Linen,clothing_alpha,mens-shirts,shirt,Mango Everlane
-oxford,title,8,men,Men > Shirts > Oxford,clothing_alpha,mens-shirts,shirt,
-dress shirt,title,5,men,Men > Shirts > Dress Shirt,clothing_alpha,mens-shirts,shirt,
-casual shirt,title,8,men,Men > Shirts > Casual,clothing_alpha,mens-shirts,shirt,
+bag,any,10,women,Women > Accessories > Handbag,one_size,womens-accessories,bag,
+belt,any,10,women,Women > Accessories > Belt,one_size,womens-accessories,accessory,
+hat,any,10,women,Women > Accessories > Hat,one_size,womens-accessories,accessory,
+linen shirt,title,5,men,Men > Shirts > Linen,clothing_alpha,mens-shirts,shirt,
+shirt,any,15,men,Men > Shirts > Casual,clothing_alpha,mens-shirts,shirt,
 polo,any,10,men,Men > Shirts > Polo,clothing_alpha,mens-shirts,shirt,
-shirt,any,15,men,Men > Shirts > Casual,clothing_alpha,mens-shirts,shirt,Default men's shirt
-tee,any,10,men,Men > Tops > T-Shirt,clothing_alpha,mens-shirts,t-shirt,
-henley,any,10,men,Men > Tops > Henley,clothing_alpha,mens-shirts,shirt,
-501,title,5,men,Men > Jeans > 501 Original,clothing_numeric,mens-pants,jean,Levi's 501
-511,title,5,men,Men > Jeans > 511 Slim,clothing_numeric,mens-pants,jean,Levi's
 jean,any,10,men,Men > Jeans > Straight,clothing_numeric,mens-pants,jean,
-chino,any,10,men,Men > Pants > Chinos,clothing_alpha,mens-pants,pant,
-trouser,any,10,men,Men > Pants > Trousers,clothing_alpha,mens-pants,pant,
+501,title,5,men,Men > Jeans > 501 Original,clothing_numeric,mens-pants,jean,Levi's
 pant,any,12,men,Men > Pants > Casual,clothing_alpha,mens-pants,pant,
 short,any,10,men,Men > Shorts > Casual,clothing_alpha,mens-pants,pant,
 jacket,any,10,men,Men > Outerwear > Jacket,clothing_alpha,mens-outerwear,jacket,
-coat,any,10,men,Men > Outerwear > Coat,clothing_alpha,mens-outerwear,coat,
 hoodie,any,10,men,Men > Outerwear > Hoodie,clothing_alpha,mens-outerwear,jacket,
 fleece,any,10,men,Men > Outerwear > Fleece,clothing_alpha,mens-outerwear,jacket,Patagonia
-western boot,title,5,men,Men > Shoes > Western Boots,footwear_uk,mens-shoes,shoe,Tecovas
 boot,any,10,men,Men > Shoes > Boots,footwear_uk,mens-shoes,shoe,
 sneaker,any,10,men,Men > Shoes > Sneakers,footwear_uk,mens-shoes,shoe,
-loafer,any,10,men,Men > Shoes > Loafers,footwear_uk,mens-shoes,shoe,
-bag,any,10,unisex,Accessories > Bags > Handbag,one_size,accessories,bag,
-tote,any,10,unisex,Accessories > Bags > Tote,one_size,accessories,bag,
-belt,any,10,unisex,Accessories > Belts > Casual,one_size,accessories,accessory,
-hat,any,10,unisex,Accessories > Hats > Cap,one_size,accessories,accessory,
-scarf,any,10,unisex,Accessories > Scarves > Casual,one_size,accessories,accessory,
-/shirts/,url,8,men,Men > Shirts > Casual,clothing_alpha,mens-shirts,shirt,URL path Zara Mango
+bag,any,10,men,Men > Accessories > Bag,one_size,mens-accessories,bag,
+belt,any,10,men,Men > Accessories > Belt,one_size,mens-accessories,accessory,
+hat,any,10,men,Men > Accessories > Hat,one_size,mens-accessories,accessory,
+watch,any,10,men,Men > Accessories > Watch,one_size,mens-accessories,accessory,
+kids dress,title,5,kids,Kids > Dresses > Casual,clothing_alpha,kids,dress,
+girls dress,title,5,kids,Kids > Girls > Dress,clothing_alpha,kids,dress,
+boys shirt,title,5,kids,Kids > Boys > Shirt,clothing_alpha,kids,shirt,
+kids tee,title,5,kids,Kids > Tops > T-Shirt,clothing_alpha,kids,t-shirt,
+kids,any,5,kids,Kids > Clothing > Casual,clothing_alpha,kids,shirt,Default kids
+boys,any,5,kids,Kids > Boys > Clothing,clothing_alpha,kids,shirt,
+girls,any,5,kids,Kids > Girls > Clothing,clothing_alpha,kids,shirt,
+toddler,any,5,kids,Kids > Toddler > Clothing,clothing_alpha,kids,shirt,
+baby,any,5,kids,Kids > Baby > Clothing,clothing_alpha,kids,shirt,
+/kids/,url,3,kids,Kids > Clothing > Casual,clothing_alpha,kids,shirt,
+/boys/,url,3,kids,Kids > Boys > Clothing,clothing_alpha,kids,shirt,
+/girls/,url,3,kids,Kids > Girls > Clothing,clothing_alpha,kids,shirt,
+/shirts/,url,8,men,Men > Shirts > Casual,clothing_alpha,mens-shirts,shirt,
 /linen/,url,8,men,Men > Shirts > Linen,clothing_alpha,mens-shirts,shirt,
 /dresses/,url,8,women,Women > Dresses > Casual,clothing_alpha,womens-dresses,dress,
-/jeans/,url,8,any,,clothing_numeric,,jean,Gender resolved separately — see gender rules
-/pants/,url,8,men,Men > Pants > Casual,clothing_alpha,mens-pants,pant,
-/men/,url,3,men,,,,,Gender hint only — pair with product keyword
+/men/,url,3,men,,,,,Gender hint only
 /women/,url,3,women,,,,,Gender hint only
-/mujer/,url,3,women,,,,,Mango ES
-/hombre/,url,3,men,,,,,Mango ES
-/products/,url,50,any,,,,,Shopify URL — match title keywords instead

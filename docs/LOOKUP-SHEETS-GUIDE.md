@@ -31,13 +31,37 @@ Your main product input tab stays as **Sheet1** (or whatever you use today) with
 
 ### 1. Shopify Collections (reference only — you create in Admin)
 
-This is **not** used by automation yet. It is the checklist of collections to create in Shopify:
+This is **not** used by automation yet. It is the checklist of collections to create in Shopify.
+
+**Your store (already created — good to go):**
+
+| Handle | Use for |
+|--------|---------|
+| `kids` | All kids / boys / girls |
+| `mens-shirts` | Men's shirts |
+| `mens-pants` | Men's jeans, pants, shorts |
+| `mens-outerwear` | Men's jackets, hoodies, fleece |
+| `mens-shoes` | Men's footwear |
+| `mens-accessories` | Men's bags, belts, hats, watches |
+| `womens-dresses` | Dresses, jumpsuits |
+| `womens-tops` | Tops, shirts, sweaters, women's jackets (until you add womens-outerwear) |
+| `womens-bottoms` | Jeans, pants, skirts, leggings |
+| `womens-intimates` | Underwear, bodysuits, bras |
+| `womens-shoes` | Women's footwear |
+| `womens-accessories` | Women's bags, belts, jewelry |
+
+**Manual collection = correct.** You only need:
+1. **Title** (e.g. `mens-shirts`)
+2. **Type: Manual** (default when you don't add conditions)
+3. **Save**
+
+No conditions, no product rules, no automated tags needed. The workflow adds each product to the collection using the **handle** from the sheet **Collection** column (or lookup).
 
 ```
 Shopify Admin → Products → Collections → Create collection
-Title: Women's Dresses
-Handle: womens-dresses   ← must match collection_handle column
-Type: Manual
+Title: mens-shirts
+Handle: mens-shirts   ← auto from title if you use lowercase + hyphens
+Type: Manual          ← leave empty conditions = manual ✓
 ```
 
 ### 2. Product Type Map (fills Product category)
