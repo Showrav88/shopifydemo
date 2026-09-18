@@ -71,6 +71,10 @@ def main() -> int:
     for col in ("Prompt Title", "Prompt Description", "Vendor", "Product category"):
         if col not in active_js:
             errors.append(f"Active product row missing column: {col}")
+    if "return obj;" in active_js and "function resolvePromptFields" not in active_js:
+        errors.append("Active product row has stray 'return obj' (SyntaxError)")
+    if active_js.count("function browserDomain") != 1:
+        errors.append("Active product row browserDomain function is broken/duplicated")
 
     names = {n.get("name") for n in data["nodes"]}
     if "Re-read sheet row" not in names:
