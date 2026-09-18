@@ -13,8 +13,14 @@ legging,any,10,women,Women > Pants > Leggings,clothing_alpha,womens-bottoms,pant
 bodysuit,any,10,women,Women > Intimates > Bodysuit,clothing_alpha,womens-intimates,shirt,Skims
 bra,any,10,women,Women > Intimates > Bra,clothing_alpha,womens-intimates,shirt,
 underwear,any,10,women,Women > Intimates > Underwear,clothing_alpha,womens-intimates,shirt,
-jacket,any,10,women,Women > Tops > Jacket,clothing_alpha,womens-tops,jacket,No womens-outerwear yet
-coat,any,10,women,Women > Tops > Coat,clothing_alpha,womens-tops,coat,
+jacket,any,10,women,Women > Outerwear > Jacket,clothing_alpha,womens-outerwear,jacket,
+coat,any,10,women,Women > Outerwear > Coat,clothing_alpha,womens-outerwear,coat,
+blazer,any,10,women,Women > Outerwear > Blazer,clothing_alpha,womens-outerwear,jacket,
+hoodie,any,10,women,Women > Outerwear > Hoodie,clothing_alpha,womens-outerwear,jacket,
+fleece,any,10,women,Women > Outerwear > Fleece,clothing_alpha,womens-outerwear,jacket,Patagonia
+parka,any,10,women,Women > Outerwear > Parka,clothing_alpha,womens-outerwear,coat,
+puffer,any,10,women,Women > Outerwear > Puffer Jacket,clothing_alpha,womens-outerwear,jacket,
+windbreaker,any,10,women,Women > Outerwear > Windbreaker,clothing_alpha,womens-outerwear,jacket,
 boot,any,10,women,Women > Shoes > Boots,footwear_uk,womens-shoes,shoe,
 sneaker,any,10,women,Women > Shoes > Sneakers,footwear_uk,womens-shoes,shoe,
 bag,any,10,women,Women > Accessories > Handbag,one_size,womens-accessories,bag,

@@ -9,6 +9,6 @@ mens-pants,mens-pants,manual,Men,CREATED,Jeans chinos trousers shorts
 mens-shirts,mens-shirts,manual,Men,CREATED,All shirt types
 womens-intimates,womens-intimates,manual,Women,CREATED,Underwear bodysuits bras Skims
 womens-bottoms,womens-bottoms,manual,Women,CREATED,Jeans pants skirts leggings shorts
-womens-tops,womens-tops,manual,Women,CREATED,Shirts blouses tees sweaters hoodies jackets
+womens-tops,womens-tops,manual,Women,CREATED,Shirts blouses tees sweaters tanks — NOT jackets/coats
+womens-outerwear,womens-outerwear,manual,Women,CREATED,Jackets coats blazers hoodies fleece — separate from tops
 womens-dresses,womens-dresses,manual,Women,CREATED,Dresses jumpsuits rompers
-womens-outerwear,womens-outerwear,manual,Women,OPTIONAL,Not in your store yet — women's jackets currently map to womens-tops

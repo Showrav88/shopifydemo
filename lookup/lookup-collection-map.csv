@@ -13,7 +13,7 @@ tank,any,10,women,womens-tops,womens-tops,
 shirt,any,15,women,womens-tops,womens-tops,Women's shirts
 sweater,any,10,women,womens-tops,womens-tops,
 cardigan,any,10,women,womens-tops,womens-tops,
-hoodie,any,10,women,womens-tops,womens-tops,No womens-outerwear — tops collection
+hoodie,any,10,women,womens-outerwear,womens-outerwear,Outerwear not tops
 jean,any,10,women,womens-bottoms,womens-bottoms,
 denim,any,12,women,womens-bottoms,womens-bottoms,
 pant,any,10,women,womens-bottoms,womens-bottoms,
@@ -29,9 +29,14 @@ bra,any,10,women,womens-intimates,womens-intimates,
 underwear,any,10,women,womens-intimates,womens-intimates,
 lingerie,any,10,women,womens-intimates,womens-intimates,
 intimates,any,10,women,womens-intimates,womens-intimates,
-jacket,any,10,women,womens-tops,womens-tops,Until womens-outerwear added
-coat,any,10,women,womens-tops,womens-tops,Until womens-outerwear added
-blazer,any,10,women,womens-tops,womens-tops,
+jacket,any,10,women,womens-outerwear,womens-outerwear,
+coat,any,10,women,womens-outerwear,womens-outerwear,
+blazer,any,10,women,womens-outerwear,womens-outerwear,
+fleece,any,10,women,womens-outerwear,womens-outerwear,Patagonia women's fleece
+parka,any,10,women,womens-outerwear,womens-outerwear,
+puffer,any,10,women,womens-outerwear,womens-outerwear,
+windbreaker,any,10,women,womens-outerwear,womens-outerwear,
+vest,any,12,women,womens-outerwear,womens-outerwear,Gilet / vest
 boot,any,10,women,womens-shoes,womens-shoes,
 sneaker,any,10,women,womens-shoes,womens-shoes,
 heel,any,10,women,womens-shoes,womens-shoes,

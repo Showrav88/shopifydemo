@@ -44,7 +44,8 @@ This is **not** used by automation yet. It is the checklist of collections to cr
 | `mens-shoes` | Men's footwear |
 | `mens-accessories` | Men's bags, belts, hats, watches |
 | `womens-dresses` | Dresses, jumpsuits |
-| `womens-tops` | Tops, shirts, sweaters, women's jackets (until you add womens-outerwear) |
+| `womens-tops` | Tops, shirts, blouses, tees, sweaters, cardigans |
+| `womens-outerwear` | Jackets, coats, blazers, hoodies, fleece, parkas |
 | `womens-bottoms` | Jeans, pants, skirts, leggings |
 | `womens-intimates` | Underwear, bodysuits, bras |
 | `womens-shoes` | Women's footwear |
@@ -201,6 +202,8 @@ Lookup sheets are ready now; workflow wiring comes in **5c**.
 | Women's jeans | `Women > Jeans > Straight` | `womens-bottoms` |
 | Skims bodysuit | *(blank — lookup fills)* | `womens-intimates` |
 | Men's boots | `Men > Shoes > Boots` | `mens-shoes` |
-| Bag | `Accessories > Bags > Tote` | `accessories` |
+| Women's bag | `Women > Accessories > Handbag` | `womens-accessories` |
+| Men's belt | `Men > Accessories > Belt` | `mens-accessories` |
+| Kids tee | *(blank — lookup fills)* | `kids` |
 
 **Minimum mode:** paste **Product URL only** — after Phase 5c lookup fills the rest.
