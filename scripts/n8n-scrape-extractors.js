@@ -547,6 +547,95 @@ SCRAPE_EXTRACTORS.pickImageUrl = function pickImageUrl(scraped, row) {
   return '';
 };
 
+// ─── Fetch strategy: HTTP vs Browserless (smart routing) ─────────────────────
+
+/** Domains that almost always need a real browser (bot checks + heavy JS). */
+SCRAPE_EXTRACTORS.BROWSER_DOMAINS = [
+  'macys.com', 'mango.com', 'express.com', 'nordstrom.com', 'zara.com',
+  'hm.com', 'asos.com', 'uniqlo.com', 'gap.com', 'oldnavy.com',
+];
+
+/** Domains where Shopify .json alone is usually enough — skip browser. */
+SCRAPE_EXTRACTORS.SHOPIFY_JSON_DOMAINS = [
+  'everlane.com', 'matethelabel.com', 'gymshark.com', 'allbirds.com',
+  'colourpop.com', 'brooklinen.com',
+];
+
+SCRAPE_EXTRACTORS.hostname = function hostname(url) {
+  try {
+    return new URL(String(url || '').trim()).hostname.replace(/^www\./, '').toLowerCase();
+  } catch {
+    return '';
+  }
+};
+
+SCRAPE_EXTRACTORS.isShopifyProductUrl = function isShopifyProductUrl(url) {
+  return /\/products\/[^/?#]+/.test(String(url || ''));
+};
+
+SCRAPE_EXTRACTORS.isBotBlocked = function isBotBlocked(html) {
+  const body = String(html || '').toLowerCase();
+  if (!body || body.length < 200) return true;
+  const signals = [
+    'cf-browser-verification', 'cf-challenge', 'checking your browser',
+    'just a moment', 'one moment, please', 'access denied',
+    'bot-protection', 'imunify360', 'ddos protection', 'captcha',
+  ];
+  return signals.some((s) => body.includes(s));
+};
+
+/**
+ * Pick fetch method BEFORE downloading the page.
+ * Returns: 'shopify_json' | 'http' | 'browser'
+ *
+ * - shopify_json: try product.json API first; HTML optional
+ * - http: plain HTTP fetch (fast, free) — default for most sites
+ * - browser: Browserless/Playwright — only for known hard domains
+ */
+SCRAPE_EXTRACTORS.pickFetchStrategy = function pickFetchStrategy(url) {
+  const host = SCRAPE_EXTRACTORS.hostname(url);
+  const isShopify = SCRAPE_EXTRACTORS.isShopifyProductUrl(url);
+
+  if (SCRAPE_EXTRACTORS.BROWSER_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))) {
+    return 'browser';
+  }
+
+  if (isShopify) {
+    if (SCRAPE_EXTRACTORS.SHOPIFY_JSON_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))) {
+      return 'shopify_json';
+    }
+    // Unknown Shopify store — HTTP + .json (Fashion Nova blocks .json but try HTTP HTML first)
+    return 'http';
+  }
+
+  return 'http';
+};
+
+/**
+ * After HTTP scrape, decide if we should retry with Browserless.
+ * Call this in Prepare page when structured data is thin.
+ */
+SCRAPE_EXTRACTORS.needsBrowserRetry = function needsBrowserRetry(structured, html, url) {
+  if (SCRAPE_EXTRACTORS.pickFetchStrategy(url) === 'browser') return false; // already on browser path
+
+  const s = structured || {};
+  const hasTitle = Boolean(String(s.title || '').trim());
+  const hasImage = Boolean(SCRAPE_EXTRACTORS.isDirectImageUrl(s.image_url));
+  const hasPrice = Boolean(String(s.competitor_price || '').trim());
+  const hasVariants = Boolean(s.variants?.length || s.sizes?.length);
+
+  // Shopify .json succeeded — no browser needed even if HTML was empty
+  if (s._sources?.title === 'shopify_json' || s._sources?.image_url === 'shopify_json') return false;
+
+  // Good enough — no browser needed
+  if (hasTitle && hasImage && (hasPrice || hasVariants)) return false;
+
+  if (SCRAPE_EXTRACTORS.isBotBlocked(html)) return true;
+
+  // Thin result from HTTP — retry with browser
+  return !hasTitle || !hasImage;
+};
+
 SCRAPE_EXTRACTORS.mergeField = function mergeField(structured, ai, key, aiAlts = []) {
   const s = structured?.[key];
   if (s !== undefined && s !== null && String(s).trim() !== '') return s;

@@ -103,13 +103,112 @@ Builds `scrape_context.structured`:
 
 ---
 
+## HTTP vs Browserless — when to use which
+
+**Do not use Browserless for every site.** It is 10–30× slower and costs credits. Use a **smart router**:
+
+```
+Product URL
+    ↓
+Route scrape method          [Code] pickFetchStrategy(url)
+    ↓
+┌─────────────────┬──────────────────────┬─────────────────────────┐
+│ shopify_json    │ http (default)       │ browser (hard domains)  │
+│ Try .json API   │ Fetch product page   │ Browserless content API │
+│ HTML optional   │ [HTTP Request]       │ [HTTP Request]          │
+└────────┬────────┴──────────┬───────────┴────────────┬────────────┘
+         └───────────────────┴────────────────────────┘
+                             ↓
+                  Prepare page for scrape
+                             ↓
+              needsBrowserRetry? ──YES──→ Browserless (retry once)
+                             NO
+                             ↓
+                    AI scrape → Apply → Sheet
+```
+
+### Site classification
+
+| Category | Examples | Method | Why |
+|----------|----------|--------|-----|
+| **Shopify .json works** | Everlane, MATE the Label, Gymshark | `shopify_json` or `http` | `product.json` has title, images, variants — no browser |
+| **HTTP + embedded JSON** | Aarong, many Magento/WooCommerce | `http` | `__NEXT_DATA__`, JSON-LD, `catalog/product` images in HTML |
+| **HTTP works, .json blocked** | Fashion Nova (Hydrogen) | `http` | HTML has og:image + meta; `.json` returns login page |
+| **Browser required** | Macy's, Mango, Express, Zara | `browser` | Cloudflare bot check + 100% client-rendered |
+| **Browser maybe** | Lululemon | `http` first → retry `browser` if no image | SPA; sometimes og:image in initial HTML |
+
+### Decision rules (in code)
+
+Source: `scripts/n8n-scrape-extractors.js`
+
+```javascript
+SCRAPE.pickFetchStrategy(url)
+// → 'shopify_json' | 'http' | 'browser'
+
+SCRAPE.needsBrowserRetry(structured, html, url)
+// → true if HTTP got bot-blocked or missing title+image
+```
+
+| Signal | Action |
+|--------|--------|
+| URL is `/products/...` on known Shopify store | Try `.json` first — **skip browser** |
+| `shopify_json` returned title + image | **Done** — never open browser |
+| HTML contains `checking your browser` / `cf-challenge` | **Browserless** |
+| HTTP returned page but no title and no image | **Browserless retry** (once) |
+| Domain in `BROWSER_DOMAINS` list | **Browserless** immediately |
+
+### How to add Browserless in n8n
+
+1. Sign up at [browserless.io](https://www.browserless.io) (free tier: ~1,000 sessions/month)
+2. Add credential: HTTP Header Auth or query token
+3. Add **HTTP Request** node (only on browser path):
+
+```
+POST https://production-sfo.browserless.io/content?token=YOUR_TOKEN
+Content-Type: application/json
+
+{
+  "url": "={{ $json.source_product_url }}",
+  "gotoOptions": {
+    "waitUntil": "networkidle2",
+    "timeout": 30000
+  }
+}
+```
+
+Response body = full rendered HTML → pass to **Prepare page for scrape** (same as HTTP fetch).
+
+4. Wire workflow:
+
+```
+Needs scrape (TRUE)
+  → Route scrape method [Code]
+  → Switch / IF:
+       browser  → Browserless fetch → Prepare page
+       default  → Fetch product page → Prepare page
+  → IF needsBrowserRetry → Browserless fetch → Prepare page (merge)
+  → AI scrape → Apply → Sheet
+```
+
+### Cost comparison (per product)
+
+| Method | Speed | Cost |
+|--------|-------|------|
+| Shopify `.json` | ~1 s | Free |
+| HTTP fetch | ~2 s | Free |
+| Browserless | ~10–30 s | ~1 credit/session |
+
+**Target:** 80%+ of your fashion URLs should never touch Browserless.
+
+---
+
 ## Improving accuracy further (optional upgrades)
 
 | Upgrade | When | How |
 |---------|------|-----|
-| Browserless node | Site is 100% client-rendered, no `__NEXT_DATA__` | Add before Prepare |
-| Per-domain rules | Same supplier always | IF node + domain-specific Code |
-| Shopify-only fast path | All URLs are Shopify | Skip AI when `shopify_json` OK |
+| Browserless node | `pickFetchStrategy` = `browser` OR `needsBrowserRetry` | HTTP Request to Browserless content API |
+| Per-domain rules | Same supplier always | Extend `BROWSER_DOMAINS` / `SHOPIFY_JSON_DOMAINS` in extractors |
+| Shopify-only fast path | `.json` returns full product | Skip AI when `shopify_json` OK |
 | Rate limiting | Many URLs | n8n Wait node + queue sheet |
 
 ---

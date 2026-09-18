@@ -53,5 +53,13 @@ const html = `
 const imgs = SCRAPE.extractProductImages(html, 'https://shop.lululemon.com');
 assert(imgs.length > 0 && imgs[0].includes('lululemon'), 'srcset images extracted');
 
+// ── fetch strategy routing ──
+assert(SCRAPE.pickFetchStrategy('https://www.everlane.com/products/jean') === 'shopify_json', 'Everlane → shopify_json');
+assert(SCRAPE.pickFetchStrategy('https://www.macys.com/shop/product/foo') === 'browser', 'Macys → browser');
+assert(SCRAPE.pickFetchStrategy('https://www.aarong.com/shirt.html') === 'http', 'Aarong → http');
+assert(SCRAPE.isBotBlocked('<html>Checking your browser before accessing</html>'), 'bot block detected');
+assert(SCRAPE.needsBrowserRetry({}, '<html>Checking your browser</html>', 'https://x.com'), 'retry on bot block');
+assert(!SCRAPE.needsBrowserRetry({ title: 'Shirt', image_url: 'https://cdn.shopify.com/s/files/1/000/1/products/x.jpg', competitor_price: '50', _sources: { title: 'shopify_json' } }, '', 'https://everlane.com/p'), 'shopify_json ok → no retry');
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
