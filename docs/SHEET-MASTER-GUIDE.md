@@ -65,12 +65,11 @@ One Google Spreadsheet (one file, multiple tabs)
 | Column | Name | You type? | When it fills |
 |--------|------|-----------|----------------|
 | A | Product URL | ✅ Yes | — |
-| C | Suggested Vendor | No | **Immediately** from URL domain |
-| D | Suggested Category | No | URL keywords; better after Title (L) |
-| E | Suggested Collection | No | URL keywords; better after Title (L) |
-| F | Suggested Variant profile | No | Same as category |
-| G–J | Vendor, Category, Collection | Optional override | You or n8n (Phase 5c) |
-| L–M | Title, Description | No | **n8n scrape** |
+| C–F | **Vendor, Product category, Variant profile, Collection** | ✅ Optional | **You** type to override; leave blank = use Suggested* |
+| G–H | Title, Description | No | **n8n scrape** |
+| Last 4 cols | **Suggested Vendor … Suggested Collection** | ❌ Never | Formulas from LookupTables — **hide these columns** |
+
+**Important:** C–F are **plain cells** (no formulas). Lookup auto-fill lives in **Suggested*** columns at the **end** of the sheet. n8n uses your typed value if present, otherwise Suggested*.
 
 ---
 

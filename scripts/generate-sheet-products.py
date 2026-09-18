@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate sheet-products.csv — lookup formulas + Prompt ID → PromptLibrary."""
+"""Generate sheet-products.csv — manual Vendor cols + Suggested* lookup formulas at end."""
 import csv
 from pathlib import Path
 
@@ -8,6 +8,15 @@ OUT = ROOT / "sheet-products.csv"
 LOOKUP = "LookupTables"
 PROMPTS = "PromptLibrary"
 ROWS = 50
+
+# Manual columns C–F stay EMPTY in CSV — you type here to override lookup.
+# Suggested* columns at the end are formulas (hide those columns in Sheets).
+SUGGESTED = [
+    "Suggested Vendor",
+    "Suggested Product category",
+    "Suggested Variant profile",
+    "Suggested Collection",
+]
 
 HEADER = [
     "Product URL",
@@ -51,9 +60,9 @@ HEADER = [
     "Generated Image URL",
     "Shopify Image URL",
     "Shopify Product URL",
+    *SUGGESTED,
 ]
 
-# PromptLibrary column map (A=prompt_id, C–I = prompt fields)
 PROMPT_LIB_COLS = {
     "Prompt Title": "C",
     "Prompt Description": "D",
@@ -102,7 +111,6 @@ def vendor_formula(r: int) -> str:
 
 
 def prompt_formula(r: int, lib_col: str) -> str:
-    """Pull prompt text from PromptLibrary by Prompt ID (column R); blank ID → default."""
     return (
         f'=IF($A{r}="","",IFERROR(INDEX(FILTER({PROMPTS}!{lib_col}$2:{lib_col}$500,'
         f'{PROMPTS}!$A$2:$A$500=IF($R{r}="","default",$R{r})),1),""))'
@@ -112,13 +120,14 @@ def prompt_formula(r: int, lib_col: str) -> str:
 def build_row(sheet_row: int, url: str = "", prompt_id: str = "") -> list:
     row = [""] * len(HEADER)
     row[0] = url
-    row[2] = vendor_formula(sheet_row)
-    row[3] = priority_lookup(sheet_row, "product_type_map", "F")
-    row[4] = priority_lookup(sheet_row, "product_type_map", "G")
-    row[5] = priority_lookup(sheet_row, "collection_map", "H")
     row[17] = prompt_id
     for col_name, lib_col in PROMPT_LIB_COLS.items():
         row[HEADER.index(col_name)] = prompt_formula(sheet_row, lib_col)
+    base = len(HEADER) - len(SUGGESTED)
+    row[base] = vendor_formula(sheet_row)
+    row[base + 1] = priority_lookup(sheet_row, "product_type_map", "F")
+    row[base + 2] = priority_lookup(sheet_row, "product_type_map", "G")
+    row[base + 3] = priority_lookup(sheet_row, "collection_map", "H")
     return row
 
 
@@ -131,7 +140,7 @@ def main():
 
     with OUT.open("w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerows(rows)
-    print(f"Wrote {OUT} — row 2 = Mango URL + prompt_id mango-linen-qa90")
+    print(f"Wrote {OUT} — C–F manual (blank); Suggested* formulas at end")
 
 
 if __name__ == "__main__":

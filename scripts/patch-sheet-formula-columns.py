@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-"""Stop n8n sheet writes from overwriting lookup formula columns (Vendor, Product category)."""
+"""Stop n8n sheet writes from overwriting Suggested* lookup formula columns."""
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 WORKFLOW = ROOT / "ShopifyProductAdd.V2.json"
 
-# These columns are filled by sheet formulas from LookupTables — n8n must not overwrite.
-FORMULA_COLUMNS = {"Vendor", "Product category", "Variant profile", "Collection"}
+# Formulas live on Suggested* columns — Vendor/Category/Collection are manual overrides.
+FORMULA_COLUMNS = {
+    "Suggested Vendor",
+    "Suggested Product category",
+    "Suggested Variant profile",
+    "Suggested Collection",
+}
 
 
 def strip_formula_columns(cols: dict) -> None:
@@ -34,7 +39,7 @@ def main():
         prep["parameters"]["jsCode"] = js
 
     WORKFLOW.write_text(json.dumps(data, indent=2) + "\n")
-    print("Patched workflow: formula columns protected from n8n overwrites")
+    print("Patched workflow: Suggested* columns protected; Vendor/Category stay manual")
 
 
 if __name__ == "__main__":
