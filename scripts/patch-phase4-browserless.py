@@ -83,10 +83,23 @@ snippet.bot_protection_bypassed = Boolean(http.bot_protection_bypassed);
 snippet.bot_protection_expected = Boolean(row.bot_protection_expected);
 """
 
-APPLY_SCRAPE_METHOD = r"""
-const scrapeMethodUsed = row.scrape_context?.scrape_method || row.scrape_method_planned || row.fetch_method || 'http';
-const botBypassed = Boolean(row.scrape_context?.bot_protection_bypassed);
-"""
+def repair_apply_scrape_status(code: str) -> str:
+    """Fix double-patched Apply node: stray brace + missing let scrapeStatus."""
+    # Remove orphan closing brace left by old regex that stopped before final `}`
+    code = re.sub(
+        r"(scrapeStatus = 'SCRAPED_PARTIAL';\n\})\n\}",
+        r"scrapeStatus = 'SCRAPED_PARTIAL';\n}",
+        code,
+        count=1,
+    )
+    # If scrapeStatus is assigned without declaration, prepend let on first assignment block
+    if "let scrapeStatus = 'SCRAPED'" not in code and "scrapeStatus =" in code:
+        code = code.replace(
+            "if (!imageUrl) {\n  scrapeStatus =",
+            "let scrapeStatus = 'SCRAPED';\nif (!imageUrl) {\n  scrapeStatus =",
+            1,
+        )
+    return code
 
 
 def patch_prepare_wrapper(wrapper: str) -> str:
@@ -209,35 +222,15 @@ def main():
     data["nodes"] = [n for n in data["nodes"] if n.get("name") not in names_to_replace]
     data["nodes"].extend([route_node, use_browser_if, browserless_node, wrap_node, normalize_node])
 
-    # Patch Apply scraped data for scrape method + SCRAPED_BROWSER
-    apply_status_patch = r"""
-if (!imageUrl) {
-  scrapeStatus = fetchStrategy === 'browser' ? 'NEEDS_BROWSER' : 'SCRAPED_NO_IMAGE';
-} else if (scrapeMethodUsed === 'browser' && botBypassed) {
-  scrapeStatus = 'SCRAPED_BROWSER';
-} else if (fetchStrategy === 'browser' && !hasVariants && !hasSizes && !hasColors) {
-  scrapeStatus = 'SCRAPED_PARTIAL';
-}
-"""
     for node in data["nodes"]:
         if node.get("name") == "Apply scraped data":
-            code = node["parameters"]["jsCode"]
-            if "scrapeMethodUsed" not in code:
-                code = code.replace(
-                    "const extractionSources = structured._sources || {};",
-                    APPLY_SCRAPE_METHOD + "\nconst extractionSources = structured._sources || {};\n",
-                )
-                code = re.sub(
-                    r"let scrapeStatus = 'SCRAPED';[\s\S]*?scrapeStatus = 'SCRAPED_PARTIAL';",
-                    apply_status_patch.strip(),
-                    code,
-                    count=1,
-                )
+            code = repair_apply_scrape_status(node["parameters"]["jsCode"])
+            if "'Scrape method': scrapeMethodUsed" not in code:
                 code = code.replace(
                     "'Scrape Status': scrapeStatus,",
                     "'Scrape Status': scrapeStatus,\n    'Scrape method': scrapeMethodUsed,",
                 )
-                node["parameters"]["jsCode"] = code
+            node["parameters"]["jsCode"] = code
         elif node.get("name") == "Prepare sheet scrape write":
             code = node["parameters"]["jsCode"]
             if "'Scrape method'" not in code:
@@ -254,13 +247,22 @@ if (!imageUrl) {
             cols["Scrape method"] = "={{ $json['Scrape method'] || 'blocked' }}"
             cols["Scrape Status"] = "={{ $json['Scrape Status'] }}"
         elif node.get("name") == "Prepare scrape blocked":
-            node["parameters"]["jsCode"] = node["parameters"]["jsCode"].replace(
+            blocked_js = node["parameters"]["jsCode"]
+            blocked_js = re.sub(
+                r"('Scrape method': 'blocked',\s*)+",
+                "'Scrape method': 'blocked',\n    ",
+                blocked_js,
+            )
+            blocked_js = blocked_js.replace(
                 "? 'Site blocks HTTP scraper (Akamai/Cloudflare). Phase 4: add Browserless node, or paste Product image URL manually.'",
                 "? 'Bot protection (Akamai/Cloudflare). Set Force browser=YES and add Browserless API credential, or paste Product image URL manually.'",
-            ).replace(
-                "'Product image URL': '',",
-                "'Scrape method': 'blocked',\n    'Product image URL': '',",
             )
+            if "'Scrape method'" not in blocked_js:
+                blocked_js = blocked_js.replace(
+                    "'Product image URL': '',",
+                    "'Scrape method': 'blocked',\n    'Product image URL': '',",
+                )
+            node["parameters"]["jsCode"] = blocked_js
 
     # Rewire scrape path
     data["connections"]["Needs scrape"] = {
