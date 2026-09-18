@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Manual Vendor + Prompt cols; Suggested* formula fallback in workflow."""
+"""Vendor/category in C–F formulas; prompt manual + Suggested Prompt* fallback."""
 import json
 from pathlib import Path
 
@@ -16,11 +16,8 @@ function pickManualOrSuggested(manualKey, suggestedKey) {
   return String(fresh[suggestedKey] ?? row[suggestedKey] ?? '').trim();
 }
 
-const lookupPairs = [
-  ['Vendor', 'Suggested Vendor'],
-  ['Product category', 'Suggested Product category'],
-  ['Variant profile', 'Suggested Variant profile'],
-  ['Collection', 'Suggested Collection'],
+// Vendor/category come from C–F sheet formulas (re-read fresh). Prompts: manual or Suggested*.
+const promptPairs = [
   ['Prompt Title', 'Suggested Prompt Title'],
   ['Prompt Description', 'Suggested Prompt Description'],
   ['Prompt Tags', 'Suggested Prompt Tags'],
@@ -29,8 +26,13 @@ const lookupPairs = [
   ['Prompt Image alt', 'Suggested Prompt Image alt'],
   ['Prompt Category', 'Suggested Prompt Category'],
 ];
-for (const [manual, suggested] of lookupPairs) {
+for (const [manual, suggested] of promptPairs) {
   row[manual] = pickManualOrSuggested(manual, suggested);
+}
+
+for (const key of ['Vendor', 'Product category', 'Variant profile', 'Collection']) {
+  const v = String(fresh[key] ?? '').trim();
+  if (v) row[key] = v;
 }
 
 const promptId = String(fresh['Prompt ID'] ?? row['Prompt ID'] ?? '').trim();
@@ -40,12 +42,8 @@ return [{ json: row }];
 """
 
 RESOLVE_SNIPPET = r"""
-function resolveLookupFields(obj) {
+function resolvePromptFields(obj) {
   const pairs = [
-    ['Vendor', 'Suggested Vendor'],
-    ['Product category', 'Suggested Product category'],
-    ['Variant profile', 'Suggested Variant profile'],
-    ['Collection', 'Suggested Collection'],
     ['Prompt Title', 'Suggested Prompt Title'],
     ['Prompt Description', 'Suggested Prompt Description'],
     ['Prompt Tags', 'Suggested Prompt Tags'],
@@ -72,19 +70,20 @@ def main():
 
     active = next(n for n in data["nodes"] if n.get("name") == "Active product row")
     js = active["parameters"]["jsCode"]
-    if "function resolveLookupFields" not in js:
+    js = js.replace("resolveLookupFields", "resolvePromptFields")
+    if "function resolvePromptFields" not in js:
         js = js.replace(
             "merged.needs_browser_site = browserDomain",
-            RESOLVE_SNIPPET + "merged = resolveLookupFields(merged);\n\nmerged.needs_browser_site = browserDomain",
+            RESOLVE_SNIPPET + "merged = resolvePromptFields(merged);\n\nmerged.needs_browser_site = browserDomain",
         )
     else:
-        start = js.find("function resolveLookupFields")
+        start = js.find("function resolvePromptFields")
         end = js.find("}\n", start) + 2
         js = js[:start] + RESOLVE_SNIPPET.strip() + "\n\n" + js[end:]
     active["parameters"]["jsCode"] = js
 
     WORKFLOW.write_text(json.dumps(data, indent=2) + "\n")
-    print("Patched workflow: manual Prompt ID/prompts with Suggested* fallback")
+    print("Patched workflow: C–F lookup + Suggested Prompt* only")
 
 
 if __name__ == "__main__":

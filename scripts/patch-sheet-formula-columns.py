@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stop n8n from overwriting Suggested* formula columns (lookup + prompts)."""
+"""Protect lookup formula columns from n8n overwrites."""
 import json
 from pathlib import Path
 
@@ -7,10 +7,10 @@ ROOT = Path(__file__).resolve().parent.parent
 WORKFLOW = ROOT / "ShopifyProductAdd.V2.json"
 
 FORMULA_COLUMNS = {
-    "Suggested Vendor",
-    "Suggested Product category",
-    "Suggested Variant profile",
-    "Suggested Collection",
+    "Vendor",
+    "Product category",
+    "Variant profile",
+    "Collection",
     "Suggested Prompt Title",
     "Suggested Prompt Description",
     "Suggested Prompt Tags",
@@ -45,7 +45,7 @@ def main():
         prep["parameters"]["jsCode"] = js
 
     WORKFLOW.write_text(json.dumps(data, indent=2) + "\n")
-    print("Patched workflow: Suggested* columns protected")
+    print("Patched workflow: C–F + Suggested Prompt* protected from overwrites")
 
 
 if __name__ == "__main__":
