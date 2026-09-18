@@ -113,13 +113,13 @@ def strip_formula_writes(data: dict) -> None:
 def patch_active_product_row(data: dict) -> None:
     active = next(n for n in data["nodes"] if n.get("name") == "Active product row")
     js = active["parameters"]["jsCode"]
-    if "function overlaySheetFormulas" in js:
-        start = js.find("const SHEET_FORMULA_KEYS")
-        if start == -1:
-            start = js.find("function overlaySheetFormulas")
+    # Strip old overlay header only (do not touch body — avoids breaking browserDomain tail).
+    if js.startswith("const SHEET_FORMULA_KEYS"):
         end = js.find("function isDirectImageUrl")
-        if start != -1 and end != -1:
-            js = js[:start] + js[end:]
+        if end != -1:
+            js = js[end:]
+    # Remove leftover resolvePromptFields fragments from older patches.
+    js = js.replace("\n  return obj;\n}\n\n  return obj;\n}\n", "\n")
     js = SHEET_FORMULA_KEYS_JS + "\n" + js.lstrip()
     if "Re-read sheet after scrape" not in js:
         js = js.replace(ACTIVE_OVERLAY_MARKER, ACTIVE_OVERLAY_REPLACEMENT)
