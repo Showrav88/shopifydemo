@@ -1,112 +1,104 @@
-# Google Sheet setup — 2 tabs, 1 spreadsheet (professional)
+# Google Sheet setup — step by step (fix formula errors)
 
-Use **one Google Spreadsheet** with **two tabs** connected by formulas.  
-Delete product rows anytime — **lookup data never gets deleted**.
+## Why you saw errors (#REF! or #N/A)
 
-## Files to import
+| Error | Cause | Fix |
+|-------|-------|-----|
+| **#REF!** | `LookupTables` tab missing or wrong name | Import lookup CSV first, rename tab exactly **`LookupTables`** |
+| **#N/A** inside formula | No keyword matched yet | Normal before Title — fills after scrape or use URL with `/shirts/` etc. |
+| **Blank** | Row has no URL in column A | Normal — not an error |
+| **#NAME?** | Old tab name `Lookup Tables` (with space) | Use **`LookupTables`** (no space) — updated in latest CSV |
 
-| File | Tab name in Google Sheets | Purpose |
-|------|---------------------------|---------|
-| **`sheet-products.csv`** | **Products** | Paste Product URL here — add/delete rows freely |
-| **`sheet-lookup-tables.csv`** | **Lookup Tables** | Rules only — edit keywords, **do not delete rows** |
+**You do NOT need to run n8n** for **Suggested Vendor** — it works from URL alone (e.g. `mango.com` → `Mango`).
 
-Same spreadsheet file. Two imports → two tabs.
-
----
-
-## Step-by-step import
-
-### 1. Create or open your spreadsheet
-
-### 2. Import Products tab
-
-- **File → Import** → `sheet-products.csv`
-- **Insert new sheet** (or replace Sheet1)
-- Rename tab: **`Products`**
-
-### 3. Import Lookup tab (same spreadsheet)
-
-- **File → Import** → `sheet-lookup-tables.csv`
-- **Insert new sheet**
-- Rename tab: **`Lookup Tables`** (name must match exactly — formulas use this)
-
-### 4. Check formulas work
-
-On **Products** tab row 2 (Mango example URL):
-
-| Column | Should show |
-|--------|-------------|
-| C Suggested Vendor | `Mango` |
-| E Suggested Collection | `mens-shirts` (from URL `/shirts/`) |
-
-If formulas show `#REF!` → Lookup tab is not named **`Lookup Tables`**.
+**Suggested Category / Collection** improve when **Title** (column L) is filled by scrape.
 
 ---
 
-## What you do day to day
+## Import order (important)
 
-| Action | Where |
-|--------|-------|
-| Paste **Product URL** | **Products** tab, column A |
-| Add new product | **Insert row** on Products tab (formulas copy down) |
-| Delete finished product | **Delete row** on Products tab only — safe |
-| Edit lookup rules | **Lookup Tables** tab — add keyword rows at bottom |
-| Never | Delete rows on Lookup Tables tab |
+### Step 1 — Lookup tab FIRST
+
+1. Open your Google Spreadsheet
+2. **File → Import → Upload** `sheet-lookup-tables.csv`
+3. **Insert new sheet**
+4. Rename tab to **`LookupTables`** (exactly — no space)
+
+### Step 2 — Products tab SECOND
+
+1. **File → Import → Upload** `sheet-products.csv`
+2. **Insert new sheet**
+3. Rename tab to **`Products`**
+
+### Step 3 — README tab (optional)
+
+1. Import `sheet-setup-readme.csv` → tab **`README`**
+
+### Step 4 — Test
+
+1. Go to **Products** tab, row 2 (Mango example URL)
+2. Column **C** should show **`Mango`**
+3. Column **E** may show **`mens-shirts`** (from `/shirts/` in URL)
+
+If **#REF!** → go back to Step 1, check tab name is `LookupTables`.
 
 ---
 
-## How tabs connect
+## Your spreadsheet structure
 
 ```
-┌─────────────────────────────┐     ┌──────────────────────────────┐
-│  Products tab               │     │  Lookup Tables tab           │
-│  A: Product URL  (you type) │────►│  keyword → vendor            │
-│  C–F: Suggested  (formulas) │◄────│  keyword → category          │
-│  L: Title        (n8n)      │────►│  keyword → collection        │
-│  M: Description  (n8n)      │     │  (static rules, 193 rows)    │
-└─────────────────────────────┘     └──────────────────────────────┘
-              │
-              ▼
-         n8n workflow → Shopify
+One Google Spreadsheet (one file, multiple tabs)
+│
+├── Products          ← you work here (paste URLs, delete rows OK)
+├── LookupTables      ← rules only (never delete rows)
+└── README            ← instructions (optional)
 ```
 
-**Suggested** columns (C–F) use formulas like:
-
-`=INDEX('Lookup Tables'!$K:$K, MATCH(... SEARCH in URL/title ...))`
-
-When n8n writes **Title** (column L), suggestions in D and E **update automatically**.
+**Connected:** Products columns C–F use formulas that read `LookupTables` tab.
 
 ---
 
-## Column guide (Products tab)
+## What you type vs what auto-fills
 
-| Col | Name | You type? |
-|-----|------|-----------|
-| A | Product URL | ✅ Yes |
-| B | Force browser | Optional |
-| C–F | Suggested … | Formulas (auto) |
-| G–J | Vendor, Category, Collection | Optional override |
-| L–M | Title, Description | n8n scrape |
-| Rest | Sizes, QA, Shopify URL | n8n workflow |
-
----
-
-## Professional layout tips
-
-1. **Freeze row 1** on both tabs (View → Freeze → 1 row)
-2. **Hide** prompt columns you don't use (columns U onward)
-3. **Color** column A header yellow = "input here"
-4. **Color** columns C–F header light blue = "auto suggestions"
-5. Keep **Lookup Tables** tab at the end — don't use it daily
+| Column | Name | You type? | When it fills |
+|--------|------|-----------|----------------|
+| A | Product URL | ✅ Yes | — |
+| C | Suggested Vendor | No | **Immediately** from URL domain |
+| D | Suggested Category | No | URL keywords; better after Title (L) |
+| E | Suggested Collection | No | URL keywords; better after Title (L) |
+| F | Suggested Variant profile | No | Same as category |
+| G–J | Vendor, Category, Collection | Optional override | You or n8n (Phase 5c) |
+| L–M | Title, Description | No | **n8n scrape** |
 
 ---
 
-## n8n (Phase 5c)
+## Delete / add rows safely
 
-After scrape, n8n will copy **Suggested** → **Vendor / Product category / Collection** if those are still empty, then create Shopify draft.
+| Tab | Delete row? |
+|-----|-------------|
+| **Products** | ✅ Safe — lookup not affected |
+| **LookupTables** | ❌ Never delete — only add keywords at bottom |
+
+**Add new product:** Insert row on Products → copy columns C–F formulas from row above (drag fill handle).
+
+Rows 102+ have **no formulas** pre-loaded — copy from row 2–101 or insert row between existing products (Sheets copies formulas).
 
 ---
 
-## Do NOT use `sheet-master.csv`
+## Do errors show on empty rows?
 
-The old single-tab file mixed product rows with lookup data — deleting a product row deleted lookup rules. **Deprecated.** Use `sheet-products.csv` + `sheet-lookup-tables.csv` instead.
+**No** — if column A is empty, columns C–F should be **blank** (not red errors).
+
+Errors only appear when:
+- `LookupTables` tab is missing (**#REF!**)
+- URL present but no rule matches (**blank** after IFERROR — not red)
+
+---
+
+## Files
+
+| File | Tab name |
+|------|----------|
+| `sheet-lookup-tables.csv` | **LookupTables** |
+| `sheet-products.csv` | **Products** |
+| `sheet-setup-readme.csv` | **README** |

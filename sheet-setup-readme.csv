@@ -1,0 +1,15 @@
+Step,Instruction,Important
+1,Import sheet-lookup-tables.csv FIRST,Tab name MUST be exactly: LookupTables (no space)
+2,File → Import → Insert new sheet,Rename tab to LookupTables
+3,Import sheet-products.csv SECOND,Tab name: Products
+4,File → Import → Insert new sheet,Rename tab to Products
+5,Click Products tab row 2 column C,Should show Mango in Suggested Vendor (not an error)
+6,If you see #REF! error,LookupTables tab is missing or wrong name — fix step 1-2
+7,Empty rows with no URL,Should be BLANK in columns C-F (not an error)
+8,Paste your Product URL in column A only,Columns C-F fill automatically from URL
+9,After n8n scrape Title appears in column L,Suggested Category and Collection update automatically
+10,You do NOT need to run n8n for Suggested Vendor,Vendor works from URL domain immediately (e.g. mango.com → Mango)
+11,Delete product rows on Products tab only,Safe — never delete rows on LookupTables tab
+12,To add new product row,Insert row below last product and copy formulas from row above (columns C-F),Or duplicate an existing row
+13,Optional: hide columns U onward on Products tab,Keeps sheet clean
+14,Workflow ShopifyProductAdd.V2.json,Re-import from latest main branch in n8n

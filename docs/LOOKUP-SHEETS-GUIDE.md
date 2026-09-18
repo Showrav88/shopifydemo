@@ -1,6 +1,6 @@
 # Lookup Tables tab
 
-Import **`sheet-lookup-tables.csv`** as tab **`Lookup Tables`** in the same spreadsheet as **`sheet-products.csv`**.
+Import **`sheet-lookup-tables.csv`** as tab **`LookupTables`** (no space — required for formulas) in the same spreadsheet as **`sheet-products.csv`**.
 
 Full setup: **`docs/SHEET-MASTER-GUIDE.md`**
 
