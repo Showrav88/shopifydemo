@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Generate sheet-products.csv — lookup formulas + AI prompt instruction columns."""
+"""Generate sheet-products.csv — lookup formulas + Prompt ID → PromptLibrary."""
 import csv
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "sheet-products.csv"
 LOOKUP = "LookupTables"
+PROMPTS = "PromptLibrary"
 ROWS = 50
 
 HEADER = [
@@ -26,6 +27,7 @@ HEADER = [
     "Price",
     "SKU",
     "Inventory quantity",
+    "Prompt ID",
     "Prompt Title",
     "Prompt Description",
     "Prompt Tags",
@@ -51,56 +53,15 @@ HEADER = [
     "Shopify Product URL",
 ]
 
-DEFAULT_PROMPTS = {
-    "Prompt Title": (
-        "Write a completely NEW original title. Same product facts but different words. "
-        "Never copy competitor phrasing. Max 70 chars UK fashion."
-    ),
-    "Prompt Description": (
-        "Rewrite in your own words — new sentences only. Keep factual specs (material, fit, colour). "
-        "Do NOT copy competitor text (copyright). HTML <p> tags."
-    ),
-    "Prompt Tags": "Original search tags only — not copied from source. Max 10 UK fashion keywords.",
-    "Prompt SEO title": "Original Google title, max 60 chars. Paraphrase — do not copy source.",
-    "Prompt SEO description": "Original meta description, max 160 chars. New wording, same facts.",
-    "Prompt Image alt": "Original alt text describing what you see in the image.",
-    "Prompt Category": "UK fashion category path e.g. Men > Shirts > Casual",
-}
-
-# Tuned for Mango linen shirt — targets QA score >= 90 (overlap checks must pass).
-MANGO_LINEN_QA90_PROMPTS = {
-    "Prompt Title": (
-        "UK men's fashion title, max 65 chars. Completely new wording — zero copied phrases. "
-        "Facts: linen shirt, men's, casual. DO NOT use verbatim: regular-fit, regular fit, "
-        "100% linen, band collar, long sleeve. Prefer: lightweight linen, relaxed fit, "
-        "mandarin collar, breathable summer shirt. Mention colour only if in image analysis."
-    ),
-    "Prompt Description": (
-        "Two or three HTML <p> paragraphs. UK spelling. Men's linen shirt — same facts, "
-        "brand-new sentences. FORBIDDEN exact phrases from source: regular fit, band collar, "
-        "buttoned cuffs, front button closure, 100% linen fabric. Paraphrase: e.g. relaxed "
-        "silhouette, stand collar, barrel cuffs, button-through front, woven linen. "
-        "No sentence may share 4+ consecutive words with the scraped description. "
-        "Sell breathability and warm-weather wear."
-    ),
-    "Prompt Tags": (
-        "8 original UK tags. No competitor brand names. Ideas: men's shirt, linen weave, "
-        "summer layering, smart casual, breathable, lightweight, warm weather, wardrobe staple. "
-        "Do not copy tag list from source page."
-    ),
-    "Prompt SEO title": (
-        "Unique Google title under 58 chars. Different structure from product page title. "
-        "No copy of 'regular fit' or '100% linen shirt'. Benefit-led or style-led wording."
-    ),
-    "Prompt SEO description": (
-        "Meta description max 155 chars. Fresh wording only. Highlight comfort, linen fabric, "
-        "versatile styling. No phrase duplicated from Mango listing."
-    ),
-    "Prompt Image alt": (
-        "Accessibility alt for men's linen shirt in image: colour, collar type, sleeve length. "
-        "Original words — not copied from page title."
-    ),
-    "Prompt Category": "Men > Shirts > Linen",
+# PromptLibrary column map (A=prompt_id, C–I = prompt fields)
+PROMPT_LIB_COLS = {
+    "Prompt Title": "C",
+    "Prompt Description": "D",
+    "Prompt Tags": "E",
+    "Prompt SEO title": "F",
+    "Prompt SEO description": "G",
+    "Prompt Image alt": "H",
+    "Prompt Category": "I",
 }
 
 GENDER_FILTER = (
@@ -140,29 +101,37 @@ def vendor_formula(r: int) -> str:
     )
 
 
-def build_row(sheet_row: int, url: str = "", prompts: dict | None = None) -> list:
+def prompt_formula(r: int, lib_col: str) -> str:
+    """Pull prompt text from PromptLibrary by Prompt ID (column R); blank ID → default."""
+    return (
+        f'=IF($A{r}="","",IFERROR(INDEX(FILTER({PROMPTS}!{lib_col}$2:{lib_col}$500,'
+        f'{PROMPTS}!$A$2:$A$500=IF($R{r}="","default",$R{r})),1),""))'
+    )
+
+
+def build_row(sheet_row: int, url: str = "", prompt_id: str = "") -> list:
     row = [""] * len(HEADER)
     row[0] = url
     row[2] = vendor_formula(sheet_row)
     row[3] = priority_lookup(sheet_row, "product_type_map", "F")
     row[4] = priority_lookup(sheet_row, "product_type_map", "G")
     row[5] = priority_lookup(sheet_row, "collection_map", "H")
-    if prompts:
-        for col_name, text in prompts.items():
-            row[HEADER.index(col_name)] = text
+    row[17] = prompt_id
+    for col_name, lib_col in PROMPT_LIB_COLS.items():
+        row[HEADER.index(col_name)] = prompt_formula(sheet_row, lib_col)
     return row
 
 
 def main():
     rows = [HEADER]
     mango = "https://shop.mango.com/us/en/p/men/shirts/linen/regular-fit-100-linen-shirt/37031400/51/00"
-    rows.append(build_row(2, mango, prompts=MANGO_LINEN_QA90_PROMPTS))
+    rows.append(build_row(2, mango, prompt_id="mango-linen-qa90"))
     for i in range(3, ROWS + 2):
         rows.append(build_row(i))
 
     with OUT.open("w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerows(rows)
-    print(f"Wrote {OUT} — row 2 = Mango URL + prompt instructions, rows 3+ empty")
+    print(f"Wrote {OUT} — row 2 = Mango URL + prompt_id mango-linen-qa90")
 
 
 if __name__ == "__main__":
