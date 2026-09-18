@@ -1,0 +1,14 @@
+collection_handle,collection_title,collection_type,menu_group,status,notes
+kids,kids,manual,Kids,CREATED,Your store — all kids/boys/girls products
+mens-accessories,mens-accessories,manual,Men,CREATED,Bags belts hats wallets watches jewelry
+womens-accessories,womens-accessories,manual,Women,CREATED,Bags belts hats scarves jewelry
+mens-shoes,mens-shoes,manual,Men,CREATED,Boots sneakers loafers
+womens-shoes,womens-shoes,manual,Women,CREATED,Heels boots sneakers sandals
+mens-outerwear,mens-outerwear,manual,Men,CREATED,Jackets coats hoodies fleece
+mens-pants,mens-pants,manual,Men,CREATED,Jeans chinos trousers shorts
+mens-shirts,mens-shirts,manual,Men,CREATED,All shirt types
+womens-intimates,womens-intimates,manual,Women,CREATED,Underwear bodysuits bras Skims
+womens-bottoms,womens-bottoms,manual,Women,CREATED,Jeans pants skirts leggings shorts
+womens-tops,womens-tops,manual,Women,CREATED,Shirts blouses tees sweaters tanks — NOT jackets/coats
+womens-outerwear,womens-outerwear,manual,Women,CREATED,Jackets coats blazers hoodies fleece — separate from tops
+womens-dresses,womens-dresses,manual,Women,CREATED,Dresses jumpsuits rompers
