@@ -53,9 +53,48 @@ const html = `
 const imgs = SCRAPE.extractProductImages(html, 'https://shop.lululemon.com');
 assert(imgs.length > 0 && imgs[0].includes('lululemon'), 'srcset images extracted');
 
+// ── Mango / Next.js color-size payload ──
+const mangoNextData = {
+  props: {
+    pageProps: {
+      product: {
+        name: 'Regular-fit 100% linen shirt',
+        price: 69.99,
+        currency: 'USD',
+        colors: [
+          {
+            id: '51',
+            label: 'Ecru',
+            price: 69.99,
+            images: [{ url: 'https://media.mango.com/is/image/punto/37031400-51-002' }],
+            sizes: [
+              { id: '19', label: 'S', available: true },
+              { id: '20', label: 'M', available: true },
+              { id: '21', label: 'L', available: false },
+            ],
+          },
+          {
+            id: '99',
+            label: 'Black',
+            images: [{ url: 'https://media.mango.com/is/image/punto/37031400-99-002' }],
+            sizes: [{ id: '19', label: 'S', available: true }],
+          },
+        ],
+      },
+    },
+  },
+};
+const mangoHtml = `<html><script id="__NEXT_DATA__" type="application/json">${JSON.stringify(mangoNextData)}</script></html>`;
+const mangoStructured = SCRAPE.buildStructuredProduct(mangoHtml, 'https://shop.mango.com/us/en/p/shirt/37031400');
+assert(mangoStructured.colors?.includes('Ecru'), 'Mango colors from __NEXT_DATA__');
+assert(mangoStructured.sizes?.includes('M'), 'Mango sizes from __NEXT_DATA__');
+assert(mangoStructured.variants?.length >= 4, 'Mango variant matrix');
+assert(SCRAPE.isDirectImageUrl('https://media.mango.com/is/image/punto/37031400-51-002'), 'Mango CDN image');
+
 // ── fetch strategy routing ──
 assert(SCRAPE.pickFetchStrategy('https://www.everlane.com/products/jean') === 'shopify_json', 'Everlane → shopify_json');
 assert(SCRAPE.pickFetchStrategy('https://www.macys.com/shop/product/foo') === 'browser', 'Macys → browser');
+assert(SCRAPE.pickFetchStrategy('https://shop.mango.com/us/en/p/men/shirts/linen/shirt/37031400/51/00') === 'browser', 'Mango → browser');
 assert(SCRAPE.isForceBrowser({ 'Force browser': 'YES' }), 'Force browser YES');
 assert(SCRAPE.pickFetchStrategy('https://everlane.com/products/jean', { forceBrowser: true }) === 'browser', 'Force overrides shopify');
 assert(SCRAPE.pickFetchStrategy('https://www.aarong.com/shirt.html') === 'http', 'Aarong → http');
