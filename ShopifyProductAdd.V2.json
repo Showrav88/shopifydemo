@@ -1427,7 +1427,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const SHEET_FORMULA_KEYS = [\n  'Vendor',\n  'Product category',\n  'Variant profile',\n  'Collection',\n  'Prompt ID',\n  'Prompt Title',\n  'Prompt Description',\n  'Prompt Tags',\n  'Prompt SEO title',\n  'Prompt SEO description',\n  'Prompt Image alt',\n  'Prompt Category',\n];\n\nfunction overlaySheetFormulas(target, source) {\n  if (!source || typeof source !== 'object') return target;\n  for (const key of SHEET_FORMULA_KEYS) {\n    const v = String(source[key] ?? '').trim();\n    if (v) target[key] = v;\n  }\n  return target;\n}\n\nconst base = $('Active product row').first().json;\nconst row = { ...base };\nconst fresh = $('Re-read sheet row').first().json;\nrow = overlaySheetFormulas(row, fresh);\nreturn [{ json: row }];"
+        "jsCode": "const SHEET_FORMULA_KEYS = [\n  'Vendor',\n  'Product category',\n  'Variant profile',\n  'Collection',\n  'Prompt ID',\n  'Prompt Title',\n  'Prompt Description',\n  'Prompt Tags',\n  'Prompt SEO title',\n  'Prompt SEO description',\n  'Prompt Image alt',\n  'Prompt Category',\n];\n\nfunction overlaySheetFormulas(target, source) {\n  if (!source || typeof source !== 'object') return target;\n  for (const key of SHEET_FORMULA_KEYS) {\n    const v = String(source[key] ?? '').trim();\n    if (v) target[key] = v;\n  }\n  return target;\n}\n\nconst base = $('Active product row').first().json;\nlet row = { ...base };\nconst fresh = $('Re-read sheet row').first().json;\nrow = overlaySheetFormulas(row, fresh);\nreturn [{ json: row }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
