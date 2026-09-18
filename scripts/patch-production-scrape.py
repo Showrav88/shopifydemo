@@ -105,7 +105,14 @@ const vendor = SCRAPE.mergeField(structured, scraped, 'vendor', ['brand']) || ro
 const tags = scraped.tags || '';
 const sizesArr = structured.sizes || scraped.sizes || [];
 const sizes = Array.isArray(sizesArr) ? sizesArr.join(', ') : String(sizesArr || '');
-const colors = Array.isArray(scraped.colors) ? scraped.colors.join(', ') : String(scraped.colors || '');
+let colorsArr = structured.colors?.length ? structured.colors : (scraped.colors || []);
+if ((!colorsArr || colorsArr.length === 0) && (structured.variants || scraped.variants)) {
+  const vars = structured.variants || scraped.variants || [];
+  colorsArr = [...new Set(vars.map((v) => v.color).filter(Boolean))];
+}
+const colors = Array.isArray(colorsArr) ? colorsArr.join(', ') : String(colorsArr || '');
+const lengthsArr = structured.lengths?.length ? structured.lengths : (scraped.lengths || []);
+const lengths = Array.isArray(lengthsArr) ? lengthsArr.join(', ') : String(lengthsArr || '');
 const scrapedVariants = JSON.stringify(structured.variants || scraped.variants || []);
 const extractionSources = structured._sources || {};
 """

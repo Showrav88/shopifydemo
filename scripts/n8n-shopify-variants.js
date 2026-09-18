@@ -8,12 +8,12 @@ const VARIANTS = {};
 // ─── Profiles: how to name Shopify options per product family ───────────────
 
 VARIANTS.PROFILES = {
-  clothing_alpha: { option1: 'Size', option2: 'Color', sizePattern: 'alpha' },
-  clothing_numeric: { option1: 'Waist', option2: 'Length', sizePattern: 'numeric' },
-  footwear_uk: { option1: 'UK Size', option2: 'Color', sizePattern: 'numeric' },
-  one_size: { option1: null, option2: 'Color', sizePattern: 'one' },
-  color_only: { option1: null, option2: 'Color', sizePattern: 'one' },
-  generic: { option1: 'Size', option2: 'Color', sizePattern: 'any' },
+  clothing_alpha: { option1: 'Size', option2: 'Color', option3: null, sizePattern: 'alpha' },
+  clothing_numeric: { option1: 'Waist', option2: 'Length', option3: 'Color', sizePattern: 'numeric' },
+  footwear_uk: { option1: 'UK Size', option2: 'Color', option3: null, sizePattern: 'numeric' },
+  one_size: { option1: null, option2: 'Color', option3: null, sizePattern: 'one' },
+  color_only: { option1: null, option2: 'Color', option3: null, sizePattern: 'one' },
+  generic: { option1: 'Size', option2: 'Color', option3: null, sizePattern: 'any' },
 };
 
 VARIANTS.detectProfile = function detectProfile(category, explicitProfile) {
@@ -34,12 +34,44 @@ VARIANTS.parseList = function parseList(val) {
   return String(val).split(/[,;|/]+/).map((x) => x.trim()).filter(Boolean);
 };
 
+VARIANTS.splitCombinedVariant = function splitCombinedVariant(sizeStr) {
+  const raw = VARIANTS.norm(sizeStr);
+  if (!raw.includes('/')) return { size: raw, color: '', length: '' };
+  const parts = raw.split(/\s*\/\s*/).map((x) => x.trim()).filter(Boolean);
+  let size = '';
+  let color = '';
+  let length = '';
+  for (const p of parts) {
+    if (/\d+(?:\.\d+)?\s*(?:"|''|inch|\bin\b|inseam)/i.test(p) || /^\d+(?:\.\d+)?"$/.test(p)) {
+      length = p;
+    } else if (/^(xx?s|xx?l|[0-5]x|xs|s|m|l|xl|xxl|xxxl|one\s*size)$/i.test(p)) {
+      size = p;
+    } else if (/^\d{2,3}$/.test(p) && Number(p) >= 20 && Number(p) <= 54) {
+      size = p;
+    } else if (/[a-z]/i.test(p)) {
+      color = color ? `${color} / ${p}` : p;
+    }
+  }
+  return { size: size || parts[parts.length - 1] || raw, color, length };
+};
+
 VARIANTS.parseScrapedVariants = function parseScrapedVariants(row) {
   const raw = row['Scraped variants'] || row.scraped_variants || '';
   if (!raw) return [];
   try {
     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((v) => {
+      const sizeRaw = VARIANTS.norm(v.size || v.option1 || v.title || '');
+      const hasSlash = sizeRaw.includes('/') && !v.color && !v.length;
+      const split = hasSlash ? VARIANTS.splitCombinedVariant(sizeRaw) : null;
+      return {
+        ...v,
+        size: split ? split.size : sizeRaw,
+        color: VARIANTS.norm(v.color || v.option2 || (split && split.color) || ''),
+        length: VARIANTS.norm(v.length || v.option3 || (split && split.length) || ''),
+      };
+    });
   } catch {
     return [];
   }
@@ -67,13 +99,20 @@ VARIANTS.buildVariantRows = function buildVariantRows(row, profileKey) {
 
   if (scraped.length > 0) {
     for (const v of scraped) {
-      const size = VARIANTS.norm(v.size || v.option1 || v.title || '');
-      const color = VARIANTS.norm(v.color || v.option2 || '');
+      let size = VARIANTS.norm(v.size || v.option1 || '');
+      let color = VARIANTS.norm(v.color || v.option2 || '');
+      let length = VARIANTS.norm(v.length || v.option3 || '');
+      if (!size && !color && v.title) {
+        const split = VARIANTS.splitCombinedVariant(v.title);
+        size = split.size;
+        color = split.color;
+        length = split.length || length;
+      }
       const price = v.price ?? v.competitor_price ?? '';
       const sku = VARIANTS.norm(v.sku || '');
       const qty = v.inventory ?? v.inventory_quantity ?? v.stock ?? null;
-      if (!size && !color) continue;
-      rows.push({ size, color, price, sku, qty });
+      if (!size && !color && !length) continue;
+      rows.push({ size, color, length, price, sku, qty });
     }
   }
 
@@ -171,8 +210,10 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
   // ── Multi-variant ──
   const option1Name = profile.option1;
   const option2Name = profile.option2;
+  const option3Name = profile.option3;
   const option1Values = new Set();
   const option2Values = new Set();
+  const option3Values = new Set();
   const shopifyVariants = [];
   const inventoryUpdates = [];
 
@@ -182,22 +223,37 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
 
   rows.forEach((r, i) => {
     const sizeVal = r.size || (profile.sizePattern === 'one' ? 'One Size' : `Option ${i + 1}`);
+    const lengthVal = r.length || '';
     const colorVal = r.color || '';
-    const opt1 = option1Name ? sizeVal : (colorVal || 'Default');
-    const opt2 = option1Name && option2Name && colorVal ? colorVal : undefined;
 
-    if (option1Name) option1Values.add(opt1);
+    let opt1;
+    let opt2;
+    let opt3;
+
+    if (profileKey === 'clothing_numeric') {
+      opt1 = option1Name ? sizeVal : undefined;
+      opt2 = option2Name && lengthVal ? lengthVal : undefined;
+      opt3 = option3Name && colorVal ? colorVal : undefined;
+    } else {
+      opt1 = option1Name ? sizeVal : (colorVal || 'Default');
+      opt2 = option1Name && option2Name && colorVal ? colorVal : undefined;
+      opt3 = undefined;
+    }
+
+    if (opt1 && option1Name) option1Values.add(opt1);
     if (opt2 && option2Name) option2Values.add(opt2);
+    if (opt3 && option3Name) option3Values.add(opt3);
 
     const variant = {
       price: sellPrice,
-      sku: r.sku || VARIANTS.variantSku(baseSku, sizeVal, colorVal, i),
+      sku: r.sku || VARIANTS.variantSku(baseSku, sizeVal, colorVal || lengthVal, i),
       inventory_management: 'shopify',
       inventory_quantity: 0,
     };
 
-    if (option1Name) variant.option1 = opt1;
+    if (opt1 && option1Name) variant.option1 = opt1;
     if (opt2 && option2Name) variant.option2 = opt2;
+    if (opt3 && option3Name) variant.option3 = opt3;
 
     shopifyVariants.push(variant);
 
@@ -209,6 +265,7 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
       sku: variant.sku,
       option1: variant.option1,
       option2: variant.option2,
+      option3: variant.option3,
       inventory_quantity: vInv,
     });
   });
@@ -228,6 +285,9 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
     product.options.push({ name: option1Name, values: [...option1Values] });
     if (option2Name && option2Values.size > 0) {
       product.options.push({ name: option2Name, values: [...option2Values] });
+    }
+    if (option3Name && option3Values.size > 0) {
+      product.options.push({ name: option3Name, values: [...option3Values] });
     }
   }
 

@@ -44,19 +44,42 @@ These come from Shopify CSV export but this workflow ignores them:
 
 ---
 
-## Analyze image flow (working V2)
+## Analyze image flow (recommended V2)
 
 ```
-Photoroom → Analyze image (binary) → Restore image binary → ImgBB → Message a model
+Active product row → Analyze image (scraped URL, detail: low) → Photoroom → Restore binary → ImgBB → AI listing
 ```
 
-**Why not ImgBB URL for vision?** n8n can reach `i.ibb.co`, but **OpenAI's servers often cannot** — you get `Unable to download content from the provided URL before the timeout` even when "Wait for CDN ready" passes.
+**Why analyze BEFORE Photoroom?**
+- Uses the **scraped competitor image URL** (smaller, faster)
+- `detail: low` = fewer tokens, less likely to hit size limits
+- Photoroom output can be 5–15 MB PNG — sending that as base64 to vision often fails (413 error)
+
+**Why not ImgBB URL for vision?** OpenAI's servers often cannot fetch `i.ibb.co` in time.
 
 **Analyze image settings:**
-- Input Type: **Binary File(s)**
-- Input Data Field Name: `data` (from Photoroom HTTP Request)
+- Input Type: **Image URL(s)**
+- URL: `Product image URL` from Active product row
+- Detail: **low**
 
-ImgBB still runs **after** analysis for Shopify upload and **Generated Image URL** in the sheet.
+ImgBB still runs **after** Photoroom for Shopify upload and **Generated Image URL** in the sheet.
+
+## Image compression — do you need a separate node?
+
+Usually **no**. Best free approach:
+
+| Step | What to do | Cost |
+|------|------------|------|
+| Vision (analyze) | URL + `detail: low` **before** Photoroom | OpenAI tokens only |
+| Background remove | Photoroom (already in workflow) | Photoroom credits |
+| Host for Shopify | ImgBB (already in workflow) | Free |
+
+Optional compress **after** Photoroom only if ImgBB/Shopify upload fails on huge files:
+- **Cloudinary** free tier (25 credits/month) — resize via URL API
+- **TinyPNG** API — 500 compressions/month free
+- **images.weserv.nl** — free proxy resize (needs public URL; less reliable for automation)
+
+No separate compress node is required for most fashion product images once analyze runs on the scraped URL first.
 
 ---
 

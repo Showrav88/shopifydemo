@@ -6,7 +6,7 @@
 |---------|-------|
 | Spreadsheet ID | `1_GFtwtZR4RlpDGsEGsG6oJ1c-ztvlW1PIRi_WOHUgZo` |
 | Tab gid | `975501836` |
-| Match column | **SKU** (all update nodes) |
+| Match column | **Product URL** (all update nodes) |
 
 ## Re-import workflow — credential names (one-time)
 
@@ -26,5 +26,16 @@ Copy from `sheet-input-template.csv`. Must include **Product URL** and **SKU**.
 
 ## How matching works
 
-1. **Stamp sheet SKU** — writes SKU to your row (matches Product URL from trigger once)
-2. All other updates — match on **SKU** (reliable, no URL mismatch)
+All sheet update nodes match on **Product URL** from the Google Sheets trigger row.
+
+## Do you need to change your sheet columns?
+
+**No** — if your Row 1 headers match `sheet-input-template.csv`, you are fine. The workflow matches columns **by name**, not position. You do not need to rearrange columns.
+
+| Column | Required? | Notes |
+|--------|-----------|-------|
+| **Product URL** | Yes | Only column you must fill to start |
+| **Sizes**, **Colors**, **Scraped variants** | Auto-filled by scrape | Lengths for jeans live inside **Scraped variants** JSON |
+| **Variant profile** | Optional | e.g. `clothing_numeric` for jeans (Waist + Length + Color) |
+| **Approve** | Optional | Not used in full-auto mode — safe to hide |
+| **Lengths** | Not needed | Stored in Scraped variants; add only if you want to read inseams in the sheet |
