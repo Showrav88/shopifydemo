@@ -1,0 +1,16 @@
+collection_handle,collection_title,collection_type,menu_group,create_in_shopify,notes
+womens-dresses,Women's Dresses,manual,Women,YES,Create once in Shopify Admin → Products → Collections
+womens-tops,Women's Tops,manual,Women,YES,Shirts blouses tees tanks
+womens-bottoms,Women's Bottoms,manual,Women,YES,Jeans pants trousers skirts
+womens-outerwear,Women's Outerwear,manual,Women,YES,Jackets coats blazers
+womens-intimates,Women's Intimates,manual,Women,YES,Underwear bodysuits bras Skims
+womens-activewear,Women's Activewear,manual,Women,YES,Leggings sports bras Lululemon
+womens-shoes,Women's Shoes,manual,Women,YES,Heels boots sneakers sandals
+mens-shirts,Men's Shirts,manual,Men,YES,All shirt types linen oxford casual
+mens-pants,Men's Pants & Jeans,manual,Men,YES,Jeans chinos trousers Levi's Gap
+mens-outerwear,Men's Outerwear,manual,Men,YES,Jackets coats Patagonia
+mens-activewear,Men's Activewear,manual,Men,YES,Shorts joggers gym
+mens-shoes,Men's Shoes,manual,Men,YES,Boots sneakers Tecovas
+accessories,Accessories,manual,Unisex,YES,Bags belts hats scarves jewelry
+new-arrivals,New Arrivals,manual,Shop,YES,Optional — manual or automated later
+sale,Sale,manual,Shop,YES,Optional — markdown items

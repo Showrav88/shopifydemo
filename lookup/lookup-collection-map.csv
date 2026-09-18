@@ -1,0 +1,72 @@
+keyword,match_where,priority,gender,collection_handle,collection_title,notes
+dress,any,10,women,womens-dresses,Women's Dresses,Matches dress dresses gown midi maxi
+gown,any,12,women,womens-dresses,Women's Dresses,
+midi,title,15,women,womens-dresses,Women's Dresses,Only when title contains midi
+maxi,title,15,women,womens-dresses,Women's Dresses,
+jumpsuit,any,10,women,womens-dresses,Women's Dresses,Often grouped with dresses
+romper,any,10,women,womens-dresses,Women's Dresses,
+blouse,any,10,women,womens-tops,Women's Tops,
+top,any,20,women,womens-tops,Women's Tops,Lower priority — broad word
+tee,any,10,women,womens-tops,Women's Tops,t-shirt tshirt
+t-shirt,any,10,women,womens-tops,Women's Tops,
+tank,any,10,women,womens-tops,Women's Tops,tank top cami
+shirt,any,15,women,womens-tops,Women's Tops,Women's shirts — use mens-shirts if gender=men
+sweater,any,10,women,womens-tops,Women's Tops,knit pullover cardigan
+cardigan,any,10,women,womens-tops,Women's Tops,
+hoodie,any,10,women,womens-tops,Women's Tops,sweatshirt
+jean,any,10,women,womens-bottoms,Women's Bottoms,jeans denim
+denim,any,12,women,womens-bottoms,Women's Bottoms,
+pant,any,10,women,womens-bottoms,Women's Bottoms,pants trousers chino
+trouser,any,10,women,womens-bottoms,Women's Bottoms,
+skirt,any,10,women,womens-bottoms,Women's Bottoms,
+short,any,10,women,womens-bottoms,Women's Bottoms,shorts
+legging,any,10,women,womens-activewear,Women's Activewear,Lululemon leggings
+jogger,any,10,women,womens-activewear,Women's Activewear,
+sports bra,any,10,women,womens-activewear,Women's Activewear,
+bodysuit,any,10,women,womens-intimates,Women's Intimates,Skims
+bra,any,10,women,womens-intimates,Women's Intimates,
+underwear,any,10,women,womens-intimates,Women's Intimates,brief thong
+lingerie,any,10,women,womens-intimates,Women's Intimates,
+intimates,any,10,women,womens-intimates,Women's Intimates,
+jacket,any,10,women,womens-outerwear,Women's Outerwear,
+coat,any,10,women,womens-outerwear,Women's Outerwear,
+blazer,any,10,women,womens-outerwear,Women's Outerwear,
+boot,any,10,women,womens-shoes,Women's Shoes,boots
+sneaker,any,10,women,womens-shoes,Women's Shoes,trainer trainers
+heel,any,10,women,womens-shoes,Women's Shoes,heels pumps
+sandal,any,10,women,womens-shoes,Women's Shoes,
+flat,any,15,women,womens-shoes,Women's Shoes,ballet flat — lower priority
+shirt,any,10,men,mens-shirts,Men's Shirts,linen oxford casual dress shirt
+linen,title,12,men,mens-shirts,Men's Shirts,When title mentions linen shirt
+polo,any,10,men,mens-shirts,Men's Shirts,
+tee,any,10,men,mens-shirts,Men's Shirts,men's tees often in shirts collection
+jean,any,10,men,mens-pants,Men's Pants & Jeans,501 511 Levi's
+pant,any,10,men,mens-pants,Men's Pants & Jeans,chino trouser
+chino,any,10,men,mens-pants,Men's Pants & Jeans,
+trouser,any,10,men,mens-pants,Men's Pants & Jeans,
+short,any,10,men,mens-pants,Men's Pants & Jeans,men's shorts
+jacket,any,10,men,mens-outerwear,Men's Outerwear,
+coat,any,10,men,mens-outerwear,Men's Outerwear,
+hoodie,any,10,men,mens-outerwear,Men's Outerwear,sweatshirt fleece Patagonia
+fleece,any,10,men,mens-outerwear,Men's Outerwear,
+jogger,any,10,men,mens-activewear,Men's Activewear,
+short,any,12,men,mens-activewear,Men's Activewear,athletic shorts — context
+boot,any,10,men,mens-shoes,Men's Shoes,western boot Tecovas
+sneaker,any,10,men,mens-shoes,Men's Shoes,
+loafer,any,10,men,mens-shoes,Men's Shoes,
+bag,any,10,unisex,accessories,Accessories,handbag tote
+belt,any,10,unisex,accessories,Accessories,
+hat,any,10,unisex,accessories,Accessories,cap beanie
+scarf,any,10,unisex,accessories,Accessories,
+wallet,any,10,unisex,accessories,Accessories,
+watch,any,10,unisex,accessories,Accessories,
+jewelry,any,10,unisex,accessories,Accessories,necklace ring
+/men/,url,5,men,,,URL path hint — use with product-type map
+/women/,url,5,women,,,URL path hint
+/mujer/,url,5,women,,,Mango Spanish path
+/hombre/,url,5,men,,,Mango Spanish path
+/shirts/,url,8,men,mens-shirts,Men's Shirts,Zara Mango Express URL segments
+/dresses/,url,8,women,womens-dresses,Women's Dresses,
+/jeans/,url,8,any,,,Use product-type map for gender
+/pants/,url,8,any,,,
+/linen/,url,10,men,mens-shirts,Men's Shirts,Mango linen shirts
