@@ -107,6 +107,16 @@ def prompt_formula(r: int, lib_col: str) -> str:
     )
 
 
+def sell_colors_formula(r: int) -> str:
+    """LookupTables sell_colors_map — how many colors to sell per variant profile."""
+    return (
+        f'=IF($A{r}="","",IFERROR(INDEX(FILTER({LOOKUP}!$N$2:$N$500,'
+        f'({LOOKUP}!$A$2:$A$500="sell_colors_map")*'
+        f'({LOOKUP}!$B$2:$B$500=$E{r})*'
+        f'({LOOKUP}!$N$2:$N$500<>"")),1),""))'
+    )
+
+
 def build_row(sheet_row: int, url: str = "", prompt_id: str = "") -> list:
     row = [""] * len(HEADER)
     row[0] = url
@@ -114,6 +124,7 @@ def build_row(sheet_row: int, url: str = "", prompt_id: str = "") -> list:
     row[3] = priority_lookup(sheet_row, "product_type_map", "F")
     row[4] = priority_lookup(sheet_row, "product_type_map", "G")
     row[5] = priority_lookup(sheet_row, "collection_map", "H")
+    row[HEADER.index("Colors")] = sell_colors_formula(sheet_row)
     row[HEADER.index("Prompt ID")] = prompt_id
     for col_name, lib_col in PROMPT_COLS.items():
         row[HEADER.index(col_name)] = prompt_formula(sheet_row, lib_col)
