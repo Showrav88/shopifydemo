@@ -194,9 +194,3 @@ vendor_map,,,,,,,,,,Tommy Hilfiger,tommy.com,,
 vendor_map,,,,,,,,,,Abercrombie & Fitch,abercrombie.com,,
 vendor_map,,,,,,,,,,Origin,originusa.com,,
 vendor_map,,,,,,,,,,Skims,skims.com,,
-sell_colors_map,clothing_alpha,,,,,,,,,,ACTIVE,"Black, Navy, White, Beige"
-sell_colors_map,clothing_numeric,,,,,,,,,,ACTIVE,"Black, Indigo, Khaki, Stone"
-sell_colors_map,footwear_uk,,,,,,,,,,ACTIVE,"Black, Brown, White"
-sell_colors_map,one_size,,,,,,,,,,ACTIVE,"Black, Tan, Burgundy"
-sell_colors_map,color_only,,,,,,,,,,ACTIVE,"Black, White, Red, Blue"
-sell_colors_map,generic,,,,,,,,,,ACTIVE,"Black, Navy, Grey"

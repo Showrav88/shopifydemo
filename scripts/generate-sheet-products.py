@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Generate sheet-products.csv — lookup + prompts via formulas; no Suggested* columns."""
+"""Generate sheet-products.csv — LookupTables + VariantLibrary + PromptLibrary formulas."""
 import csv
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "sheet-products.csv"
 LOOKUP = "LookupTables"
+VARIANTS = "VariantLibrary"
 PROMPTS = "PromptLibrary"
 ROWS = 50
 
@@ -15,6 +16,13 @@ HEADER = [
     "Vendor",
     "Product category",
     "Variant profile",
+    "Variant preset ID",
+    "Option 1 name",
+    "Option 1 values",
+    "Option 2 name",
+    "Option 2 values",
+    "Option 3 name",
+    "Option 3 values",
     "Collection",
     "Title",
     "Description",
@@ -23,6 +31,7 @@ HEADER = [
     "Competitor currency",
     "Sizes",
     "Colors",
+    "Lengths",
     "Scraped variants",
     "Price",
     "SKU",
@@ -63,13 +72,31 @@ PROMPT_COLS = {
     "Prompt Category": "I",
 }
 
+# Product sheet columns (1-based): E=profile, F=preset ID, G-L=options, Y=prompt ID
+PROMPT_ID_COL = "Y"
+
 GENDER_FILTER = (
     'IF(REGEXMATCH(LOWER($A{r}),"/men/|/hombre/"),{L}!$E$2:$E$500="men",'
     'IF(REGEXMATCH(LOWER($A{r}),"/women/|/mujer/|womens"),{L}!$E$2:$E$500="women",'
     'IF(REGEXMATCH(LOWER($A{r}),"/kids/|/boys/|/girls/|/children/"),{L}!$E$2:$E$500="kids",1)))'
 )
 
-SEARCH_TEXT = 'LOWER($A{r}&" "&$G{r}&" "&$H{r})'
+SEARCH_TEXT = 'LOWER($A{r}&" "&$N{r}&" "&$O{r})'
+
+
+def resolved_preset(r: int) -> str:
+    return (
+        f'IF($F{r}<>"",$F{r},IFERROR(INDEX(FILTER({VARIANTS}!$A$2:$A$500,'
+        f'{VARIANTS}!$B$2:$B$500=$E{r}),1),"uk-shirts"))'
+    )
+
+
+def variant_field(r: int, lib_col: str) -> str:
+    key = resolved_preset(r)
+    return (
+        f'=IF($A{r}="","",IFERROR(INDEX(FILTER({VARIANTS}!{lib_col}$2:{lib_col}$500,'
+        f'{VARIANTS}!$A$2:$A$500={key}),1),""))'
+    )
 
 
 def _base_match(r: int, table_type: str, value_col: str) -> str:
@@ -103,28 +130,44 @@ def vendor_formula(r: int) -> str:
 def prompt_formula(r: int, lib_col: str) -> str:
     return (
         f'=IF($A{r}="","",IFERROR(INDEX(FILTER({PROMPTS}!{lib_col}$2:{lib_col}$500,'
-        f'{PROMPTS}!$A$2:$A$500=IF($R{r}="","default",$R{r})),1),""))'
+        f'{PROMPTS}!$A$2:$A$500=IF(${PROMPT_ID_COL}{r}="","default",${PROMPT_ID_COL}{r})),1),""))'
     )
 
 
-def sell_colors_formula(r: int) -> str:
-    """LookupTables sell_colors_map — how many colors to sell per variant profile."""
+def sizes_display_formula(r: int) -> str:
+    """Show option1 values when option1 is a size field (scrape may overwrite)."""
     return (
-        f'=IF($A{r}="","",IFERROR(INDEX(FILTER({LOOKUP}!$N$2:$N$500,'
-        f'({LOOKUP}!$A$2:$A$500="sell_colors_map")*'
-        f'({LOOKUP}!$B$2:$B$500=$E{r})*'
-        f'({LOOKUP}!$N$2:$N$500<>"")),1),""))'
+        f'=IF($A{r}="","",IF(OR($G{r}="Size",$G{r}="Waist",$G{r}="UK Size",$G{r}="US Size"),$H{r},""))'
     )
 
 
-def build_row(sheet_row: int, url: str = "", prompt_id: str = "") -> list:
+def colors_display_formula(r: int) -> str:
+    return (
+        f'=IF($A{r}="","",IF($I{r}="Color",$J{r},IF($K{r}="Color",$L{r},IF($G{r}="Color",$H{r},""))))'
+    )
+
+
+def lengths_display_formula(r: int) -> str:
+    return f'=IF($A{r}="","",IF($I{r}="Length",$J{r},IF($K{r}="Length",$L{r},"")))'
+
+
+def build_row(sheet_row: int, url: str = "", preset_id: str = "", prompt_id: str = "") -> list:
     row = [""] * len(HEADER)
     row[0] = url
     row[2] = vendor_formula(sheet_row)
     row[3] = priority_lookup(sheet_row, "product_type_map", "F")
     row[4] = priority_lookup(sheet_row, "product_type_map", "G")
-    row[5] = priority_lookup(sheet_row, "collection_map", "H")
-    row[HEADER.index("Colors")] = sell_colors_formula(sheet_row)
+    row[5] = preset_id
+    row[6] = variant_field(sheet_row, "C")
+    row[7] = variant_field(sheet_row, "D")
+    row[8] = variant_field(sheet_row, "E")
+    row[9] = variant_field(sheet_row, "F")
+    row[10] = variant_field(sheet_row, "G")
+    row[11] = variant_field(sheet_row, "H")
+    row[12] = priority_lookup(sheet_row, "collection_map", "H")
+    row[HEADER.index("Sizes")] = sizes_display_formula(sheet_row)
+    row[HEADER.index("Colors")] = colors_display_formula(sheet_row)
+    row[HEADER.index("Lengths")] = lengths_display_formula(sheet_row)
     row[HEADER.index("Prompt ID")] = prompt_id
     for col_name, lib_col in PROMPT_COLS.items():
         row[HEADER.index(col_name)] = prompt_formula(sheet_row, lib_col)
@@ -134,13 +177,13 @@ def build_row(sheet_row: int, url: str = "", prompt_id: str = "") -> list:
 def main():
     rows = [HEADER]
     mango = "https://shop.mango.com/us/en/p/men/shirts/linen/regular-fit-100-linen-shirt/37031400/51/00"
-    rows.append(build_row(2, mango, prompt_id="mango-linen-qa90"))
+    rows.append(build_row(2, mango, preset_id="", prompt_id="mango-linen-qa90"))
     for i in range(3, ROWS + 2):
         rows.append(build_row(i))
 
     with OUT.open("w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerows(rows)
-    print(f"Wrote {OUT} — no Suggested* columns; URL + Prompt ID drive formulas")
+    print(f"Wrote {OUT} — VariantLibrary drives options; user sets Variant preset ID only")
 
 
 if __name__ == "__main__":

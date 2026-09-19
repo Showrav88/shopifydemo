@@ -17,7 +17,14 @@ FORMULA_COLUMNS = {
     "Product category",
     "Variant profile",
     "Collection",
+    "Option 1 name",
+    "Option 1 values",
+    "Option 2 name",
+    "Option 2 values",
+    "Option 3 name",
+    "Option 3 values",
     "Colors",
+    "Lengths",
     "Prompt Title",
     "Prompt Description",
     "Prompt Tags",
@@ -32,7 +39,14 @@ SHEET_FORMULA_KEYS_JS = """const SHEET_FORMULA_KEYS = [
   'Product category',
   'Variant profile',
   'Collection',
+  'Option 1 name',
+  'Option 1 values',
+  'Option 2 name',
+  'Option 2 values',
+  'Option 3 name',
+  'Option 3 values',
   'Colors',
+  'Lengths',
   'Prompt ID',
   'Prompt Title',
   'Prompt Description',
@@ -148,7 +162,7 @@ def ensure_scrape_reread_node(data: dict) -> None:
 
 def patch_sticky_note(data: dict) -> None:
     headers = sheet_headers()
-    user_cols = "A URL | B Force browser | C-F lookup | G-H scrape | R Prompt ID | S-Y prompts"
+    user_cols = "A URL | B Force browser | F Variant preset ID | Y Prompt ID"
     formula_cols = ", ".join(sorted(FORMULA_COLUMNS))
     text = (
         "## Sheet columns (Master_Sheetv1)\n\n"
