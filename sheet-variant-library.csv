@@ -1,0 +1,10 @@
+preset_id,match_profile,option1_name,option1_values,option2_name,option2_values,option3_name,option3_values,notes
+uk-shirts,clothing_alpha,Size,"XS,S,M,L,XL,XXL",Color,"Black,Navy,White,Grey,Beige,Red,Olive,Tan,Blue,Burgundy",,,UK alpha shirts — 10 sell colors
+us-shirts,clothing_alpha,Size,"XS,S,M,L,XL,2XL",Color,"Black,Navy,White,Grey,Beige,Red,Olive,Tan,Blue,Burgundy",,,US alpha shirts — 10 sell colors
+uk-jeans,clothing_numeric,Waist,"28,30,32,34,36,38",Length,"30,32,34",Color,"Black,Indigo,Khaki,Stone,Grey,Brown,Navy,Olive,Tan,White",UK jeans waist × length × 10 colors
+us-jeans,clothing_numeric,Waist,"28,30,32,34,36,38,40",Length,"30,32,34,36",Color,"Black,Indigo,Khaki,Stone,Grey,Brown,Navy,Olive,Tan,White",US jeans waist × length × 10 colors
+uk-shoes,footwear_uk,UK Size,"6,7,8,9,10,11,12",Color,"Black,Brown,White,Navy,Grey,Tan,Olive,Burgundy,Blue,Nude",,,UK footwear — 10 colors
+us-shoes,footwear_us,US Size,"7,8,9,10,11,12,13",Color,"Black,Brown,White,Navy,Grey,Tan,Olive,Burgundy,Blue,Nude",,,US footwear — 10 colors
+bags,one_size,Color,"Black,Tan,Burgundy,Navy,Olive,Grey,Brown,White,Beige,Red",,,,,Bags belts hats — color only (10 colors)
+generic,generic,Size,"S,M,L,XL",Color,"Black,Navy,White,Grey",,,Fallback when profile unknown
+custom,custom,,,,,,,,"Delete formulas on product row and type any Option 1/2/3 names + values Shopify accepts"

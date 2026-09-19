@@ -25,7 +25,8 @@ You do **not** need to re-pick the spreadsheet on each import — ID is baked in
 | File | Tab name |
 |------|----------|
 | `sheet-products.csv` | **Products** — paste URLs, delete rows freely |
-| `sheet-lookup-tables.csv` | **LookupTables** — import FIRST, never delete rows |
+| `sheet-lookup-tables.csv` | **LookupTables** — vendor, category, collection |
+| `sheet-variant-library.csv` | **VariantLibrary** — size/color presets (UK/US, 10 colors, any Shopify options) |
 | `sheet-setup-readme.csv` | **README** — setup instructions (optional) |
 
 See **`docs/SHEET-MASTER-GUIDE.md`**. Suggested columns (C–F) connect to Lookup tab via formulas.
@@ -74,9 +75,10 @@ All sheet update nodes match on **Product URL** from the Google Sheets trigger r
 | Column | Required? | Notes |
 |--------|-----------|-------|
 | **Product URL** | Yes | Only column you must fill to start |
-| **Sizes**, **Scraped variants** | Auto-filled by scrape | Lengths for jeans live inside **Scraped variants** JSON |
-| **Colors** | Formula from LookupTables | `sell_colors_map` — edit how many colors you sell per profile. See [VARIANTS-AND-BROWSERLESS-GUIDE.md](./VARIANTS-AND-BROWSERLESS-GUIDE.md) |
-| **Variant profile** | Formula (column E) | Auto-detected — e.g. `clothing_numeric` for jeans (Waist + Length + Color) |
+| **Variant preset ID** | Optional | e.g. `uk-shirts`, `us-jeans`, `uk-shoes` — see **VariantLibrary** tab |
+| **Option 1/2/3** | Formulas | Any Shopify option names + values from **VariantLibrary** |
+| **Sizes**, **Colors**, **Lengths**, **Scraped variants** | Scrape + formulas | Scrape fills Sizes when found; library fills when scrape misses |
+| **Variant profile** | Formula | Auto-detected category hint — drives default preset when preset ID blank |
 | **Approve** | Optional | Not used in full-auto mode — safe to hide |
 
 Lookup rules are **inside** `sheet-master.csv` (columns AU–BH, hidden). No second tab needed.

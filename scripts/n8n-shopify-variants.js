@@ -1,39 +1,13 @@
 /**
- * Phase 2: Shopify multi-variant builder for n8n Code nodes.
- * One sheet row → one product with Size/Color (etc.) options from scrape.
+ * Shopify multi-variant builder — driven by VariantLibrary sheet (any option combo).
+ * Priority: scraped variants → manual Sizes/Colors → Option 1/2/3 columns → single variant.
  */
 
 const VARIANTS = {};
 
-// ─── Profiles: how to name Shopify options per product family ───────────────
-
-VARIANTS.PROFILES = {
-  clothing_alpha: { option1: 'Size', option2: 'Color', option3: null, sizePattern: 'alpha' },
-  clothing_numeric: { option1: 'Waist', option2: 'Length', option3: 'Color', sizePattern: 'numeric' },
-  footwear_uk: { option1: 'UK Size', option2: 'Color', option3: null, sizePattern: 'numeric' },
-  one_size: { option1: null, option2: 'Color', option3: null, sizePattern: 'one' },
-  color_only: { option1: null, option2: 'Color', option3: null, sizePattern: 'one' },
-  generic: { option1: 'Size', option2: 'Color', option3: null, sizePattern: 'any' },
-};
-
-// Used when scrape returns no sizes — profile is auto-detected from category (no lookup needed).
-VARIANTS.DEFAULT_SIZES = {
-  clothing_alpha: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-  clothing_numeric: ['30', '32', '34', '36', '38'],
-  footwear_uk: ['7', '8', '9', '10', '11'],
-  one_size: ['One Size'],
-  color_only: [],
-  generic: ['S', 'M', 'L', 'XL'],
-};
-
-VARIANTS.DEFAULT_LENGTHS = {
-  clothing_numeric: ['30', '32'],
-};
-
 VARIANTS.detectProfile = function detectProfile(category, explicitProfile) {
   const p = String(explicitProfile || '').trim().toLowerCase();
-  if (p && VARIANTS.PROFILES[p]) return p;
-
+  if (p) return p;
   const c = String(category || '').toLowerCase();
   if (/shoe|sneaker|boot|footwear|sandal|trainer/.test(c)) return 'footwear_uk';
   if (/jean|trouser|pant|chino/.test(c)) return 'clothing_numeric';
@@ -48,13 +22,17 @@ VARIANTS.parseList = function parseList(val) {
   return String(val).split(/[,;|/]+/).map((x) => x.trim()).filter(Boolean);
 };
 
-// LookupTables sell_colors_map (sheet formula) first; scraped variant colors as fallback.
-VARIANTS.resolveColors = function resolveColors(row) {
-  const fromSheet = VARIANTS.parseList(row.Colors);
-  if (fromSheet.length > 0) return fromSheet;
-  const scraped = VARIANTS.parseScrapedVariants(row);
-  const fromVariants = [...new Set(scraped.map((v) => VARIANTS.norm(v.color)).filter(Boolean))];
-  return fromVariants;
+VARIANTS.norm = function norm(v) {
+  return String(v || '').trim();
+};
+
+VARIANTS.slugPart = function slugPart(v) {
+  return String(v || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 12) || 'VAR';
 };
 
 VARIANTS.splitCombinedVariant = function splitCombinedVariant(sizeStr) {
@@ -93,6 +71,9 @@ VARIANTS.parseScrapedVariants = function parseScrapedVariants(row) {
         size: split ? split.size : sizeRaw,
         color: VARIANTS.norm(v.color || v.option2 || (split && split.color) || ''),
         length: VARIANTS.norm(v.length || v.option3 || (split && split.length) || ''),
+        option1: VARIANTS.norm(v.option1 || (split ? split.size : sizeRaw)),
+        option2: VARIANTS.norm(v.option2 || v.color || (split && split.color) || ''),
+        option3: VARIANTS.norm(v.option3 || v.length || (split && split.length) || ''),
       };
     });
   } catch {
@@ -100,101 +81,118 @@ VARIANTS.parseScrapedVariants = function parseScrapedVariants(row) {
   }
 };
 
-VARIANTS.norm = function norm(v) {
-  return String(v || '').trim();
+/** Read Shopify option config from VariantLibrary columns on the product row. */
+VARIANTS.parseOptionConfig = function parseOptionConfig(row) {
+  const options = [];
+  for (let i = 1; i <= 3; i++) {
+    const name = VARIANTS.norm(row[`Option ${i} name`]);
+    const values = VARIANTS.parseList(row[`Option ${i} values`]);
+    if (name && values.length > 0) options.push({ name, values });
+  }
+  return options;
 };
 
-VARIANTS.slugPart = function slugPart(v) {
-  return String(v || '')
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 12) || 'VAR';
-};
-
-VARIANTS.buildVariantRows = function buildVariantRows(row, profileKey) {
-  const profile = VARIANTS.PROFILES[profileKey] || VARIANTS.PROFILES.generic;
-  const scraped = VARIANTS.parseScrapedVariants(row);
+/** Legacy Sizes / Colors / Lengths columns merged into named options when Option columns empty. */
+VARIANTS.legacyOptionConfig = function legacyOptionConfig(row) {
   const sizes = VARIANTS.parseList(row.Sizes);
-  const colors = VARIANTS.resolveColors(row);
+  const colors = VARIANTS.parseList(row.Colors);
+  const lengths = VARIANTS.parseList(row.Lengths);
+  const profile = VARIANTS.norm(row['Variant profile'] || row.variant_profile).toLowerCase();
+  const options = [];
+
+  if (sizes.length > 0) {
+    const sizeName = /numeric|jean|pant|trouser/.test(profile) ? 'Waist'
+      : /footwear|shoe/.test(profile) ? 'UK Size' : 'Size';
+    options.push({ name: sizeName, values: sizes });
+  }
+  if (lengths.length > 0) {
+    options.push({ name: 'Length', values: lengths });
+  }
+  if (colors.length > 0) {
+    options.push({ name: 'Color', values: colors });
+  }
+  return options;
+};
+
+VARIANTS.cartesian = function cartesian(options) {
+  if (!options.length) return [];
+  let combos = options[0].values.map((v) => [v]);
+  for (let i = 1; i < options.length; i++) {
+    const next = [];
+    for (const combo of combos) {
+      for (const val of options[i].values) {
+        next.push([...combo, val]);
+      }
+    }
+    combos = next;
+  }
+  return combos;
+};
+
+VARIANTS.buildRowsFromOptions = function buildRowsFromOptions(options) {
+  const combos = VARIANTS.cartesian(options);
+  return combos.map((vals) => ({
+    options: options.map((opt, i) => ({ name: opt.name, value: vals[i] || '' })),
+    option1: vals[0] || '',
+    option2: vals[1] || '',
+    option3: vals[2] || '',
+    price: '',
+    sku: '',
+    qty: null,
+  }));
+};
+
+VARIANTS.buildVariantRows = function buildVariantRows(row) {
+  const scraped = VARIANTS.parseScrapedVariants(row);
   const rows = [];
 
   if (scraped.length > 0) {
     for (const v of scraped) {
-      let size = VARIANTS.norm(v.size || v.option1 || '');
-      let color = VARIANTS.norm(v.color || v.option2 || '');
-      let length = VARIANTS.norm(v.length || v.option3 || '');
-      if (!size && !color && v.title) {
-        const split = VARIANTS.splitCombinedVariant(v.title);
-        size = split.size;
-        color = split.color;
-        length = split.length || length;
-      }
-      const price = v.price ?? v.competitor_price ?? '';
-      const sku = VARIANTS.norm(v.sku || '');
-      const qty = v.inventory ?? v.inventory_quantity ?? v.stock ?? null;
-      if (!size && !color && !length) continue;
-      rows.push({ size, color, length, price, sku, qty });
+      const o1 = VARIANTS.norm(v.option1 || v.size || '');
+      const o2 = VARIANTS.norm(v.option2 || v.color || '');
+      const o3 = VARIANTS.norm(v.option3 || v.length || '');
+      if (!o1 && !o2 && !o3) continue;
+      rows.push({
+        options: [
+          o1 ? { name: 'Option 1', value: o1 } : null,
+          o2 ? { name: 'Option 2', value: o2 } : null,
+          o3 ? { name: 'Option 3', value: o3 } : null,
+        ].filter(Boolean),
+        option1: o1,
+        option2: o2,
+        option3: o3,
+        price: v.price ?? v.competitor_price ?? '',
+        sku: VARIANTS.norm(v.sku || ''),
+        qty: v.inventory ?? v.inventory_quantity ?? v.stock ?? null,
+      });
     }
+    return { rows, used_library: false, source: 'scraped' };
   }
 
-  if (rows.length === 0 && sizes.length > 0) {
-    const colorList = colors.length > 0 ? colors : [''];
-    for (const size of sizes) {
-      for (const color of colorList) {
-        rows.push({ size, color, price: '', sku: '', qty: null });
-      }
-    }
+  let optionConfig = VARIANTS.parseOptionConfig(row);
+  if (optionConfig.length === 0) {
+    optionConfig = VARIANTS.legacyOptionConfig(row);
+  }
+  if (optionConfig.length > 0) {
+    return {
+      rows: VARIANTS.buildRowsFromOptions(optionConfig),
+      used_library: true,
+      source: 'library',
+      optionConfig,
+    };
   }
 
-  // Color-only products (bags, belts) — no size grid.
-  if (
-    rows.length === 0
-    && colors.length > 0
-    && (profile.sizePattern === 'one' || profileKey === 'color_only' || profileKey === 'one_size')
-  ) {
-    for (const color of colors) {
-      rows.push({ size: 'One Size', color, price: '', sku: '', qty: null });
-    }
-  }
-
-  // Scrape missed sizes — apply generic grid for shirts, pants, shoes, etc.
-  if (rows.length === 0) {
-    const defaultSizes = VARIANTS.DEFAULT_SIZES[profileKey] || VARIANTS.DEFAULT_SIZES.generic;
-    const colorList = colors.length > 0 ? colors : [''];
-    if (profileKey === 'clothing_numeric') {
-      const lengths = VARIANTS.DEFAULT_LENGTHS.clothing_numeric || ['32'];
-      for (const size of defaultSizes) {
-        for (const length of lengths) {
-          for (const color of colorList) {
-            rows.push({ size, color, length, price: '', sku: '', qty: null });
-          }
-        }
-      }
-    } else if (profile.sizePattern === 'one') {
-      for (const color of colorList) {
-        rows.push({ size: 'One Size', color, length: '', price: '', sku: '', qty: null });
-      }
-    } else {
-      for (const size of defaultSizes) {
-        for (const color of colorList) {
-          rows.push({ size, color, length: '', price: '', sku: '', qty: null });
-        }
-      }
-    }
-  }
-
-  return { profile, rows, used_defaults: rows.length > 0 && scraped.length === 0 && sizes.length === 0 };
+  return { rows: [], used_library: false, source: 'none' };
 };
 
-VARIANTS.variantSku = function variantSku(baseSku, size, color, index) {
+VARIANTS.variantSku = function variantSku(baseSku, parts, index) {
   const base = VARIANTS.norm(baseSku) || 'SKU';
-  const parts = [base];
-  if (size && size !== 'One Size') parts.push(VARIANTS.slugPart(size));
-  if (color) parts.push(VARIANTS.slugPart(color));
-  if (parts.length === 1) parts.push(`V${index + 1}`);
-  return parts.join('-').slice(0, 50);
+  const slugParts = [base];
+  for (const p of parts) {
+    if (p && p !== 'One Size') slugParts.push(VARIANTS.slugPart(p));
+  }
+  if (slugParts.length === 1) slugParts.push(`V${index + 1}`);
+  return slugParts.join('-').slice(0, 50);
 };
 
 VARIANTS.resolvePrice = function resolvePrice(row) {
@@ -221,23 +219,25 @@ VARIANTS.resolveInventory = function resolveInventory(row) {
 };
 
 VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
-  const category = row.validated_category || row['Product category'] || listing.collection || '';
-  const profileKey = VARIANTS.detectProfile(category, row['Variant profile'] || row.variant_profile);
-  const { profile, rows, used_defaults } = VARIANTS.buildVariantRows(row, profileKey);
+  const profileKey = VARIANTS.detectProfile(
+    row.validated_category || row['Product category'] || '',
+    row['Variant profile'] || row.variant_profile,
+  );
+  const { rows, used_library, optionConfig, source } = VARIANTS.buildVariantRows(row);
 
   const sellPrice = VARIANTS.resolvePrice(row);
   const totalInv = VARIANTS.resolveInventory(row);
-
   const baseSku = row.validated_sku || row.SKU || row.processing_sku || '';
   const vendor = row.Vendor || row.validated_vendor || '';
-  const productType = category || listing.collection || '';
+  const productType = row.validated_category || row['Product category'] || listing.collection || '';
 
-  // ── Single variant fallback (no scrape sizes) ──
   if (rows.length === 0) {
     return {
       multi_variant: false,
       variant_count: 1,
       variant_profile: profileKey,
+      variant_source: source,
+      used_library: false,
       shopify_payload: {
         product: {
           title: listing.title,
@@ -254,67 +254,49 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
           }],
         },
       },
-      inventory_updates: [{
-        sku: baseSku,
-        inventory_quantity: totalInv,
-      }],
+      inventory_updates: [{ sku: baseSku, inventory_quantity: totalInv }],
     };
   }
 
-  // ── Multi-variant ──
-  const option1Name = profile.option1;
-  const option2Name = profile.option2;
-  const option3Name = profile.option3;
-  const option1Values = new Set();
-  const option2Values = new Set();
-  const option3Values = new Set();
+  const config = optionConfig && optionConfig.length
+    ? optionConfig
+    : rows[0].options.map((o, i) => ({ name: o.name || `Option ${i + 1}`, values: [] }));
+
+  const optionNames = config.length
+    ? config.map((o) => o.name)
+    : ['Option 1', 'Option 2', 'Option 3'].filter((_, i) => rows.some((r) => {
+      const v = [r.option1, r.option2, r.option3][i];
+      return Boolean(v);
+    }));
+
+  const valueSets = optionNames.map(() => new Set());
   const shopifyVariants = [];
   const inventoryUpdates = [];
-
   const perVariantInv = rows.length > 0 && totalInv > 0
     ? Math.max(1, Math.floor(totalInv / rows.length))
     : 0;
 
   rows.forEach((r, i) => {
-    const sizeVal = r.size || (profile.sizePattern === 'one' ? 'One Size' : `Option ${i + 1}`);
-    const lengthVal = r.length || '';
-    const colorVal = r.color || '';
-
-    let opt1;
-    let opt2;
-    let opt3;
-
-    if (profileKey === 'clothing_numeric') {
-      opt1 = option1Name ? sizeVal : undefined;
-      opt2 = option2Name && lengthVal ? lengthVal : undefined;
-      opt3 = option3Name && colorVal ? colorVal : undefined;
-    } else {
-      opt1 = option1Name ? sizeVal : (colorVal || 'Default');
-      opt2 = option1Name && option2Name && colorVal ? colorVal : undefined;
-      opt3 = undefined;
-    }
-
-    if (opt1 && option1Name) option1Values.add(opt1);
-    if (opt2 && option2Name) option2Values.add(opt2);
-    if (opt3 && option3Name) option3Values.add(opt3);
-
+    const vals = [r.option1, r.option2, r.option3];
     const variant = {
       price: sellPrice,
-      sku: r.sku || VARIANTS.variantSku(baseSku, sizeVal, colorVal || lengthVal, i),
+      sku: r.sku || VARIANTS.variantSku(baseSku, vals.filter(Boolean), i),
       inventory_management: 'shopify',
       inventory_quantity: 0,
     };
 
-    if (opt1 && option1Name) variant.option1 = opt1;
-    if (opt2 && option2Name) variant.option2 = opt2;
-    if (opt3 && option3Name) variant.option3 = opt3;
+    optionNames.forEach((name, idx) => {
+      const val = vals[idx];
+      if (val) {
+        valueSets[idx].add(val);
+        variant[`option${idx + 1}`] = val;
+      }
+    });
 
     shopifyVariants.push(variant);
-
     const vInv = r.qty !== null && r.qty !== undefined && r.qty !== ''
       ? Number(r.qty)
       : perVariantInv;
-
     inventoryUpdates.push({
       sku: variant.sku,
       option1: variant.option1,
@@ -334,22 +316,21 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
     variants: shopifyVariants,
   };
 
-  if (option1Name && option1Values.size > 0) {
-    product.options = [];
-    product.options.push({ name: option1Name, values: [...option1Values] });
-    if (option2Name && option2Values.size > 0) {
-      product.options.push({ name: option2Name, values: [...option2Values] });
-    }
-    if (option3Name && option3Values.size > 0) {
-      product.options.push({ name: option3Name, values: [...option3Values] });
-    }
+  const shopifyOptions = optionNames
+    .map((name, idx) => ({ name, values: [...valueSets[idx]] }))
+    .filter((o) => o.values.length > 0);
+
+  if (shopifyOptions.length > 0) {
+    product.options = shopifyOptions;
   }
 
   return {
     multi_variant: shopifyVariants.length > 1,
     variant_count: shopifyVariants.length,
     variant_profile: profileKey,
-    used_default_sizes: Boolean(used_defaults),
+    variant_preset: row['Variant preset ID'] || row.variant_preset_id || '',
+    variant_source: source,
+    used_library: Boolean(used_library),
     shopify_payload: { product },
     inventory_updates: inventoryUpdates,
   };
