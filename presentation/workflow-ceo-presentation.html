@@ -296,6 +296,15 @@
     .acc-mid { background: linear-gradient(90deg, var(--warn), #fcd34d); }
     .acc-low { background: linear-gradient(90deg, var(--err), #fca5a5); }
 
+    .hard-easy { background: rgba(52,211,153,0.2); color: var(--ok); }
+    .hard-mid { background: rgba(251,191,36,0.2); color: var(--warn); }
+    .hard-high { background: rgba(248,113,113,0.2); color: var(--err); }
+    table.dense { font-size: 0.72rem; }
+    table.dense th, table.dense td { padding: 0.4rem 0.45rem; }
+    .mode-a { border-left: 4px solid var(--ok); }
+    .mode-b { border-left: 4px solid var(--warn); }
+    .mode-c { border-left: 4px solid var(--accent2); }
+
     .pipeline {
       display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;
       margin: 1rem 0; font-size: 0.75rem;
@@ -696,23 +705,233 @@
           </div>
         </section>
 
-        <!-- 13 SITE MATRIX -->
-        <section class="slide" data-title="Site Matrix" data-tags="sites everlane aarong mango macys lululemon skims best accuracy">
+        <!-- 13 PIPELINE REQUIREMENTS -->
+        <section class="slide" data-title="Pipeline Requirements" data-tags="requirements build product url image title vendor variants category">
           <div class="slide-inner">
-            <div class="tag">Client demo guide</div>
-            <h1>Site matrix — what works today</h1>
-            <table>
-              <tr><th>Tier</th><th>Site examples</th><th>Method</th><th>Success rate</th><th>Demo?</th></tr>
-              <tr><td><span class="badge badge-ok">A Best</span></td><td>Everlane · MATE · Gymshark</td><td>Shopify .json</td><td>95–98%</td><td>✅ Show CEO first</td></tr>
-              <tr><td><span class="badge badge-ok">A</span></td><td>Aarong · Magento/Woo HTML</td><td>HTTP + __NEXT_DATA__</td><td>85–92%</td><td>✅ Reliable image</td></tr>
-              <tr><td><span class="badge badge-warn">B</span></td><td>Fashion Nova · Hydrogen</td><td>HTTP og:image</td><td>70–80%</td><td>⚠️ Partial variants</td></tr>
-              <tr><td><span class="badge badge-warn">C</span></td><td>Mango · Macy's · Zara · Express</td><td>Browserless required</td><td>75–88%*</td><td>✅ If token set</td></tr>
-              <tr><td><span class="badge badge-plan">D Future</span></td><td>Lululemon · CK · Tommy · Skims · Dôen</td><td>Add to domain arrays</td><td>TBD</td><td>🔜 Not started</td></tr>
-              <tr><td><span class="badge badge-err">Hard</span></td><td>Heavy CAPTCHA · login walls</td><td>Manual image paste</td><td>&lt;50%</td><td>❌ Avoid in demo</td></tr>
+            <div class="tag">What the workflow needs per product</div>
+            <h1>Required fields to build end-to-end</h1>
+            <table class="dense">
+              <tr><th>Required</th><th>Sheet / source</th><th>If missing</th><th>Hardness</th></tr>
+              <tr><td><strong>Product URL</strong> (single product page)</td><td>You paste</td><td>Category/home URLs fail — need <code>/products/</code> or <code>/p/.../id</code></td><td><span class="badge hard-easy">Easy</span></td></tr>
+              <tr><td><strong>Image URL</strong></td><td>Scrape or manual</td><td>Stops at <em>Analyze image</em></td><td><span class="badge hard-mid">Site-dependent</span></td></tr>
+              <tr><td><strong>Title + description</strong></td><td>Scrape + AI</td><td>QA / copy fails</td><td><span class="badge hard-easy">AI fixes</span></td></tr>
+              <tr><td><strong>Vendor</strong></td><td>Scrape or LookupTables</td><td>Empty brand on Shopify</td><td><span class="badge hard-easy">Lookup OK</span></td></tr>
+              <tr><td><strong>Sizes / colors / variants</strong></td><td>Scrape or VariantLibrary</td><td>Single-variant fallback only</td><td><span class="badge hard-mid">Hard on Mode B/C</span></td></tr>
+              <tr><td><strong>Product category</strong></td><td>LookupTables formula (not scrape)</td><td>Wrong product_type + wrong variant options</td><td><span class="badge hard-easy">Sheet-driven</span></td></tr>
+              <tr><td><strong>Browserless API token</strong></td><td>n8n credential</td><td>Mode B sites → NEEDS_BROWSER / no image</td><td><span class="badge hard-high">Blocks Tier B</span></td></tr>
+              <tr><td>Price</td><td>You set after draft</td><td>Shopify draft at £0.00 (by design)</td><td>—</td></tr>
+              <tr><td>Inventory quantity</td><td>Optional sheet</td><td>Defaults split across variants (10)</td><td>—</td></tr>
+              <tr><td>Collection</td><td>LookupTables formula</td><td>Product created but not in collection</td><td>—</td></tr>
             </table>
-            <p style="font-size:0.75rem">* Browserless with valid token on production-lon.browserless.io</p>
+            <div class="note note-warn">
+              <strong>URL rule:</strong> <code>shop.mango.com/.../h/men</code> is a <em>category page</em> — not a product. Every site needs a product-level URL.
+            </div>
+          </div>
+        </section>
+
+        <!-- 14 MODES ABC -->
+        <section class="slide" data-title="Modes A B C" data-tags="mode shopify browserless custom platform hardness scrape">
+          <div class="slide-inner">
+            <div class="tag">Platform modes · 26 target brands</div>
+            <h1>Three scrape modes + hardness</h1>
+            <div class="grid-4" style="margin-bottom:0.75rem">
+              <div class="card stat"><div class="num">10</div><div class="lbl">Mode A · Shopify · ★☆☆ Easy</div></div>
+              <div class="card stat"><div class="num">12</div><div class="lbl">Mode B · Browserless · ★★★ Hard</div></div>
+              <div class="card stat"><div class="num">4</div><div class="lbl">Mode C only · Custom · ★★☆</div></div>
+              <div class="card stat"><div class="num">26</div><div class="lbl">Unique brands on target list</div></div>
+            </div>
+            <table class="dense" style="margin-bottom:0.75rem">
+              <tr><th>Mode</th><th>What it is</th><th>Examples from target list</th><th>How workflow fetches</th><th>Hardness</th></tr>
+              <tr><td><strong>A</strong> Shopify</td><td>Built on Shopify · <code>product.json</code> API</td><td>Everlane, Skims, MATE, Fashion Nova, Tecovas, Dôen, Origin, LA Apparel</td><td>HTTP + <code>.json</code> — fast, best variants</td><td><span class="badge hard-easy">★☆☆ Easy</span></td></tr>
+              <tr><td><strong>B</strong> Bot / heavy JS</td><td>Akamai, Cloudflare, SPA; blocks simple HTTP</td><td>Zara, Mango, Macy's, Express, Lululemon, Gap, Calvin Klein, Tommy, Abercrombie</td><td>Browserless (real browser)</td><td><span class="badge hard-high">★★★ Hard</span></td></tr>
+              <tr><td><strong>C</strong> Custom</td><td>Own stack · JSON-LD or embedded JSON</td><td>Levi's, Patagonia, Ralph Lauren, Aarong</td><td>HTTP or browser + <em>custom parser per brand</em></td><td><span class="badge hard-mid">★★☆ Med–Hard</span></td></tr>
+            </table>
+            <div class="grid-3">
+              <div class="card mode-a">
+                <h3><span class="badge hard-easy">Mode A</span> Shopify</h3>
+                <p><strong>What:</strong> Built on Shopify · <code>product.json</code> API</p>
+                <p><strong>Fetch:</strong> HTTP + .json — fast, best variants</p>
+                <p><strong>Hardness:</strong> ★☆☆ Easy</p>
+                <p style="margin-top:0.5rem;font-size:0.78rem">Everlane · Skims · MATE · Fashion Nova · Tecovas · Dôen · Origin · LA Apparel · Universal Standard · Black Halo</p>
+              </div>
+              <div class="card mode-b">
+                <h3><span class="badge hard-mid">Mode B</span> Bot / heavy JS</h3>
+                <p><strong>What:</strong> Akamai · Cloudflare · SPA</p>
+                <p><strong>Fetch:</strong> Browserless (real browser)</p>
+                <p><strong>Hardness:</strong> ★★★ Hard</p>
+                <p style="margin-top:0.5rem;font-size:0.78rem">Zara · Mango · Macy's · Express · Gap · Lululemon · Calvin Klein · Tommy · Abercrombie · Nordstrom · H&M · ASOS</p>
+              </div>
+              <div class="card mode-c">
+                <h3><span class="badge hard-high">Mode C</span> Custom platform</h3>
+                <p><strong>What:</strong> Own stack · JSON-LD or embedded JSON</p>
+                <p><strong>Fetch:</strong> HTTP or browser + <em>custom parser per brand</em></p>
+                <p><strong>Hardness:</strong> ★★☆ Medium–Hard</p>
+                <p style="margin-top:0.5rem;font-size:0.78rem">Levi's · Patagonia · Ralph Lauren · Aarong (HTTP works today)</p>
+              </div>
+            </div>
+            <table class="dense" style="margin-top:0.75rem">
+              <tr><th>Hardness</th><th>Meaning</th><th>Typical time</th><th>Variant accuracy</th></tr>
+              <tr><td><span class="badge hard-easy">★☆☆ Easy</span></td><td>Shopify .json or clean HTML</td><td>~2 min/product</td><td>90–98%</td></tr>
+              <tr><td><span class="badge hard-mid">★★☆ Medium</span></td><td>HTTP works, variants incomplete</td><td>~3 min/product</td><td>60–85%</td></tr>
+              <tr><td><span class="badge hard-high">★★★ Hard</span></td><td>Browserless + weak parsers</td><td>~4 min/product</td><td>50–75% without custom parser</td></tr>
+            </table>
+          </div>
+        </section>
+
+        <!-- 15 TIER A -->
+        <section class="slide" data-title="Tier A — Shopify Sites" data-tags="everlane skims mate fashion nova tecovas doen shopify json tier a">
+          <div class="slide-inner">
+            <div class="tag">Mode A · 10 Shopify DTC brands</div>
+            <h1>Tier A — Shopify stores</h1>
+            <table class="dense">
+              <tr><th>Site</th><th>In SHOPIFY_JSON_DOMAINS?</th><th>Routing today</th><th>Build today?</th><th>Gap</th></tr>
+              <tr><td>Everlane</td><td>✅ Yes</td><td>shopify_json</td><td>✅ Mostly</td><td>Colors/lengths sometimes empty</td></tr>
+              <tr><td>MATE the Label</td><td>✅ Yes</td><td>shopify_json</td><td>✅ Mostly</td><td>Color+size merged — split logic</td></tr>
+              <tr><td>Fashion Nova</td><td>❌ No</td><td>HTTP only</td><td>⚠️ Partial</td><td>.json blocked; colors not in sheet</td></tr>
+              <tr><td>Skims</td><td>❌ No</td><td>HTTP only</td><td>✅ Likely</td><td>Add to SHOPIFY_JSON_DOMAINS</td></tr>
+              <tr><td>Dôen</td><td>❌ No</td><td>HTTP only</td><td>✅ Untested</td><td>Add to SHOPIFY_JSON_DOMAINS</td></tr>
+              <tr><td>Universal Standard</td><td>❌ No</td><td>HTTP only</td><td>✅ Untested</td><td>Add to SHOPIFY_JSON_DOMAINS</td></tr>
+              <tr><td>Tecovas</td><td>❌ No</td><td>HTTP only</td><td>✅ Good</td><td>Set Variant preset = footwear</td></tr>
+              <tr><td>Black Halo</td><td>❌ No</td><td>HTTP only</td><td>✅ Good</td><td>Category = Dresses in sheet</td></tr>
+              <tr><td>LA Apparel</td><td>❌ No</td><td>HTTP only</td><td>✅ Good</td><td>Add to .json list</td></tr>
+              <tr><td>Origin USA</td><td>❌ No</td><td>HTTP only</td><td>✅ Good</td><td>Add to .json list</td></tr>
+            </table>
+            <div class="note note-future">
+              <strong>Fast win:</strong> Add Skims, Dôen, Tecovas, Fashion Nova, LA Apparel, Origin to <code>SHOPIFY_JSON_DOMAINS</code> — one array edit, big reliability jump.
+            </div>
+          </div>
+        </section>
+
+        <!-- 16 TIER B -->
+        <section class="slide" data-title="Tier B — Browser Sites" data-tags="zara mango macys lululemon calvin klein tommy browserless tier b">
+          <div class="slide-inner">
+            <div class="tag">Mode B · Bot-protected · 12 brands</div>
+            <h1>Tier B — Browserless required</h1>
+            <table class="dense">
+              <tr><th>Site</th><th>In BROWSER_DOMAINS?</th><th>HTTP test</th><th>Build today?</th><th>Action</th></tr>
+              <tr><td>Zara</td><td>✅ Yes</td><td>403</td><td>⚠️ + token</td><td>Zara JSON extractor (future)</td></tr>
+              <tr><td>Mango</td><td>✅ Yes</td><td>403</td><td>⚠️ + token</td><td>Re-import workflow + credential</td></tr>
+              <tr><td>Express</td><td>✅ Yes</td><td>403</td><td>⚠️ + token</td><td>No custom variant parser</td></tr>
+              <tr><td>Macy's</td><td>✅ Yes</td><td>403</td><td>⚠️ + token</td><td>No custom extractor</td></tr>
+              <tr><td>Gap</td><td>✅ Yes</td><td>200 home</td><td>⚠️ Partial</td><td>Product page may need browser</td></tr>
+              <tr><td>H&M · ASOS · Nordstrom</td><td>✅ Yes</td><td>403/SPA</td><td>⚠️ + token</td><td>Browserless only</td></tr>
+              <tr><td><strong>Lululemon</strong></td><td>❌ <strong>Missing</strong></td><td>403</td><td>❌ Fails</td><td><strong>Add to BROWSER_DOMAINS</strong></td></tr>
+              <tr><td><strong>Calvin Klein</strong></td><td>❌ Missing</td><td>403</td><td>❌ Fails</td><td>Add to BROWSER_DOMAINS</td></tr>
+              <tr><td><strong>Tommy Hilfiger</strong></td><td>❌ Missing</td><td>403</td><td>❌ Fails</td><td>Add to BROWSER_DOMAINS</td></tr>
+              <tr><td><strong>Abercrombie</strong></td><td>❌ Missing</td><td>403</td><td>❌ Fails</td><td>Add to BROWSER_DOMAINS</td></tr>
+            </table>
+            <div class="note note-warn">
+              <strong>P0 gap:</strong> 4 target brands block HTTP but are <em>not</em> in <code>BROWSER_DOMAINS</code> yet. Lululemon is most urgent — you already tested and it failed.
+            </div>
+          </div>
+        </section>
+
+        <!-- 17 TIER C -->
+        <section class="slide" data-title="Tier C — Custom Platforms" data-tags="levis patagonia ralph lauren aarong custom parser tier c">
+          <div class="slide-inner">
+            <div class="tag">Mode C · Custom platforms · 4 brands</div>
+            <h1>Tier C — Custom extractors needed</h1>
+            <table class="dense">
+              <tr><th>Site</th><th>Platform</th><th>Routing today</th><th>Build today?</th><th>Parser needed</th></tr>
+              <tr><td>Levi's</td><td>Custom waist × length</td><td>HTTP</td><td>⚠️ Partial</td><td>clothing_numeric + waist/length matrix</td></tr>
+              <tr><td>Ralph Lauren</td><td>Custom SPA</td><td>HTTP</td><td>⚠️ Partial</td><td>Likely Browserless + parser</td></tr>
+              <tr><td>Patagonia</td><td>Custom</td><td>HTTP</td><td>⚠️ Partial</td><td>JSON-LD partial — colors/sizes missing</td></tr>
+              <tr><td>Lululemon</td><td>Scene7 CDN + SPA</td><td>HTTP (wrong)</td><td>❌ Page blocked</td><td>Browser domain + variant API parser</td></tr>
+              <tr><td>Aarong</td><td>Magento / __NEXT_DATA__</td><td>HTTP</td><td>✅ Good image</td><td>Works without browser today</td></tr>
+            </table>
+            <div class="note note-future">
+              <strong>Future parsers (5d+):</strong> Zara embedded JSON · Mango __NEXT_DATA__ colors · Levi's matrix · Lululemon variant API · Express/Macy's payloads.
+            </div>
+          </div>
+        </section>
+
+        <!-- 18 PRIORITY GAPS -->
+        <section class="slide" data-title="Priority Gaps P0 P1 P2" data-tags="p0 p1 p2 gaps missing browserless shopify json parser">
+          <div class="slide-inner">
+            <div class="tag">What's missing · priority order</div>
+            <h1>Priority gaps (P0 → P2)</h1>
+            <div class="grid-2">
+              <div class="card">
+                <h3><span class="badge hard-high">P0</span> Must fix — blocks build</h3>
+                <ul>
+                  <li>Add to <code>BROWSER_DOMAINS</code>: lululemon, calvinklein, tommy, abercrombie, ralphlauren</li>
+                  <li>Browserless credential in n8n (token)</li>
+                  <li>Product URLs only — reject category URLs</li>
+                  <li>Re-import latest <code>ShopifyProductAdd.V2.json</code></li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3><span class="badge hard-mid">P1</span> High value — variants/colors</h3>
+                <ul>
+                  <li>Expand <code>SHOPIFY_JSON_DOMAINS</code>: skims, doen, tecovas, fashionnova, originusa…</li>
+                  <li>Site parsers: Zara, Mango, Levi's, Lululemon, Express, Macy's</li>
+                  <li>Fashion Nova color fix · Everlane length option3</li>
+                </ul>
+              </div>
+            </div>
+            <div class="card" style="margin-top:0.75rem">
+              <h3><span class="badge hard-easy">P2</span> Quality — not blocking</h3>
+              <ul>
+                <li>Sheet: Product category · Variant preset · Force browser · Collection per row</li>
+                <li>LookupTables keywords: bodysuit, boot, sweater, hoodie</li>
+                <li>Compare-at price · material metafields · multi-image per color</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- 19 SUCCESS TODAY -->
+        <section class="slide" data-title="Success Today Quick Reference" data-tags="success today build can demo everlane mango lululemon">
+          <div class="slide-inner">
+            <div class="tag">Quick reference · 26 brands</div>
+            <h1>Can we build a product today?</h1>
+            <table class="dense">
+              <tr><th>Site</th><th>Today?</th><th>Notes</th></tr>
+              <tr><td>Everlane · MATE</td><td>✅ Mostly</td><td>Best CEO demo · fill category</td></tr>
+              <tr><td>Skims · Dôen · Tecovas · Black Halo · LA Apparel · Origin</td><td>✅ Likely</td><td>Add shopify_json for reliability</td></tr>
+              <tr><td>Fashion Nova</td><td>⚠️ Partial</td><td>Image yes · colors often empty</td></tr>
+              <tr><td>Mango</td><td>⚠️</td><td>Browserless token + variants from HTML</td></tr>
+              <tr><td>Zara · Express · Macy's · Gap</td><td>⚠️</td><td>Browserless only · variants weak</td></tr>
+              <tr><td>Lululemon · CK · Tommy · Abercrombie</td><td>❌</td><td>Not in browser list — will fail HTTP</td></tr>
+              <tr><td>Levi's · Ralph Lauren · Patagonia</td><td>⚠️ Partial</td><td>Custom extractors for full variants</td></tr>
+              <tr><td>Aarong</td><td>✅ Good</td><td>HTTP + __NEXT_DATA__ · reliable image</td></tr>
+            </table>
             <div class="note note-ok">
-              <strong>CEO demo trick:</strong> Use an <strong>Everlane</strong> or <strong>Aarong</strong> URL first — full PASS in ~2 min. Then show Mango with Browserless credential as “hard site” capability.
+              <strong>CEO demo:</strong> Everlane first (Mode A · 2 min) → optional Mango with Browserless (Mode B). <strong>Never demo</strong> Lululemon until P0 browser domains added.
+            </div>
+            <h2>Recommended sheet setup per row</h2>
+            <table class="dense">
+              <tr><th>Column</th><th>Example</th><th>Why</th></tr>
+              <tr><td><strong>Product URL</strong></td><td><code>everlane.com/products/...</code></td><td>Must be product page — not category/home</td></tr>
+              <tr><td><strong>Product category</strong></td><td>Men &gt; Shirts &gt; Linen</td><td>Sets Shopify product_type + variant profile</td></tr>
+              <tr><td><strong>Variant preset ID</strong></td><td><code>uk-shirts</code> or <code>clothing_numeric</code></td><td>Jeans only: waist × length matrix</td></tr>
+              <tr><td><strong>Vendor</strong></td><td>Mango / Levi's</td><td>Optional — helps if scrape misses brand</td></tr>
+              <tr><td><strong>Force browser</strong></td><td>YES</td><td>Zara, Mango, Macy's, Lululemon until stable</td></tr>
+              <tr><td><strong>Collection</strong></td><td>mens-shirts</td><td>Optional — auto-add to store collection</td></tr>
+              <tr><td><strong>Inventory quantity</strong></td><td>10</td><td>Optional — split across variants</td></tr>
+            </table>
+          </div>
+        </section>
+
+        <!-- 20 FUTURE PHASES -->
+        <section class="slide" data-title="Suggested Build Phases" data-tags="phase 5a 5b 5c 5d 5e 5f roadmap implement">
+          <div class="slide-inner">
+            <div class="tag">Suggested next work · not started yet</div>
+            <h1>Recommended build phases (when we start)</h1>
+            <table class="dense">
+              <tr><th>Phase</th><th>Work</th><th>Sites helped</th><th>Status</th></tr>
+              <tr><td><strong>5a</strong></td><td>Add missing domains to <code>BROWSER_DOMAINS</code></td><td>Lululemon, CK, Tommy, Abercrombie, Ralph Lauren</td><td><span class="badge badge-plan">Not started</span></td></tr>
+              <tr><td><strong>5b</strong></td><td>Add Shopify brands to <code>SHOPIFY_JSON_DOMAINS</code></td><td>Skims, Dôen, Tecovas, Fashion Nova, Origin…</td><td><span class="badge badge-plan">Not started</span></td></tr>
+              <tr><td><strong>5c</strong></td><td>Levi's waist × length parser</td><td>Levi's</td><td><span class="badge badge-plan">Not started</span></td></tr>
+              <tr><td><strong>5d</strong></td><td>Zara + Express embedded JSON extractors</td><td>Zara, Express</td><td><span class="badge badge-plan">Not started</span></td></tr>
+              <tr><td><strong>5e</strong></td><td>Fashion Nova + Everlane color/length fixes</td><td>Fashion Nova, Everlane</td><td><span class="badge badge-plan">Not started</span></td></tr>
+              <tr><td><strong>5f</strong></td><td>Category URL detection → clear sheet error</td><td>All sites</td><td><span class="badge badge-plan">Not started</span></td></tr>
+            </table>
+            <div class="note note-warn">
+              <strong>Already built (don't redo):</strong> Base Browserless routing (Mango, Zara…) · base Shopify .json (Everlane…) · LookupTables + VariantLibrary + PromptLibrary wired in workflow.
+            </div>
+            <div class="note note-ok">
+              <strong>Fastest win:</strong> Phase <strong>5a + 5b</strong> together — ~30 min code + test 2 URLs each. Unlocks Lululemon + Skims for your target list.
             </div>
           </div>
         </section>
@@ -850,7 +1069,7 @@
               <div class="card">
                 <h3>What we deliver next sprint</h3>
                 <ul>
-                  <li>Phase 5a + 5b domain lists live</li>
+                  <li>Expand BROWSER_DOMAINS + SHOPIFY_JSON_DOMAINS arrays</li>
                   <li>ColorImageLibrary spec + first product with per-color images</li>
                   <li>CEO demo script recorded (Everlane + Mango)</li>
                   <li>Accuracy dashboard tab in Google Sheet</li>
