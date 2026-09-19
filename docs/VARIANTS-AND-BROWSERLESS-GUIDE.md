@@ -76,7 +76,10 @@ Or add a new row to **VariantLibrary** with your preset_id and import again.
 | Name | `Browserless API` |
 | Query param | `token` = your browserless.io API key |
 
-**Auto-routing:** Mango, Macy's, Zara, etc. → Browserless when credential exists.  
+**Auto-routing (Browserless):** Mango, Macy's, Zara, Gap, Lululemon, Calvin Klein, Tommy Hilfiger, Abercrombie, Ralph Lauren, etc. — see `BROWSER_DOMAINS` in `scripts/n8n-scrape-extractors.js`.
+
+**Shopify .json fast path:** Everlane, Skims, MATE, Tecovas, Fashion Nova, Dôen, Origin, LA Apparel, Black Halo, Universal Standard — see `SHOPIFY_JSON_DOMAINS` in the same file.
+
 **Force browser** = `YES` on any row forces Browserless.
 
 ## Re-import checklist

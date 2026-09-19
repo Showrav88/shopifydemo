@@ -647,12 +647,18 @@ SCRAPE_EXTRACTORS.pickImageUrl = function pickImageUrl(scraped, row) {
 SCRAPE_EXTRACTORS.BROWSER_DOMAINS = [
   'macys.com', 'mango.com', 'express.com', 'nordstrom.com', 'zara.com',
   'hm.com', 'asos.com', 'uniqlo.com', 'gap.com', 'oldnavy.com',
+  // Phase 5a — bot-protected targets missing from initial list
+  'lululemon.com', 'calvinklein.us', 'calvinklein.com', 'tommy.com',
+  'abercrombie.com', 'ralphlauren.com',
 ];
 
 /** Domains where Shopify .json alone is usually enough — skip browser. */
 SCRAPE_EXTRACTORS.SHOPIFY_JSON_DOMAINS = [
   'everlane.com', 'matethelabel.com', 'gymshark.com', 'allbirds.com',
   'colourpop.com', 'brooklinen.com',
+  // Phase 5b — Shopify DTC targets from client list
+  'skims.com', 'shopdoen.com', 'universalstandard.com', 'tecovas.com',
+  'fashionnova.com', 'losangelesapparel.net', 'originusa.com', 'blackhalo.com',
 ];
 
 SCRAPE_EXTRACTORS.hostname = function hostname(url) {

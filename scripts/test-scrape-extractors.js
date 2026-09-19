@@ -98,6 +98,13 @@ assert(SCRAPE.pickFetchStrategy('https://shop.mango.com/us/en/p/men/shirts/linen
 assert(SCRAPE.isForceBrowser({ 'Force browser': 'YES' }), 'Force browser YES');
 assert(SCRAPE.pickFetchStrategy('https://everlane.com/products/jean', { forceBrowser: true }) === 'browser', 'Force overrides shopify');
 assert(SCRAPE.pickFetchStrategy('https://www.aarong.com/shirt.html') === 'http', 'Aarong → http');
+assert(SCRAPE.pickFetchStrategy('https://shop.lululemon.com/p/mens-shirt/_/prod123') === 'browser', 'Lululemon → browser');
+assert(SCRAPE.pickFetchStrategy('https://www.calvinklein.us/en/mens-shirts/product') === 'browser', 'Calvin Klein → browser');
+assert(SCRAPE.pickFetchStrategy('https://www.ralphlauren.com/men-clothing-shirts/product') === 'browser', 'Ralph Lauren → browser');
+assert(SCRAPE.pickFetchStrategy('https://www.skims.com/products/fits-everybody-tank') === 'shopify_json', 'Skims → shopify_json');
+assert(SCRAPE.pickFetchStrategy('https://www.tecovas.com/products/the-earl') === 'shopify_json', 'Tecovas → shopify_json');
+assert(SCRAPE.pickFetchStrategy('https://www.fashionnova.com/products/basic-tee') === 'shopify_json', 'Fashion Nova → shopify_json');
+assert(SCRAPE.pickFetchStrategy('https://usa.tommy.com/en/men/shirts/product') === 'browser', 'Tommy usa.tommy.com → browser');
 assert(SCRAPE.isBotBlocked('<html>Checking your browser before accessing</html>'), 'bot block detected');
 assert(SCRAPE.needsBrowserRetry({}, '<html>Checking your browser</html>', 'https://x.com'), 'retry on bot block');
 assert(!SCRAPE.needsBrowserRetry({ title: 'Shirt', image_url: 'https://cdn.shopify.com/s/files/1/000/1/products/x.jpg', competitor_price: '50', _sources: { title: 'shopify_json' } }, '', 'https://everlane.com/p'), 'shopify_json ok → no retry');
