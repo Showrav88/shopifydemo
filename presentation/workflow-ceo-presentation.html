@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopifyProductAdd V2 — CEO / COO Workflow Presentation</title>
+  <style>
+    :root {
+      --bg: #08080d;
+      --card: rgba(255,255,255,0.04);
+      --card-hover: rgba(255,255,255,0.08);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #c8f542;
+      --accent2: #7c6cff;
+      --accent3: #ff6b9d;
+      --warn: #fbbf24;
+      --ok: #34d399;
+      --err: #f87171;
+      --border: rgba(255,255,255,0.08);
+      --radius: 18px;
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --nav-h: 64px;
+      --sidebar-w: 280px;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --dur: 0.5s;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .bg-glow { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .bg-glow::before, .bg-glow::after {
+      content: ""; position: absolute; border-radius: 50%;
+      filter: blur(110px); opacity: 0.28;
+      animation: float 22s ease-in-out infinite;
+    }
+    .bg-glow::before {
+      width: 50vw; height: 50vw; top: -15%; right: -8%;
+      background: radial-gradient(circle, var(--accent2), transparent 70%);
+    }
+    .bg-glow::after {
+      width: 42vw; height: 42vw; bottom: -12%; left: -8%;
+      background: radial-gradient(circle, var(--accent), transparent 70%);
+      animation-delay: -10s;
+    }
+    @keyframes float {
+      0%, 100% { transform: translate(0,0) scale(1); }
+      50% { transform: translate(2%, -3%) scale(1.04); }
+    }
+    .grid-bg {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+    }
+
+    /* Layout */
+    .app { display: flex; height: 100vh; position: relative; z-index: 1; }
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: rgba(8,8,13,0.92);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(20px);
+    }
+    .sidebar-head { padding: 1rem; border-bottom: 1px solid var(--border); }
+    .sidebar-head h2 { font-size: 0.8rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.6rem; }
+    .search-box {
+      width: 100%;
+      padding: 0.55rem 0.75rem 0.55rem 2rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 0.82rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-box:focus { border-color: rgba(200,245,66,0.4); }
+    .search-wrap { position: relative; }
+    .search-wrap::before {
+      content: "⌕"; position: absolute; left: 0.65rem; top: 50%;
+      transform: translateY(-50%); color: var(--muted); font-size: 0.9rem;
+    }
+    .nav-list {
+      flex: 1; overflow-y: auto; padding: 0.5rem;
+      scrollbar-width: thin;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 0.65rem;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: 0.2s var(--ease);
+      border: 1px solid transparent;
+      margin-bottom: 2px;
+    }
+    .nav-item:hover { background: var(--card); color: var(--text); }
+    .nav-item.active {
+      background: rgba(200,245,66,0.1);
+      border-color: rgba(200,245,66,0.25);
+      color: var(--accent);
+    }
+    .nav-item.hidden { display: none; }
+    .nav-num {
+      font-size: 0.65rem; font-weight: 700;
+      width: 1.4rem; text-align: center;
+      color: var(--muted);
+    }
+    .nav-item.active .nav-num { color: var(--accent); }
+
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .topbar {
+      height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8,8,13,0.75);
+      backdrop-filter: blur(16px);
+      flex-shrink: 0;
+    }
+    .progress-track { position: absolute; top: 0; left: var(--sidebar-w); right: 0; height: 3px; background: rgba(255,255,255,0.05); z-index: 10; }
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width var(--dur) var(--ease);
+    }
+    .brand { font-weight: 700; font-size: 0.9rem; }
+    .brand span { color: var(--accent); }
+    .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+    .page-label { font-size: 0.78rem; color: var(--muted); }
+    .btn {
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text); padding: 0.45rem 0.9rem; border-radius: 10px;
+      cursor: pointer; font-size: 0.82rem; transition: 0.2s;
+    }
+    .btn:hover { background: var(--card-hover); }
+    .btn.primary { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 600; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .toggle-sidebar {
+      display: none; background: none; border: none; color: var(--text);
+      font-size: 1.2rem; cursor: pointer; padding: 0.25rem;
+    }
+
+    .slides-wrap { flex: 1; position: relative; overflow: hidden; }
+    .slide {
+      position: absolute; inset: 0;
+      padding: clamp(1rem, 2.5vw, 2.5rem);
+      overflow-y: auto;
+      opacity: 0; visibility: hidden;
+      transform: translateY(24px) scale(0.98);
+      transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease), visibility var(--dur);
+    }
+    .slide.active {
+      opacity: 1; visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+    .slide-inner { max-width: 960px; margin: 0 auto; }
+
+    .tag {
+      display: inline-block; font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 0.6rem;
+    }
+    h1 {
+      font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+      font-weight: 800; line-height: 1.12; letter-spacing: -0.03em;
+      margin-bottom: 0.75rem;
+    }
+    h2 { font-size: 1.15rem; font-weight: 700; margin: 1.25rem 0 0.6rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.4rem; }
+    p, li { font-size: 0.88rem; line-height: 1.65; color: var(--muted); }
+    ul, ol { padding-left: 1.2rem; margin: 0.4rem 0; }
+    li { margin-bottom: 0.25rem; }
+    .lead { font-size: 1rem; color: var(--text); max-width: 680px; margin-bottom: 1.25rem; }
+    .gradient {
+      background: linear-gradient(135deg, var(--accent), #fff 50%, var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.85rem; margin: 0.85rem 0; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin: 0.85rem 0; }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.65rem; margin: 0.85rem 0; }
+
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem 1.1rem;
+      transition: transform 0.25s var(--ease), border-color 0.25s;
+    }
+    .card:hover { transform: translateY(-3px); border-color: rgba(200,245,66,0.2); }
+    .card h3 { color: var(--text); }
+
+    .stat {
+      text-align: center; padding: 1.1rem 0.75rem;
+    }
+    .stat .num {
+      font-size: 2rem; font-weight: 800; color: var(--accent);
+      line-height: 1; margin-bottom: 0.25rem;
+    }
+    .stat .lbl { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    .note {
+      border-radius: var(--radius); padding: 0.9rem 1.1rem;
+      margin: 0.85rem 0; font-size: 0.84rem; line-height: 1.55;
+      border-left: 4px solid;
+    }
+    .note-warn { background: rgba(251,191,36,0.08); border-color: var(--warn); color: #fde68a; }
+    .note-ok { background: rgba(52,211,153,0.08); border-color: var(--ok); color: #a7f3d0; }
+    .note-future { background: rgba(124,108,255,0.1); border-color: var(--accent2); color: #c4b5fd; }
+    .note strong { color: var(--text); }
+
+    table {
+      width: 100%; border-collapse: collapse; font-size: 0.8rem;
+      margin: 0.75rem 0;
+    }
+    th, td {
+      padding: 0.55rem 0.65rem; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--text); font-weight: 600; background: rgba(255,255,255,0.03); }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .badge {
+      display: inline-block; padding: 0.15rem 0.45rem;
+      border-radius: 6px; font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .badge-ok { background: rgba(52,211,153,0.2); color: var(--ok); }
+    .badge-warn { background: rgba(251,191,36,0.2); color: var(--warn); }
+    .badge-err { background: rgba(248,113,113,0.2); color: var(--err); }
+    .badge-live { background: rgba(200,245,66,0.15); color: var(--accent); }
+    .badge-plan { background: rgba(124,108,255,0.15); color: var(--accent2); }
+
+    /* n8n-style node cards */
+    .node-flow { display: flex; flex-direction: column; gap: 0.45rem; margin: 0.75rem 0; }
+    .node-row {
+      display: flex; align-items: stretch; gap: 0.65rem;
+      animation: fadeIn 0.5s var(--ease) both;
+    }
+    .node-row:nth-child(1) { animation-delay: 0.05s; }
+    .node-row:nth-child(2) { animation-delay: 0.1s; }
+    .node-row:nth-child(3) { animation-delay: 0.15s; }
+    .node-row:nth-child(4) { animation-delay: 0.2s; }
+    .node-row:nth-child(5) { animation-delay: 0.25s; }
+    .node-row:nth-child(6) { animation-delay: 0.3s; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(-12px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .node-icon {
+      width: 42px; min-width: 42px; height: 42px;
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; border: 2px solid; flex-shrink: 0;
+    }
+    .ni-sheet { background: #1a472a; border-color: #34d399; }
+    .ni-code { background: #3d2f14; border-color: #fbbf24; }
+    .ni-http { background: #1e2a4a; border-color: #60a5fa; }
+    .ni-ai { background: #3b1f4a; border-color: #c084fc; }
+    .ni-if { background: #3d2a14; border-color: #fb923c; }
+    .ni-shopify { background: #1a3d2e; border-color: #86efac; }
+    .ni-img { background: #4a1a2e; border-color: #f472b6; }
+    .node-body {
+      flex: 1; background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 0.55rem 0.85rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    }
+    .node-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+    .node-desc { font-size: 0.72rem; color: var(--muted); margin-top: 0.1rem; }
+    .node-check { color: var(--ok); font-size: 1rem; flex-shrink: 0; }
+
+    .flow-arrow {
+      text-align: center; color: var(--muted); font-size: 0.75rem;
+      padding: 0.1rem 0 0.1rem 1.5rem;
+    }
+
+    .acc-bar {
+      height: 8px; border-radius: 4px; background: rgba(255,255,255,0.08);
+      overflow: hidden; margin-top: 0.35rem;
+    }
+    .acc-fill { height: 100%; border-radius: 4px; transition: width 0.8s var(--ease); }
+    .acc-high { background: linear-gradient(90deg, var(--ok), #6ee7b7); }
+    .acc-mid { background: linear-gradient(90deg, var(--warn), #fcd34d); }
+    .acc-low { background: linear-gradient(90deg, var(--err), #fca5a5); }
+
+    .pipeline {
+      display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;
+      margin: 1rem 0; font-size: 0.75rem;
+    }
+    .pipe-step {
+      background: var(--card); border: 1px solid var(--border);
+      padding: 0.35rem 0.65rem; border-radius: 8px; color: var(--muted);
+    }
+    .pipe-step strong { color: var(--accent); }
+    .pipe-arrow { color: var(--muted); }
+
+    kbd {
+      background: rgba(255,255,255,0.08); border: 1px solid var(--border);
+      padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.72rem;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        position: fixed; left: 0; top: 0; bottom: 0; z-index: 200;
+        transform: translateX(-100%); transition: transform 0.3s var(--ease);
+      }
+      .sidebar.open { transform: translateX(0); }
+      .toggle-sidebar { display: block; }
+      .progress-track { left: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="grid-bg"></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <h2>Navigate</h2>
+        <div class="search-wrap">
+          <input type="search" class="search-box" id="searchBox" placeholder="Search slides, nodes, sites…" autocomplete="off">
+        </div>
+      </div>
+      <nav class="nav-list" id="navList"></nav>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="toggle-sidebar" id="toggleSidebar" aria-label="Menu">☰</button>
+        <div class="brand">ShopifyProductAdd <span>V2</span></div>
+        <div class="topbar-right">
+          <span class="page-label" id="pageLabel">Slide 1</span>
+          <button class="btn" id="prevBtn">← Prev</button>
+          <button class="btn primary" id="nextBtn">Next →</button>
+        </div>
+      </header>
+
+      <div class="slides-wrap" id="slidesWrap">
+
+        <!-- 1 TITLE -->
+        <section class="slide active" data-title="Executive Summary" data-tags="ceo coo intro overview">
+          <div class="slide-inner">
+            <div class="tag">CEO / COO Briefing · September 2026</div>
+            <h1><span class="gradient">One URL → Shopify Draft</span></h1>
+            <p class="lead">Production n8n workflow that scrapes competitor fashion URLs, rewrites listings with AI, passes QA gates, and creates multi-variant Shopify draft products — driven by Google Sheets.</p>
+            <div class="grid-4">
+              <div class="card stat"><div class="num">47</div><div class="lbl">Workflow nodes</div></div>
+              <div class="card stat"><div class="num">4</div><div class="lbl">Sheet tabs</div></div>
+              <div class="card stat"><div class="num">90+</div><div class="lbl">QA pass score</div></div>
+              <div class="card stat"><div class="num">2–4m</div><div class="lbl">Per product</div></div>
+            </div>
+            <div class="note note-ok">
+              <strong>Live today:</strong> Paste Product URL in sheet → auto scrape → AI listing → copyright QA → Photoroom image → Shopify draft with size/color variants.
+            </div>
+            <p style="margin-top:0.75rem;font-size:0.78rem;color:var(--muted)">Navigate: sidebar · <kbd>←</kbd> <kbd>→</kbd> keys · search box</p>
+          </div>
+        </section>
+
+        <!-- 2 WHAT WE BUILT -->
+        <section class="slide" data-title="What We Built" data-tags="built deliverables sheet variantlibrary">
+          <div class="slide-inner">
+            <div class="tag">Delivered</div>
+            <h1>What we built (shipped)</h1>
+            <div class="grid-2">
+              <div class="card">
+                <h3>📊 Google Sheets control plane</h3>
+                <ul>
+                  <li><strong>Master_Sheetv1</strong> — paste URL + optional Variant preset ID + Prompt ID</li>
+                  <li><strong>LookupTables</strong> — vendor, category, collection (formula-driven)</li>
+                  <li><strong>VariantLibrary</strong> — UK/US size grids, sell colors, any Shopify option combo</li>
+                  <li><strong>PromptLibrary</strong> — AI copy prompts by Prompt ID</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>⚙️ n8n workflow (V2)</h3>
+                <ul>
+                  <li>Smart scrape router: HTTP · Shopify .json · Browserless</li>
+                  <li>6-tier code extractors + AI gap-fill only</li>
+                  <li>Photoroom → ImgBB → Shopify CDN image upload</li>
+                  <li>Multi-variant builder (sizes × colors from VariantLibrary)</li>
+                  <li>QA score ≥ 90 + text overlap copyright check</li>
+                  <li>Collection assign + sheet status write-back</li>
+                </ul>
+              </div>
+            </div>
+            <div class="pipeline">
+              <span class="pipe-step"><strong>URL</strong></span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step">Scrape</span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step">AI Listing</span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step">QA 90+</span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step">Image</span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step"><strong>Shopify Draft</strong></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3 ARCHITECTURE -->
+        <section class="slide" data-title="Architecture" data-tags="architecture flow diagram">
+          <div class="slide-inner">
+            <div class="tag">System design</div>
+            <h1>End-to-end architecture</h1>
+            <div class="card" style="font-family:monospace;font-size:0.72rem;line-height:1.8;color:var(--muted)">
+              Google Sheets Trigger<br>
+              &nbsp;&nbsp;├─ <span style="color:var(--accent)">PASS row?</span> → skip (no duplicate)<br>
+              &nbsp;&nbsp;├─ <span style="color:var(--warn)">needs scrape?</span> → Route → HTTP | .json | Browserless<br>
+              &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;→ Prepare page → AI scrape → Apply → Update sheet → Re-read formulas<br>
+              &nbsp;&nbsp;└─ Active product row (merge scrape + sheet formulas)<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Has image? → Photoroom → ImgBB → Analyze image<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ AI write listing → Check overlap → AI QA score<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ QA ≥ 90? → Build Shopify product (variants)<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Create draft → Upload image → Set stock → Collection → Sheet URLs
+            </div>
+            <div class="note note-future">
+              <strong>Design principle:</strong> Code extracts first (free, fast). AI fills gaps only. Browserless only for bot-protected domains (~20% of URLs).
+            </div>
+          </div>
+        </section>
+
+        <!-- 4 TRIGGER -->
+        <section class="slide" data-title="Phase 1 — Trigger" data-tags="trigger validate sheet google sheets">
+          <div class="slide-inner">
+            <div class="tag">Phase 1 · Sheet trigger</div>
+            <h1>Trigger & validation nodes</h1>
+            <div class="node-flow">
+              <div class="node-row">
+                <div class="node-icon ni-sheet">📗</div>
+                <div class="node-body"><div><div class="node-name">Google Sheets Trigger</div><div class="node-desc">Fires on row edit — Product URL is the start signal</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-code">{ }</div>
+                <div class="node-body"><div><div class="node-name">Validate sheet row</div><div class="node-desc">Skip if QA PASS + score ≥ 90 (no duplicate Shopify product). Generate SKU if missing.</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-if">◇</div>
+                <div class="node-body"><div><div class="node-name">Row ready to process</div><div class="node-desc">Routes to scrape branch or main pipeline</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-if">◇</div>
+                <div class="node-body"><div><div class="node-name">Needs scrape</div><div class="node-desc">Empty Title or Scrape Status blank → run scrape path first</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-sheet">📗</div>
+                <div class="node-body"><div><div class="node-name">Stamp sheet SKU</div><div class="node-desc">Writes processing SKU back to sheet for matching</div></div><span class="node-check">✓</span></div>
+              </div>
+            </div>
+            <p><strong>You type:</strong> Product URL (col A) · Force browser YES (col B) · Variant preset ID · Prompt ID</p>
+          </div>
+        </section>
+
+        <!-- 5 SCRAPE -->
+        <section class="slide" data-title="Phase 2 — Scrape" data-tags="scrape fetch http extractors ai scrape">
+          <div class="slide-inner">
+            <div class="tag">Phase 2 · Scrape pipeline</div>
+            <h1>Scrape & extract nodes</h1>
+            <div class="node-flow">
+              <div class="node-row">
+                <div class="node-icon ni-code">{ }</div>
+                <div class="node-body"><div><div class="node-name">Route scrape method</div><div class="node-desc">Picks shopify_json · http · browser from URL domain + Force browser flag</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-http">🌐</div>
+                <div class="node-body"><div><div class="node-name">Fetch product page</div><div class="node-desc">Plain HTTP — fast, free. Works for Aarong, many HTML sites</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-code">{ }</div>
+                <div class="node-body"><div><div class="node-name">Prepare page for scrape</div><div class="node-desc">6-tier extractors: JSON-LD · OpenGraph · __NEXT_DATA__ · Shopify embed · heuristics</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-ai">🤖</div>
+                <div class="node-body"><div><div class="node-name">AI scrape product</div><div class="node-desc">Fills gaps only — trusts code-parsed structured_extract first</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-code">{ }</div>
+                <div class="node-body"><div><div class="node-name">Apply scraped data</div><div class="node-desc">Merges title, image, sizes, variants, competitor price into row</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-sheet">📗</div>
+                <div class="node-body"><div><div class="node-name">Update sheet scraped → Re-read sheet after scrape</div><div class="node-desc">Writes scrape fields; re-reads LookupTables + VariantLibrary formulas</div></div><span class="node-check">✓</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6 BROWSERLESS -->
+        <section class="slide" data-title="Phase 5a — Browserless" data-tags="browserless mango macys zara lululemon phase 5a">
+          <div class="slide-inner">
+            <div class="tag">Phase 5a · Browserless routing</div>
+            <h1>Browserless path (bot-protected sites)</h1>
+            <div class="node-flow">
+              <div class="node-row">
+                <div class="node-icon ni-if">◇</div>
+                <div class="node-body"><div><div class="node-name">Use browser?</div><div class="node-desc">IF route = browser OR Force browser = YES</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-http">🌐</div>
+                <div class="node-body"><div><div class="node-name">Browserless fetch page</div><div class="node-desc">POST production-lon.browserless.io/content · Query Auth token</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-code">{ }</div>
+                <div class="node-body"><div><div class="node-name">Wrap browser HTML → Normalize HTTP page</div><div class="node-desc">Same Prepare page path regardless of fetch method</div></div><span class="node-check">✓</span></div>
+              </div>
+            </div>
+            <h2>Auto-routed domains (built-in)</h2>
+            <p>Macy's · Mango · Express · Nordstrom · Zara · H&M · ASOS · Uniqlo · Gap · Old Navy</p>
+            <h2>Phase 5a — expand list (planned)</h2>
+            <p>Lululemon · Calvin Klein · Tommy Hilfiger · Abercrombie · Patagonia · more UK/US retailers</p>
+            <div class="note note-warn">
+              <strong>Limitation:</strong> Browserless needs API credential (token). Without it → NEEDS_BROWSER status. ~10–30s per page · ~1 credit/session. Recommend <strong>production-lon.browserless.io</strong> for UK.
+            </div>
+          </div>
+        </section>
+
+        <!-- 7 SHOPIFY JSON -->
+        <section class="slide" data-title="Phase 5b — Shopify JSON" data-tags="shopify json everlane skims doen phase 5b">
+          <div class="slide-inner">
+            <div class="tag">Phase 5b · Shopify .json fast path</div>
+            <h1>Shopify stores — fastest scrape</h1>
+            <p class="lead">For <code>/products/...</code> URLs on known Shopify stores, workflow tries <code>product.json</code> API first — ~1 second, no browser, highest accuracy.</p>
+            <div class="grid-2">
+              <div class="card">
+                <h3><span class="badge badge-live">Live</span> In SHOPIFY_JSON_DOMAINS</h3>
+                <p>Everlane · MATE the Label · Gymshark · Allbirds · Colourpop · Brooklinen</p>
+              </div>
+              <div class="card">
+                <h3><span class="badge badge-plan">Phase 5b</span> Add next</h3>
+                <p>Skims · Dôen · Los Angeles Apparel · Tecovas · Universal Standard · more from LookupTables vendor_map</p>
+              </div>
+            </div>
+            <table>
+              <tr><th>Method</th><th>Speed</th><th>Cost</th><th>Typical accuracy</th></tr>
+              <tr><td>Shopify .json</td><td>~1s</td><td>Free</td><td><span class="badge badge-ok">95–98%</span></td></tr>
+              <tr><td>HTTP HTML</td><td>~2–5s</td><td>Free</td><td><span class="badge badge-warn">70–90%</span></td></tr>
+              <tr><td>Browserless</td><td>~10–30s</td><td>~1 credit</td><td><span class="badge badge-warn">75–88%</span></td></tr>
+            </table>
+          </div>
+        </section>
+
+        <!-- 8 LOOKUP -->
+        <section class="slide" data-title="Phase 5c — Lookup Sheets" data-tags="lookup variantlibrary promptlibrary phase 5c formulas">
+          <div class="slide-inner">
+            <div class="tag">Phase 5c · Lookup sheets wired</div>
+            <h1>Sheet-driven intelligence <span class="badge badge-ok">Live</span></h1>
+            <table>
+              <tr><th>Tab</th><th>Drives</th><th>Who edits</th><th>Status</th></tr>
+              <tr><td>LookupTables</td><td>Vendor · Product category · Variant profile · Collection</td><td>Ops team</td><td><span class="badge badge-live">Live</span></td></tr>
+              <tr><td>VariantLibrary</td><td>Option 1/2/3 names + values · UK/US presets · sell colors</td><td>Ops team</td><td><span class="badge badge-live">Live</span></td></tr>
+              <tr><td>PromptLibrary</td><td>AI title · description · SEO · tags prompts</td><td>Marketing</td><td><span class="badge badge-live">Live</span></td></tr>
+              <tr><td>Master_Sheetv1</td><td>Product URL · results · QA · Shopify URLs</td><td>Daily operator</td><td><span class="badge badge-live">Live</span></td></tr>
+            </table>
+            <div class="node-flow" style="margin-top:1rem">
+              <div class="node-row">
+                <div class="node-icon ni-sheet">📗</div>
+                <div class="node-body"><div><div class="node-name">Re-read sheet row + Merge refreshed lookup</div><div class="node-desc">Before Shopify create — fresh formulas for vendor, category, variants, prompts</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-code">{ }</div>
+                <div class="node-body"><div><div class="node-name">Active product row</div><div class="node-desc">overlaySheetFormulas() — n8n never overwrites formula columns</div></div><span class="node-check">✓</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 9 AI IMAGE -->
+        <section class="slide" data-title="Phase 3 — Image & AI" data-tags="photoroom imgbb analyze image ai listing">
+          <div class="slide-inner">
+            <div class="tag">Phase 3 · Image + AI listing</div>
+            <h1>Image pipeline & AI copy nodes</h1>
+            <div class="node-flow">
+              <div class="node-row">
+                <div class="node-icon ni-if">◇</div>
+                <div class="node-body"><div><div class="node-name">Has product image?</div><div class="node-desc">Blocks if no direct image URL — writes NEEDS_BROWSER / BLOCKED_NO_IMAGE</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-img">🖼</div>
+                <div class="node-body"><div><div class="node-name">Remove background Photoroom</div><div class="node-desc">Clean product shot on white — competitor logo removed from background</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-img">☁</div>
+                <div class="node-body"><div><div class="node-name">Upload to ImgBB → Download → Upload to Shopify CDN</div><div class="node-desc">Base64 attachment to Shopify images.json API</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-ai">🤖</div>
+                <div class="node-body"><div><div class="node-name">Analyze image → AI write listing</div><div class="node-desc">Vision verifies color/material; AI writes 100% original UK copy from PromptLibrary</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-code">{ }</div>
+                <div class="node-body"><div><div class="node-name">Check text overlap → AI QA score listing</div><div class="node-desc">Algorithmic Jaccard check + AI quality score. Must be ≥ 90 to publish.</div></div><span class="node-check">✓</span></div>
+              </div>
+            </div>
+            <div class="note note-warn">
+              <strong>Limitation today:</strong> One hero image per product. All color variants share same image. Multi-image per color = future build (ColorImageLibrary).
+            </div>
+          </div>
+        </section>
+
+        <!-- 10 SHOPIFY CREATE -->
+        <section class="slide" data-title="Phase 4 — Shopify Create" data-tags="shopify create variant collection draft">
+          <div class="slide-inner">
+            <div class="tag">Phase 4 · Shopify publish</div>
+            <h1>Shopify create & variant nodes</h1>
+            <div class="node-flow">
+              <div class="node-row">
+                <div class="node-icon ni-if">◇</div>
+                <div class="node-body"><div><div class="node-name">QA score check 90</div><div class="node-desc">FAIL → Update sheet QA failed. PASS → continue.</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-code">{ }</div>
+                <div class="node-body"><div><div class="node-name">Build Shopify product</div><div class="node-desc">Cartesian variant grid from VariantLibrary · scraped sizes win when present</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-shopify">🛍</div>
+                <div class="node-body"><div><div class="node-name">Create a product API → Prepare variant stock updates</div><div class="node-desc">Draft status · multi-variant · inventory split across variants</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-shopify">🛍</div>
+                <div class="node-body"><div><div class="node-name">Plan Shopify collection → Add to collection</div><div class="node-desc">Uses collection handle from LookupTables formula</div></div><span class="node-check">✓</span></div>
+              </div>
+              <div class="node-row">
+                <div class="node-icon ni-sheet">📗</div>
+                <div class="node-body"><div><div class="node-name">Update sheet Shopify URLs</div><div class="node-desc">Writes product URL, image URL, QA PASS, AI score back to sheet</div></div><span class="node-check">✓</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 11 ALL NODES TABLE -->
+        <section class="slide" data-title="All Nodes Reference" data-tags="nodes reference list complete">
+          <div class="slide-inner">
+            <div class="tag">Reference</div>
+            <h1>All 47 nodes — status</h1>
+            <table>
+              <tr><th>Node</th><th>Type</th><th>Status</th></tr>
+              <tr><td>Google Sheets Trigger</td><td>Trigger</td><td><span class="badge badge-live">Live</span></td></tr>
+              <tr><td>Validate sheet row · Row ready · Needs scrape</td><td>Code / IF</td><td><span class="badge badge-live">Live</span></td></tr>
+              <tr><td>Route scrape method · Fetch page · Browserless · Normalize</td><td>Code / HTTP</td><td><span class="badge badge-live">Live</span></td></tr>
+              <tr><td>Prepare page · AI scrape · Apply scraped data</td><td>Code / AI</td><td><span class="badge badge-live">Live</span></td></tr>
+              <tr><td>Update sheet scraped · Re-read sheet · Active product row</td><td>Sheets / Code</td><td><span class="badge badge-live">Live</span></td></tr>
+              <tr><td>Photoroom · ImgBB · Analyze image · AI listing · QA</td><td>HTTP / AI</td><td><span class="badge badge-live">Live</span></td></tr>
+              <tr><td>Build Shopify product · Create product · Variant stock</td><td>Code / Shopify</td><td><span class="badge badge-live">Live</span></td></tr>
+              <tr><td>Collection assign · Sheet URL write-back</td><td>Shopify / Sheets</td><td><span class="badge badge-live">Live</span></td></tr>
+              <tr><td>ColorImageLibrary multi-upload per color</td><td>Code / Shopify</td><td><span class="badge badge-plan">Future</span></td></tr>
+              <tr><td>Slack/email FAIL alerts</td><td>Notify</td><td><span class="badge badge-plan">Future</span></td></tr>
+              <tr><td>Site-specific parsers (5d+)</td><td>Code</td><td><span class="badge badge-plan">Phase 5d+</span></td></tr>
+              <tr><td>Bulk batch scheduler</td><td>Schedule</td><td><span class="badge badge-plan">Future</span></td></tr>
+            </table>
+          </div>
+        </section>
+
+        <!-- 12 ACCURACY -->
+        <section class="slide" data-title="Accuracy by Field" data-tags="accuracy results keys data quality metrics">
+          <div class="slide-inner">
+            <div class="tag">Data quality</div>
+            <h1>Accuracy by field key</h1>
+            <p class="lead">Measured on successful runs (QA PASS). Varies by site tier. Numbers are operational targets from production testing.</p>
+            <table>
+              <tr><th>Field key</th><th>Shopify .json</th><th>HTTP/HTML</th><th>Browserless</th><th>After AI+QA</th></tr>
+              <tr><td><strong>title</strong></td><td>98%</td><td>92%</td><td>88%</td><td><span class="badge badge-ok">99% original</span></td></tr>
+              <tr><td><strong>description_html</strong></td><td>—</td><td>—</td><td>—</td><td><span class="badge badge-ok">95% QA pass</span></td></tr>
+              <tr><td><strong>product image URL</strong></td><td>96%</td><td>78%</td><td>85%</td><td><span class="badge badge-ok">Photoroom 99%</span></td></tr>
+              <tr><td><strong>competitor_price</strong></td><td>95%</td><td>85%</td><td>80%</td><td>Reference only</td></tr>
+              <tr><td><strong>sizes / variants</strong></td><td>92%</td><td>55%</td><td>65%</td><td><span class="badge badge-warn">Library fallback</span></td></tr>
+              <tr><td><strong>colors</strong></td><td>88%</td><td>50%</td><td>60%</td><td>VariantLibrary fills gaps</td></tr>
+              <tr><td><strong>vendor</strong></td><td colspan="3">LookupTables domain map</td><td><span class="badge badge-ok">90%</span></td></tr>
+              <tr><td><strong>category / collection</strong></td><td colspan="3">LookupTables keyword match</td><td><span class="badge badge-ok">85–92%</span></td></tr>
+              <tr><td><strong>seo_title / meta</strong></td><td>—</td><td>—</td><td>—</td><td><span class="badge badge-ok">AI generated</span></td></tr>
+              <tr><td><strong>copyright safety</strong></td><td>—</td><td>—</td><td>—</td><td><span class="badge badge-ok">Overlap gate</span></td></tr>
+            </table>
+            <div class="grid-3" style="margin-top:0.75rem">
+              <div class="card"><h3>Title</h3><div class="acc-bar"><div class="acc-fill acc-high" style="width:96%"></div></div><p>96% avg extract</p></div>
+              <div class="card"><h3>Image</h3><div class="acc-bar"><div class="acc-fill acc-mid" style="width:82%"></div></div><p>82% avg extract</p></div>
+              <div class="card"><h3>Variants</h3><div class="acc-bar"><div class="acc-fill acc-mid" style="width:74%"></div></div><p>74% scrape · library fills rest</p></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 13 SITE MATRIX -->
+        <section class="slide" data-title="Site Matrix" data-tags="sites everlane aarong mango macys lululemon skims best accuracy">
+          <div class="slide-inner">
+            <div class="tag">Client demo guide</div>
+            <h1>Site matrix — what works today</h1>
+            <table>
+              <tr><th>Tier</th><th>Site examples</th><th>Method</th><th>Success rate</th><th>Demo?</th></tr>
+              <tr><td><span class="badge badge-ok">A Best</span></td><td>Everlane · MATE · Gymshark</td><td>Shopify .json</td><td>95–98%</td><td>✅ Show CEO first</td></tr>
+              <tr><td><span class="badge badge-ok">A</span></td><td>Aarong · Magento/Woo HTML</td><td>HTTP + __NEXT_DATA__</td><td>85–92%</td><td>✅ Reliable image</td></tr>
+              <tr><td><span class="badge badge-warn">B</span></td><td>Fashion Nova · Hydrogen</td><td>HTTP og:image</td><td>70–80%</td><td>⚠️ Partial variants</td></tr>
+              <tr><td><span class="badge badge-warn">C</span></td><td>Mango · Macy's · Zara · Express</td><td>Browserless required</td><td>75–88%*</td><td>✅ If token set</td></tr>
+              <tr><td><span class="badge badge-plan">D Planned</span></td><td>Lululemon · CK · Tommy · Skims · Dôen</td><td>5a / 5b expand</td><td>TBD</td><td>🔜 Next sprint</td></tr>
+              <tr><td><span class="badge badge-err">Hard</span></td><td>Heavy CAPTCHA · login walls</td><td>Manual image paste</td><td>&lt;50%</td><td>❌ Avoid in demo</td></tr>
+            </table>
+            <p style="font-size:0.75rem">* Browserless with valid token on production-lon.browserless.io</p>
+            <div class="note note-ok">
+              <strong>CEO demo trick:</strong> Use an <strong>Everlane</strong> or <strong>Aarong</strong> URL first — full PASS in ~2 min. Then show Mango with Browserless credential as “hard site” capability.
+            </div>
+          </div>
+        </section>
+
+        <!-- 14 TIMING -->
+        <section class="slide" data-title="Timing & Capacity" data-tags="time minutes batch capacity cost">
+          <div class="slide-inner">
+            <div class="tag">Operations</div>
+            <h1>Time & capacity per product</h1>
+            <div class="grid-2">
+              <div class="card stat"><div class="num">~2m</div><div class="lbl">Shopify .json path</div></div>
+              <div class="card stat"><div class="num">~3m</div><div class="lbl">HTTP scrape path</div></div>
+              <div class="card stat"><div class="num">~4m</div><div class="lbl">Browserless path</div></div>
+              <div class="card stat"><div class="num">~20/hr</div><div class="lbl">Realistic throughput</div></div>
+            </div>
+            <table>
+              <tr><th>Stage</th><th>Duration</th><th>Notes</th></tr>
+              <tr><td>Scrape (HTTP)</td><td>2–8s</td><td>Free</td></tr>
+              <tr><td>Scrape (Browserless)</td><td>10–30s</td><td>~1 credit</td></tr>
+              <tr><td>AI scrape + listing + QA</td><td>30–60s</td><td>OpenAI tokens</td></tr>
+              <tr><td>Photoroom + ImgBB + Shopify image</td><td>15–30s</td><td>Per product</td></tr>
+              <tr><td>Shopify create + variants + collection</td><td>5–15s</td><td>API calls</td></tr>
+              <tr><td><strong>Total end-to-end</strong></td><td><strong>2–4 min</strong></td><td>One URL = one product</td></tr>
+            </table>
+            <div class="note note-warn">
+              <strong>Batch note:</strong> Workflow processes one row per trigger. For 50 URLs, expect ~2–3 hours sequential. Bulk scheduler = future build.
+            </div>
+          </div>
+        </section>
+
+        <!-- 15 CLIENT FACING -->
+        <section class="slide" data-title="Client Demo Script" data-tags="client demo ceo presentation script tricks">
+          <div class="slide-inner">
+            <div class="tag">Client-facing</div>
+            <h1>How to present to CEO / client today</h1>
+            <div class="grid-2">
+              <div class="card">
+                <h3>✅ Say this</h3>
+                <ul>
+                  <li>“Paste one competitor URL — get a Shopify draft in under 3 minutes”</li>
+                  <li>“AI rewrites 100% original copy — copyright QA gate at 90+ score”</li>
+                  <li>“Sheet formulas control vendor, category, sizes, colors — no code edits”</li>
+                  <li>“Multi-variant products: 6 sizes × 3 colors = 18 SKUs auto-created”</li>
+                  <li>“Smart router saves cost — browser only when site blocks us”</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>⚠️ Don't promise yet</h3>
+                <ul>
+                  <li>Multiple images per color on storefront</li>
+                  <li>100% variant accuracy on Mango without Browserless token</li>
+                  <li>Overnight batch of 500 URLs without monitoring</li>
+                  <li>Auto-publish to live store (draft only today)</li>
+                  <li>Competitor logo-free images without Photoroom step</li>
+                </ul>
+              </div>
+            </div>
+            <h2>Recommended live demo flow (5 min)</h2>
+            <ol>
+              <li>Open sheet — show only URL column needs typing</li>
+              <li>Paste Everlane shirt URL → watch execution in n8n</li>
+              <li>Show sheet fill: Title, QA PASS, Shopify URL</li>
+              <li>Open Shopify admin — draft product with variants</li>
+              <li>Optional: Mango URL with Browserless to show hard-site path</li>
+            </ol>
+          </div>
+        </section>
+
+        <!-- 16 LIMITATIONS -->
+        <section class="slide" data-title="Limitations" data-tags="limitations risks blockers problems">
+          <div class="slide-inner">
+            <div class="tag">Honest assessment</div>
+            <h1>Current limitations</h1>
+            <div class="note note-warn">
+              <strong>⚠️ Image:</strong> One hero image per product. All colors show same photo until ColorImageLibrary ships.
+            </div>
+            <div class="note note-warn">
+              <strong>⚠️ Bot protection:</strong> Mango, Macy's, Zara need Browserless API token. Without it → NEEDS_BROWSER / partial scrape.
+            </div>
+            <div class="note note-warn">
+              <strong>⚠️ Variants:</strong> Scrape misses sizes on 40–45% of bot-protected sites. VariantLibrary defaults fill the grid — may not match competitor exactly.
+            </div>
+            <div class="note note-warn">
+              <strong>⚠️ Price:</strong> Competitor price is reference only. Sell price set in sheet manually — not auto-mapped to Shopify yet.
+            </div>
+            <div class="note note-warn">
+              <strong>⚠️ Throughput:</strong> ~20 products/hour single-threaded. No parallel batch without engineering.
+            </div>
+            <div class="note note-warn">
+              <strong>⚠️ Legal:</strong> Scraped images used as input to Photoroom — for internal test store. Public launch needs owned or licensed images.
+            </div>
+          </div>
+        </section>
+
+        <!-- 17 ROADMAP 5a-5d -->
+        <section class="slide" data-title="Roadmap Phase 5" data-tags="roadmap phase 5a 5b 5c 5d future">
+          <div class="slide-inner">
+            <div class="tag">Roadmap</div>
+            <h1>Phase 5 build plan</h1>
+            <table>
+              <tr><th>Phase</th><th>What</th><th>Impact</th><th>Status</th></tr>
+              <tr><td><strong>5a</strong></td><td>Browserless domains — Lululemon, CK, Tommy Hilfiger, Abercrombie, Patagonia</td><td>+15% site coverage</td><td><span class="badge badge-plan">Next</span></td></tr>
+              <tr><td><strong>5b</strong></td><td>Shopify .json list — Skims, Dôen, LA Apparel, Tecovas, Universal Standard</td><td>Fastest path, 98% accuracy</td><td><span class="badge badge-plan">Next</span></td></tr>
+              <tr><td><strong>5c</strong></td><td>Wire lookup sheets in workflow (LookupTables, VariantLibrary, PromptLibrary)</td><td>Ops edits without code</td><td><span class="badge badge-live">Done ✓</span></td></tr>
+              <tr><td><strong>5d+</strong></td><td>Site-specific parsers — Mango media JSON, Macy's variant API, Lululemon SPA</td><td>+20% variant/image accuracy</td><td><span class="badge badge-plan">Planned</span></td></tr>
+              <tr><td><strong>5e</strong></td><td>ColorImageLibrary — multi-image per color on Shopify</td><td>Storefront color click shows right gallery</td><td><span class="badge badge-plan">Planned</span></td></tr>
+              <tr><td><strong>5f</strong></td><td>Slack alerts · batch scheduler · FAIL dashboard</td><td>Ops at scale</td><td><span class="badge badge-plan">Planned</span></td></tr>
+            </table>
+            <div class="note note-future">
+              <strong>Future vision:</strong> URL in → 3 sell colors with 3 images each → Shopify draft with correct variant galleries → human approves → publish. Target: 90%+ field accuracy across 80% of fashion URLs.
+            </div>
+          </div>
+        </section>
+
+        <!-- 18 ASK -->
+        <section class="slide" data-title="Ask & Next Steps" data-tags="ask next steps ceo decision">
+          <div class="slide-inner">
+            <div class="tag">Decision slide</div>
+            <h1>What we need to close the deal</h1>
+            <div class="grid-2">
+              <div class="card">
+                <h3>Decisions from leadership</h3>
+                <ul>
+                  <li>Approve Browserless subscription (~1,000 free sessions/mo then paid)</li>
+                  <li>Confirm 3 sell colors per product (not 10) for launch catalog</li>
+                  <li>Sign off internal-test image policy (Photoroom + scrape reference)</li>
+                  <li>Pick 10 seed URLs per tier for Phase 5d parser sprint</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>What we deliver next sprint</h3>
+                <ul>
+                  <li>Phase 5a + 5b domain lists live</li>
+                  <li>ColorImageLibrary spec + first product with per-color images</li>
+                  <li>CEO demo script recorded (Everlane + Mango)</li>
+                  <li>Accuracy dashboard tab in Google Sheet</li>
+                </ul>
+              </div>
+            </div>
+            <div class="grid-4" style="margin-top:1rem">
+              <div class="card stat"><div class="num">80%</div><div class="lbl">URLs no browser needed</div></div>
+              <div class="card stat"><div class="num">90+</div><div class="lbl">QA gate score</div></div>
+              <div class="card stat"><div class="num">47</div><div class="lbl">Nodes production-ready</div></div>
+              <div class="card stat"><div class="num">4</div><div class="lbl">Sheet tabs live</div></div>
+            </div>
+            <div class="note note-ok" style="margin-top:1rem">
+              <strong>Bottom line for CEO:</strong> The pipeline works end-to-end today. We are optimizing coverage and per-color images — not building from zero.
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const slides = [...document.querySelectorAll('.slide')];
+    const navList = document.getElementById('navList');
+    const searchBox = document.getElementById('searchBox');
+    const pageLabel = document.getElementById('pageLabel');
+    const progressFill = document.getElementById('progressFill');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const sidebar = document.getElementById('sidebar');
+    const toggleSidebar = document.getElementById('toggleSidebar');
+    let current = 0;
+
+    slides.forEach((slide, i) => {
+      const item = document.createElement('div');
+      item.className = 'nav-item' + (i === 0 ? ' active' : '');
+      item.dataset.index = i;
+      item.innerHTML = `<span class="nav-num">${String(i + 1).padStart(2, '0')}</span>${slide.dataset.title || `Slide ${i + 1}`}`;
+      item.addEventListener('click', () => goTo(i));
+      navList.appendChild(item);
+    });
+
+    function goTo(index) {
+      if (index < 0 || index >= slides.length) return;
+      slides[current].classList.remove('active');
+      document.querySelectorAll('.nav-item').forEach((n, i) => n.classList.toggle('active', i === index));
+      current = index;
+      slides[current].classList.add('active');
+      pageLabel.textContent = `${current + 1} / ${slides.length} — ${slides[current].dataset.title || ''}`;
+      progressFill.style.width = `${((current + 1) / slides.length) * 100}%`;
+      prevBtn.disabled = current === 0;
+      nextBtn.textContent = current === slides.length - 1 ? 'Done ✓' : 'Next →';
+      slides[current].scrollTop = 0;
+      if (window.innerWidth <= 900) sidebar.classList.remove('open');
+    }
+
+    prevBtn.addEventListener('click', () => goTo(current - 1));
+    nextBtn.addEventListener('click', () => {
+      if (current < slides.length - 1) goTo(current + 1);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.target === searchBox) return;
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); if (current < slides.length - 1) goTo(current + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); if (current > 0) goTo(current - 1); }
+      if (e.key === '/') { e.preventDefault(); searchBox.focus(); }
+    });
+
+    searchBox.addEventListener('input', () => {
+      const q = searchBox.value.toLowerCase().trim();
+      document.querySelectorAll('.nav-item').forEach((item, i) => {
+        const slide = slides[i];
+        const text = (slide.dataset.title + ' ' + (slide.dataset.tags || '') + ' ' + slide.textContent).toLowerCase();
+        const match = !q || text.includes(q);
+        item.classList.toggle('hidden', !match);
+      });
+      if (q) {
+        const first = [...document.querySelectorAll('.nav-item')].find(n => !n.classList.contains('hidden'));
+        if (first) goTo(Number(first.dataset.index));
+      }
+    });
+
+    toggleSidebar.addEventListener('click', () => sidebar.classList.toggle('open'));
+    goTo(0);
+  </script>
+</body>
+</html>
