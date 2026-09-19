@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ShopifyProductAdd V2 — CEO / COO Workflow Presentation</title>
+  <title>ShopifyProductAdd V2 — Project Presentation</title>
   <style>
     :root {
       --bg: #08080d;
@@ -351,7 +351,7 @@
     <div class="main">
       <header class="topbar">
         <button class="toggle-sidebar" id="toggleSidebar" aria-label="Menu">☰</button>
-        <div class="brand">ShopifyProductAdd <span>V2</span></div>
+        <div class="brand">ShopifyProductAdd <span>V2 · Project Deck</span></div>
         <div class="topbar-right">
           <span class="page-label" id="pageLabel">Slide 1</span>
           <button class="btn" id="prevBtn">← Prev</button>
@@ -361,26 +361,212 @@
 
       <div class="slides-wrap" id="slidesWrap">
 
-        <!-- 1 TITLE -->
-        <section class="slide active" data-title="Executive Summary" data-tags="ceo coo intro overview">
+        <!-- 1 PROJECT OVERVIEW -->
+        <section class="slide active" data-title="Project Overview" data-tags="intro overview shopifyproductadd project">
           <div class="slide-inner">
-            <div class="tag">CEO / COO Briefing · September 2026</div>
+            <div class="tag">ShopifyProductAdd V2 · Project Presentation · September 2026</div>
             <h1><span class="gradient">One URL → Shopify Draft</span></h1>
-            <p class="lead">Production n8n workflow that scrapes competitor fashion URLs, rewrites listings with AI, passes QA gates, and creates multi-variant Shopify draft products — driven by Google Sheets.</p>
+            <p class="lead">AI-powered e-commerce automation: scrape competitor fashion URLs, rewrite listings, pass QA gates, and create multi-variant Shopify draft products — driven by Google Sheets + n8n.</p>
             <div class="grid-4">
               <div class="card stat"><div class="num">47</div><div class="lbl">Workflow nodes</div></div>
-              <div class="card stat"><div class="num">4</div><div class="lbl">Sheet tabs</div></div>
+              <div class="card stat"><div class="num">26</div><div class="lbl">Target brand sites</div></div>
               <div class="card stat"><div class="num">90+</div><div class="lbl">QA pass score</div></div>
-              <div class="card stat"><div class="num">2–4m</div><div class="lbl">Per product</div></div>
+              <div class="card stat"><div class="num">2–4m</div><div class="lbl">Per product (auto)</div></div>
             </div>
-            <div class="note note-ok">
-              <strong>Live today:</strong> Paste Product URL in sheet → auto scrape → AI listing → copyright QA → Photoroom image → Shopify draft with size/color variants.
+            <div class="pipeline" style="margin-top:1rem">
+              <span class="pipe-step"><strong>Why</strong></span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step">Workflow</span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step">Accuracy</span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step">Difficulties</span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step"><strong>Future</strong></span>
             </div>
             <p style="margin-top:0.75rem;font-size:0.78rem;color:var(--muted)">Navigate: sidebar · <kbd>←</kbd> <kbd>→</kbd> keys · search box</p>
           </div>
         </section>
 
-        <!-- 2 WHAT WE BUILT -->
+        <!-- 2 WHY WE SOLVE THIS -->
+        <section class="slide" data-title="Why We Solve This Problem" data-tags="why problem manual listing competitor fashion ecommerce">
+          <div class="slide-inner">
+            <div class="tag">The problem</div>
+            <h1>Why we built ShopifyProductAdd</h1>
+            <p class="lead">UK fashion e-commerce teams need to launch products fast — but every competitor listing is a manual copy-paste job across scrape, copy, images, variants, and Shopify admin.</p>
+            <div class="grid-2">
+              <div class="card">
+                <h3>❌ Without automation</h3>
+                <ul>
+                  <li>Open competitor product page → copy title, description, specs by hand</li>
+                  <li>Download image → edit in Photoshop → upload to Shopify</li>
+                  <li>Manually create 6 sizes × 3 colors = 18 variant rows in admin</li>
+                  <li>Rewrite copy so it's not a copyright copy of the source</li>
+                  <li>Assign vendor, category, collection — repeat for every SKU</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>✅ With ShopifyProductAdd</h3>
+                <ul>
+                  <li>Paste <strong>one Product URL</strong> in Google Sheets</li>
+                  <li>Workflow scrapes, rewrites, QA-checks, and builds variants automatically</li>
+                  <li>Shopify <strong>draft product</strong> ready in 2–4 minutes</li>
+                  <li>Ops team controls presets via sheet — no code deploy per brand</li>
+                  <li>Scale from 5 products/day to ~20/hour per operator</li>
+                </ul>
+              </div>
+            </div>
+            <div class="note note-ok">
+              <strong>Core insight:</strong> The bottleneck isn't Shopify — it's the <em>human hours</em> between finding a competitor product and having a publish-ready draft.
+            </div>
+          </div>
+        </section>
+
+        <!-- 3 MANUAL TIME COST -->
+        <section class="slide" data-title="Humans Need More Time" data-tags="manual time hours human slow competitor listing">
+          <div class="slide-inner">
+            <div class="tag">Why automation matters</div>
+            <h1>Manual work takes hours — automation takes minutes</h1>
+            <table>
+              <tr><th>Task</th><th>Human (manual)</th><th>ShopifyProductAdd (auto)</th></tr>
+              <tr><td>Scrape product data from competitor URL</td><td>15–30 min</td><td>10–30 sec</td></tr>
+              <tr><td>Write original UK listing copy</td><td>20–45 min</td><td>30–60 sec (AI + QA gate)</td></tr>
+              <tr><td>Clean product image (remove logo/bg)</td><td>10–20 min</td><td>15–30 sec (Photoroom)</td></tr>
+              <tr><td>Create multi-variant grid in Shopify</td><td>15–30 min</td><td>5–15 sec (VariantLibrary)</td></tr>
+              <tr><td>Copyright check + category assignment</td><td>10–15 min</td><td>Built into pipeline</td></tr>
+              <tr><td><strong>Total per product</strong></td><td><strong>~1–2 hours</strong></td><td><strong>2–4 minutes</strong></td></tr>
+            </table>
+            <div class="grid-3" style="margin-top:0.75rem">
+              <div class="card stat"><div class="num">30×</div><div class="lbl">Faster than manual</div></div>
+              <div class="card stat"><div class="num">~20/hr</div><div class="lbl">Automated throughput</div></div>
+              <div class="card stat"><div class="num">1 URL</div><div class="lbl">Operator input needed</div></div>
+            </div>
+            <div class="note note-warn">
+              <strong>Real-time need:</strong> Merchandisers want to react to trends same-day. A human doing 5–8 products/day can't keep up with a 26-brand competitor watch list.
+            </div>
+          </div>
+        </section>
+
+        <!-- 4 AI AUTOMATION -->
+        <section class="slide" data-title="AI Automation in Real Time" data-tags="ai automation n8n real time shopifyproductadd pipeline">
+          <div class="slide-inner">
+            <div class="tag">Our solution</div>
+            <h1>ShopifyProductAdd — AI automation pipeline</h1>
+            <p class="lead">A production n8n workflow that runs end-to-end in real time when you edit a Google Sheet row. No batch jobs, no overnight waits — trigger fires → product builds.</p>
+            <div class="pipeline">
+              <span class="pipe-step"><strong>Sheet URL</strong></span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step">Smart Scrape</span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step">AI Listing</span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step">QA ≥ 90</span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step">Photoroom</span>
+              <span class="pipe-arrow">→</span>
+              <span class="pipe-step"><strong>Shopify Draft</strong></span>
+            </div>
+            <div class="grid-2" style="margin-top:0.75rem">
+              <div class="card">
+                <h3>What AI does</h3>
+                <ul>
+                  <li>Rewrites 100% original product copy (not competitor text)</li>
+                  <li>Fills scrape gaps only — code extracts first (cheaper, faster)</li>
+                  <li>Vision analysis verifies color/material from image</li>
+                  <li>QA scores listing quality — must pass ≥ 90</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>What humans still do</h3>
+                <ul>
+                  <li>Paste competitor Product URL</li>
+                  <li>Set sell price in Shopify admin after draft</li>
+                  <li>Review QA FAIL rows and approve edge cases</li>
+                  <li>Edit LookupTables / VariantLibrary presets (one-time setup)</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5 USE CASE 1 -->
+        <section class="slide" data-title="Use Case — Competitor to Draft" data-tags="use case competitor url shopify draft fast">
+          <div class="slide-inner">
+            <div class="tag">Use case 1</div>
+            <h1>Competitor URL → Shopify draft in under 3 minutes</h1>
+            <p class="lead">Merchandiser spots a trending Everlane linen shirt. Paste the URL → get a draft with title, description, image, 6 sizes × 3 colors, vendor, and collection assigned.</p>
+            <ol>
+              <li>Copy <code>everlane.com/products/...</code> into Master_Sheetv1</li>
+              <li>Sheet formulas auto-fill vendor, category, variant preset from LookupTables</li>
+              <li>n8n scrapes via Shopify <code>.json</code> API (fast path)</li>
+              <li>AI writes UK listing → QA PASS → Photoroom cleans image</li>
+              <li>Shopify draft created — operator sets price and publishes</li>
+            </ol>
+            <div class="note note-ok">
+              <strong>Best demo site:</strong> Everlane (Mode A · ★☆☆ Easy) — reliable scrape, full variants, ~2 min end-to-end.
+            </div>
+          </div>
+        </section>
+
+        <!-- 6 USE CASE 2 -->
+        <section class="slide" data-title="Use Case — Multi-Variant Catalog" data-tags="use case variants sizes colors uk fashion jeans shoes">
+          <div class="slide-inner">
+            <div class="tag">Use case 2</div>
+            <h1>UK fashion multi-variant catalog at scale</h1>
+            <p class="lead">Launch a 50-SKU seasonal drop without manually building variant matrices in Shopify admin for every product.</p>
+            <div class="grid-2">
+              <div class="card">
+                <h3>VariantLibrary presets</h3>
+                <ul>
+                  <li><code>uk-shirts</code> — Size XS–XXL × 10 sell colors</li>
+                  <li><code>uk-jeans</code> — Waist × Length × Color (Levi's-style)</li>
+                  <li><code>uk-shoes</code> — UK Size 6–12 × 10 colors (Tecovas boots)</li>
+                  <li><code>custom</code> — any Shopify option names you type</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>Example output</h3>
+                <ul>
+                  <li>1 URL → 6 sizes × 3 colors = <strong>18 SKUs</strong> auto-created</li>
+                  <li>Inventory split across variants (default 10 total)</li>
+                  <li>Scraped sizes override preset when competitor data exists</li>
+                  <li>Collection auto-assigned from category keyword match</li>
+                </ul>
+              </div>
+            </div>
+            <div class="note note-future">
+              <strong>Coming:</strong> Per-color images on storefront (ColorImageLibrary) — today all variants share one hero image.
+            </div>
+          </div>
+        </section>
+
+        <!-- 7 USE CASE 3 -->
+        <section class="slide" data-title="Use Case — Sheet-Driven Ops" data-tags="use case sheet lookup non developer ops team mango zara">
+          <div class="slide-inner">
+            <div class="tag">Use case 3</div>
+            <h1>Sheet-driven ops — no developer per brand</h1>
+            <p class="lead">Adding a new competitor brand doesn't require a code deploy. Ops edits LookupTables and VariantLibrary — workflow picks up changes on next run.</p>
+            <table class="dense">
+              <tr><th>Sheet tab</th><th>Who edits</th><th>What it controls</th></tr>
+              <tr><td><strong>Master_Sheetv1</strong></td><td>Daily operator</td><td>Product URL · Force browser · results</td></tr>
+              <tr><td><strong>LookupTables</strong></td><td>Ops / merchandising</td><td>Vendor · category · collection formulas</td></tr>
+              <tr><td><strong>VariantLibrary</strong></td><td>Ops</td><td>Size/color presets per product type</td></tr>
+              <tr><td><strong>PromptLibrary</strong></td><td>Marketing</td><td>AI copy tone by Prompt ID</td></tr>
+            </table>
+            <div class="grid-2" style="margin-top:0.75rem">
+              <div class="card">
+                <h3>Hard site example</h3>
+                <p>Mango / Zara / Macy's → set <code>Force browser = YES</code> → Browserless fetches real page HTML → same pipeline continues.</p>
+              </div>
+              <div class="card">
+                <h3>26-brand watch list</h3>
+                <p>Mode A (Shopify) · Mode B (Browserless) · Mode C (custom parser) — routing is automatic from domain lists in code.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8 WHAT WE BUILT -->
         <section class="slide" data-title="What We Built" data-tags="built deliverables sheet variantlibrary">
           <div class="slide-inner">
             <div class="tag">Delivered</div>
@@ -530,10 +716,8 @@
               </div>
             </div>
             <h2>Auto-routed domains <span class="badge badge-live">In code today</span></h2>
-            <p>Macy's · Mango · Express · Nordstrom · Zara · H&M · ASOS · Uniqlo · Gap · Old Navy</p>
-            <p style="font-size:0.78rem;margin-top:0.4rem">Source: <code>scripts/n8n-scrape-extractors.js</code> → <code>BROWSER_DOMAINS</code> · shipped via <code>patch-phase4-browserless.py</code></p>
-            <h2>Future expand list <span class="badge badge-plan">Not started</span></h2>
-            <p>Lululemon · Calvin Klein · Tommy Hilfiger · Abercrombie · Patagonia — add to same array when we start that work</p>
+            <p>Macy's · Mango · Express · Zara · Gap · H&M · ASOS · Nordstrom · Uniqlo · Old Navy · <strong>Lululemon · Calvin Klein · Tommy · Abercrombie · Ralph Lauren</strong></p>
+            <p style="font-size:0.78rem;margin-top:0.4rem">Source: <code>scripts/n8n-scrape-extractors.js</code> → <code>BROWSER_DOMAINS</code> · Phase 5a merged (PR #84)</p>
             <div class="note note-warn">
               <strong>Limitation:</strong> Browserless needs API credential (token). Without it → NEEDS_BROWSER status. ~10–30s per page · ~1 credit/session. Recommend <strong>production-lon.browserless.io</strong> for UK.
             </div>
@@ -543,19 +727,13 @@
         <!-- 7 SHOPIFY JSON -->
         <section class="slide" data-title="Shopify JSON Fast Path" data-tags="shopify json everlane skims doen built scrape">
           <div class="slide-inner">
-            <div class="tag">Already built · production scrape pipeline (not “Phase 5b sprint”)</div>
+            <div class="tag">Built · Shopify fast path · Phase 5b merged (PR #84)</div>
             <h1>Shopify stores — fastest scrape</h1>
             <p class="lead">For <code>/products/...</code> URLs on known Shopify stores, workflow tries <code>product.json</code> API first — ~1 second, no browser, highest accuracy.</p>
-            <div class="grid-2">
-              <div class="card">
-                <h3><span class="badge badge-live">In code today</span> SHOPIFY_JSON_DOMAINS</h3>
-                <p>Everlane · MATE the Label · Gymshark · Allbirds · Colourpop · Brooklinen</p>
-                <p style="font-size:0.75rem;margin-top:0.4rem">Source: <code>n8n-scrape-extractors.js</code> · <code>pickFetchStrategy()</code></p>
-              </div>
-              <div class="card">
-                <h3><span class="badge badge-plan">Future</span> Add more domains</h3>
-                <p>Skims · Dôen · Los Angeles Apparel · Tecovas · Universal Standard — not in array yet</p>
-              </div>
+            <div class="card">
+              <h3><span class="badge badge-live">In code today</span> SHOPIFY_JSON_DOMAINS</h3>
+              <p>Everlane · MATE · Gymshark · Allbirds · Colourpop · Brooklinen · <strong>Skims · Dôen · Tecovas · Fashion Nova · Origin · LA Apparel · Black Halo · Universal Standard</strong></p>
+              <p style="font-size:0.75rem;margin-top:0.4rem">Source: <code>n8n-scrape-extractors.js</code> · <code>pickFetchStrategy()</code></p>
             </div>
             <table>
               <tr><th>Method</th><th>Speed</th><th>Cost</th><th>Typical accuracy</th></tr>
@@ -705,7 +883,48 @@
           </div>
         </section>
 
-        <!-- 13 PIPELINE REQUIREMENTS -->
+        <!-- DIFFICULTIES — 5 CORE -->
+        <section class="slide" data-title="Five Core Difficulties" data-tags="difficulties challenges problems hard bot variants copyright image">
+          <div class="slide-inner">
+            <div class="tag">Project challenges</div>
+            <h1>Five core difficulties we faced</h1>
+            <p class="lead">Building a reliable pipeline across 26 competitor fashion sites — each with different tech stacks, bot protection, and data shapes.</p>
+            <table class="dense">
+              <tr><th>#</th><th>Difficulty</th><th>Why it hurt</th><th>Impact</th></tr>
+              <tr><td><strong>1</strong></td><td><strong>Bot protection</strong></td><td>Akamai, Cloudflare, SPA sites return 403 to plain HTTP</td><td>Mango, Zara, Lululemon fail without Browserless</td></tr>
+              <tr><td><strong>2</strong></td><td><strong>26 different site platforms</strong></td><td>Shopify .json vs heavy JS vs custom JSON-LD — no one parser fits all</td><td>Mode A/B/C routing + per-brand gaps remain</td></tr>
+              <tr><td><strong>3</strong></td><td><strong>Variant matrix complexity</strong></td><td>Waist×length×color, option names vary (Color vs Wash vs Shade)</td><td>40–45% of bot sites miss sizes — need VariantLibrary fallback</td></tr>
+              <tr><td><strong>4</strong></td><td><strong>Copyright-safe AI copy</strong></td><td>Can't copy competitor text verbatim into our Shopify store</td><td>Need QA gate + algorithmic overlap check before publish</td></tr>
+              <tr><td><strong>5</strong></td><td><strong>Image pipeline fragility</strong></td><td>CDN URLs without extensions, competitor logos, Shopify binary upload limits</td><td>Scrape succeeds but image step blocks ~15–20% of URLs</td></tr>
+            </table>
+          </div>
+        </section>
+
+        <!-- HOW WE OVERCAME -->
+        <section class="slide" data-title="How We Overcame Difficulties" data-tags="overcome solution fix routing variantlibrary qa photoroom browserless">
+          <div class="slide-inner">
+            <div class="tag">Our solutions</div>
+            <h1>How we overcame each difficulty</h1>
+            <table class="dense">
+              <tr><th>Difficulty</th><th>Our solution</th><th>Status</th></tr>
+              <tr><td>Bot protection</td><td>Smart <code>pickFetchStrategy()</code> — HTTP first, Browserless only for <code>BROWSER_DOMAINS</code> + Force browser flag</td><td><span class="badge badge-live">Built</span></td></tr>
+              <tr><td>26 platforms</td><td>6-tier code extractors (JSON-LD · OG · __NEXT_DATA__ · Shopify .json · heuristics) + AI fills gaps only</td><td><span class="badge badge-live">Built</span></td></tr>
+              <tr><td>Variant complexity</td><td>VariantLibrary sheet — UK/US presets, cartesian product, scrape overrides preset</td><td><span class="badge badge-live">Built</span></td></tr>
+              <tr><td>Copyright copy</td><td>AI rewrite + Jaccard text overlap gate + QA score must be ≥ 90 before Shopify create</td><td><span class="badge badge-live">Built</span></td></tr>
+              <tr><td>Image pipeline</td><td>Scene7/CDN detection · Photoroom bg removal · ImgBB → Shopify CDN binary upload</td><td><span class="badge badge-live">Built</span></td></tr>
+            </table>
+            <div class="grid-3" style="margin-top:0.75rem">
+              <div class="card stat"><div class="num">80%</div><div class="lbl">URLs work without browser</div></div>
+              <div class="card stat"><div class="num">74%</div><div class="lbl">Variant scrape accuracy</div></div>
+              <div class="card stat"><div class="num">99%</div><div class="lbl">Title after AI+QA</div></div>
+            </div>
+            <div class="note note-future">
+              <strong>Still open:</strong> Site-specific parsers (Zara, Levi's waist×length, Fashion Nova colors) — phases 5c–5e in future work.
+            </div>
+          </div>
+        </section>
+
+        <!-- PIPELINE REQUIREMENTS -->
         <section class="slide" data-title="Pipeline Requirements" data-tags="requirements build product url image title vendor variants category">
           <div class="slide-inner">
             <div class="tag">What the workflow needs per product</div>
@@ -788,16 +1007,16 @@
               <tr><td>Everlane</td><td>✅ Yes</td><td>shopify_json</td><td>✅ Mostly</td><td>Colors/lengths sometimes empty</td></tr>
               <tr><td>MATE the Label</td><td>✅ Yes</td><td>shopify_json</td><td>✅ Mostly</td><td>Color+size merged — split logic</td></tr>
               <tr><td>Fashion Nova</td><td>❌ No</td><td>HTTP only</td><td>⚠️ Partial</td><td>.json blocked; colors not in sheet</td></tr>
-              <tr><td>Skims</td><td>❌ No</td><td>HTTP only</td><td>✅ Likely</td><td>Add to SHOPIFY_JSON_DOMAINS</td></tr>
-              <tr><td>Dôen</td><td>❌ No</td><td>HTTP only</td><td>✅ Untested</td><td>Add to SHOPIFY_JSON_DOMAINS</td></tr>
-              <tr><td>Universal Standard</td><td>❌ No</td><td>HTTP only</td><td>✅ Untested</td><td>Add to SHOPIFY_JSON_DOMAINS</td></tr>
-              <tr><td>Tecovas</td><td>❌ No</td><td>HTTP only</td><td>✅ Good</td><td>Set Variant preset = footwear</td></tr>
-              <tr><td>Black Halo</td><td>❌ No</td><td>HTTP only</td><td>✅ Good</td><td>Category = Dresses in sheet</td></tr>
-              <tr><td>LA Apparel</td><td>❌ No</td><td>HTTP only</td><td>✅ Good</td><td>Add to .json list</td></tr>
-              <tr><td>Origin USA</td><td>❌ No</td><td>HTTP only</td><td>✅ Good</td><td>Add to .json list</td></tr>
+              <tr><td>Skims</td><td>✅ Yes</td><td>shopify_json</td><td>✅ Likely</td><td>Phase 5b done</td></tr>
+              <tr><td>Dôen</td><td>✅ Yes</td><td>shopify_json</td><td>✅ Untested</td><td>Phase 5b done</td></tr>
+              <tr><td>Universal Standard</td><td>✅ Yes</td><td>shopify_json</td><td>✅ Untested</td><td>Phase 5b done</td></tr>
+              <tr><td>Tecovas</td><td>✅ Yes</td><td>shopify_json</td><td>✅ Good</td><td>Set Variant preset = footwear</td></tr>
+              <tr><td>Black Halo</td><td>✅ Yes</td><td>shopify_json</td><td>✅ Good</td><td>Category = Dresses in sheet</td></tr>
+              <tr><td>LA Apparel</td><td>✅ Yes</td><td>shopify_json</td><td>✅ Good</td><td>Phase 5b done</td></tr>
+              <tr><td>Origin USA</td><td>✅ Yes</td><td>shopify_json</td><td>✅ Good</td><td>Phase 5b done</td></tr>
             </table>
-            <div class="note note-future">
-              <strong>Fast win:</strong> Add Skims, Dôen, Tecovas, Fashion Nova, LA Apparel, Origin to <code>SHOPIFY_JSON_DOMAINS</code> — one array edit, big reliability jump.
+            <div class="note note-ok">
+              <strong>Phase 5b merged:</strong> Skims, Dôen, Tecovas, Fashion Nova, LA Apparel, Origin, Black Halo, Universal Standard now use Shopify <code>.json</code> fast path.
             </div>
           </div>
         </section>
@@ -815,13 +1034,13 @@
               <tr><td>Macy's</td><td>✅ Yes</td><td>403</td><td>⚠️ + token</td><td>No custom extractor</td></tr>
               <tr><td>Gap</td><td>✅ Yes</td><td>200 home</td><td>⚠️ Partial</td><td>Product page may need browser</td></tr>
               <tr><td>H&M · ASOS · Nordstrom</td><td>✅ Yes</td><td>403/SPA</td><td>⚠️ + token</td><td>Browserless only</td></tr>
-              <tr><td><strong>Lululemon</strong></td><td>❌ <strong>Missing</strong></td><td>403</td><td>❌ Fails</td><td><strong>Add to BROWSER_DOMAINS</strong></td></tr>
-              <tr><td><strong>Calvin Klein</strong></td><td>❌ Missing</td><td>403</td><td>❌ Fails</td><td>Add to BROWSER_DOMAINS</td></tr>
-              <tr><td><strong>Tommy Hilfiger</strong></td><td>❌ Missing</td><td>403</td><td>❌ Fails</td><td>Add to BROWSER_DOMAINS</td></tr>
-              <tr><td><strong>Abercrombie</strong></td><td>❌ Missing</td><td>403</td><td>❌ Fails</td><td>Add to BROWSER_DOMAINS</td></tr>
+              <tr><td><strong>Lululemon</strong></td><td>✅ Yes</td><td>403</td><td>⚠️ + token</td><td>Phase 5a done — needs Browserless credential</td></tr>
+              <tr><td><strong>Calvin Klein</strong></td><td>✅ Yes</td><td>403</td><td>⚠️ + token</td><td>Phase 5a done</td></tr>
+              <tr><td><strong>Tommy Hilfiger</strong></td><td>✅ Yes</td><td>403</td><td>⚠️ + token</td><td>Phase 5a done</td></tr>
+              <tr><td><strong>Abercrombie</strong></td><td>✅ Yes</td><td>403</td><td>⚠️ + token</td><td>Phase 5a done</td></tr>
             </table>
-            <div class="note note-warn">
-              <strong>P0 gap:</strong> 4 target brands block HTTP but are <em>not</em> in <code>BROWSER_DOMAINS</code> yet. Lululemon is most urgent — you already tested and it failed.
+            <div class="note note-ok">
+              <strong>Phase 5a merged:</strong> Lululemon, CK, Tommy, Abercrombie, Ralph Lauren now auto-route to Browserless. Still need API token for scrape to succeed.
             </div>
           </div>
         </section>
@@ -854,18 +1073,18 @@
               <div class="card">
                 <h3><span class="badge hard-high">P0</span> Must fix — blocks build</h3>
                 <ul>
-                  <li>Add to <code>BROWSER_DOMAINS</code>: lululemon, calvinklein, tommy, abercrombie, ralphlauren</li>
-                  <li>Browserless credential in n8n (token)</li>
-                  <li>Product URLs only — reject category URLs</li>
-                  <li>Re-import latest <code>ShopifyProductAdd.V2.json</code></li>
+                  <li><span class="badge badge-live">Done</span> BROWSER_DOMAINS expanded (5a · PR #84)</li>
+                  <li>Browserless credential in n8n (token) — still required for Mode B</li>
+                  <li>Product URLs only — reject category URLs (phase 5f)</li>
+                  <li>Re-import latest <code>ShopifyProductAdd.V2.json</code> after merge</li>
                 </ul>
               </div>
               <div class="card">
                 <h3><span class="badge hard-mid">P1</span> High value — variants/colors</h3>
                 <ul>
-                  <li>Expand <code>SHOPIFY_JSON_DOMAINS</code>: skims, doen, tecovas, fashionnova, originusa…</li>
-                  <li>Site parsers: Zara, Mango, Levi's, Lululemon, Express, Macy's</li>
-                  <li>Fashion Nova color fix · Everlane length option3</li>
+                  <li><span class="badge badge-live">Done</span> SHOPIFY_JSON_DOMAINS expanded (5b · PR #84)</li>
+                  <li>Site parsers: Zara, Mango, Levi's, Express, Macy's (5c–5d)</li>
+                  <li>Fashion Nova color fix · Everlane length option3 (5e)</li>
                 </ul>
               </div>
             </div>
@@ -887,17 +1106,17 @@
             <h1>Can we build a product today?</h1>
             <table class="dense">
               <tr><th>Site</th><th>Today?</th><th>Notes</th></tr>
-              <tr><td>Everlane · MATE</td><td>✅ Mostly</td><td>Best CEO demo · fill category</td></tr>
+              <tr><td>Everlane · MATE</td><td>✅ Mostly</td><td>Best live demo · fill category</td></tr>
               <tr><td>Skims · Dôen · Tecovas · Black Halo · LA Apparel · Origin</td><td>✅ Likely</td><td>Add shopify_json for reliability</td></tr>
               <tr><td>Fashion Nova</td><td>⚠️ Partial</td><td>Image yes · colors often empty</td></tr>
               <tr><td>Mango</td><td>⚠️</td><td>Browserless token + variants from HTML</td></tr>
               <tr><td>Zara · Express · Macy's · Gap</td><td>⚠️</td><td>Browserless only · variants weak</td></tr>
-              <tr><td>Lululemon · CK · Tommy · Abercrombie</td><td>❌</td><td>Not in browser list — will fail HTTP</td></tr>
+              <tr><td>Lululemon · CK · Tommy · Abercrombie</td><td>⚠️</td><td>Routes to Browserless (5a done) — needs API token</td></tr>
               <tr><td>Levi's · Ralph Lauren · Patagonia</td><td>⚠️ Partial</td><td>Custom extractors for full variants</td></tr>
               <tr><td>Aarong</td><td>✅ Good</td><td>HTTP + __NEXT_DATA__ · reliable image</td></tr>
             </table>
             <div class="note note-ok">
-              <strong>CEO demo:</strong> Everlane first (Mode A · 2 min) → optional Mango with Browserless (Mode B). <strong>Never demo</strong> Lululemon until P0 browser domains added.
+              <strong>Best demo flow:</strong> Everlane first (Mode A · 2 min) → optional Mango with Browserless (Mode B). Lululemon works once Browserless token is set.
             </div>
             <h2>Recommended sheet setup per row</h2>
             <table class="dense">
@@ -920,8 +1139,8 @@
             <h1>Recommended build phases (when we start)</h1>
             <table class="dense">
               <tr><th>Phase</th><th>Work</th><th>Sites helped</th><th>Status</th></tr>
-              <tr><td><strong>5a</strong></td><td>Add missing domains to <code>BROWSER_DOMAINS</code></td><td>Lululemon, CK, Tommy, Abercrombie, Ralph Lauren</td><td><span class="badge badge-plan">Not started</span></td></tr>
-              <tr><td><strong>5b</strong></td><td>Add Shopify brands to <code>SHOPIFY_JSON_DOMAINS</code></td><td>Skims, Dôen, Tecovas, Fashion Nova, Origin…</td><td><span class="badge badge-plan">Not started</span></td></tr>
+              <tr><td><strong>5a</strong></td><td>Add missing domains to <code>BROWSER_DOMAINS</code></td><td>Lululemon, CK, Tommy, Abercrombie, Ralph Lauren</td><td><span class="badge badge-live">Done · PR #84</span></td></tr>
+              <tr><td><strong>5b</strong></td><td>Add Shopify brands to <code>SHOPIFY_JSON_DOMAINS</code></td><td>Skims, Dôen, Tecovas, Fashion Nova, Origin…</td><td><span class="badge badge-live">Done · PR #84</span></td></tr>
               <tr><td><strong>5c</strong></td><td>Levi's waist × length parser</td><td>Levi's</td><td><span class="badge badge-plan">Not started</span></td></tr>
               <tr><td><strong>5d</strong></td><td>Zara + Express embedded JSON extractors</td><td>Zara, Express</td><td><span class="badge badge-plan">Not started</span></td></tr>
               <tr><td><strong>5e</strong></td><td>Fashion Nova + Everlane color/length fixes</td><td>Fashion Nova, Everlane</td><td><span class="badge badge-plan">Not started</span></td></tr>
@@ -962,11 +1181,11 @@
           </div>
         </section>
 
-        <!-- 15 CLIENT FACING -->
-        <section class="slide" data-title="Client Demo Script" data-tags="client demo ceo presentation script tricks">
+        <!-- DEMO SCRIPT -->
+        <section class="slide" data-title="Live Demo Script" data-tags="demo presentation script live everlane mango">
           <div class="slide-inner">
-            <div class="tag">Client-facing</div>
-            <h1>How to present to CEO / client today</h1>
+            <div class="tag">Demo guide</div>
+            <h1>How to run a live demo</h1>
             <div class="grid-2">
               <div class="card">
                 <h3>✅ Say this</h3>
@@ -1040,8 +1259,8 @@
               <tr><td>Shopify .json path</td><td>Everlane, Gymshark… fast API scrape</td><td><code>SHOPIFY_JSON_DOMAINS</code></td><td><span class="badge badge-live">Built</span></td></tr>
               <tr><td>Lookup sheets in workflow</td><td>Re-read sheet · overlay formulas · PromptLibrary</td><td>PRs #74, #78</td><td><span class="badge badge-live">Built</span></td></tr>
               <tr><td>VariantLibrary tab</td><td>UK/US presets · option columns</td><td>PR #82</td><td><span class="badge badge-live">Built</span></td></tr>
-              <tr><td>Expand browser domains</td><td>Lululemon, CK, Tommy, Abercrombie…</td><td>Not in <code>BROWSER_DOMAINS</code> yet</td><td><span class="badge badge-plan">Future</span></td></tr>
-              <tr><td>Expand Shopify .json list</td><td>Skims, Dôen, LA Apparel…</td><td>Not in array yet</td><td><span class="badge badge-plan">Future</span></td></tr>
+              <tr><td>Expand browser domains</td><td>Lululemon, CK, Tommy, Abercrombie, Ralph Lauren</td><td>PR #84 · <code>BROWSER_DOMAINS</code></td><td><span class="badge badge-live">Built</span></td></tr>
+              <tr><td>Expand Shopify .json list</td><td>Skims, Dôen, Tecovas, Fashion Nova…</td><td>PR #84 · <code>SHOPIFY_JSON_DOMAINS</code></td><td><span class="badge badge-live">Built</span></td></tr>
               <tr><td>Site-specific parsers</td><td>Mango media JSON, Macy's variants…</td><td>No dedicated parsers</td><td><span class="badge badge-plan">Future</span></td></tr>
               <tr><td>Color images per variant</td><td>Multi-image gallery per color</td><td>One hero image only</td><td><span class="badge badge-plan">Future</span></td></tr>
             </table>
@@ -1051,28 +1270,29 @@
           </div>
         </section>
 
-        <!-- 18 ASK -->
-        <section class="slide" data-title="Ask & Next Steps" data-tags="ask next steps ceo decision">
+        <!-- NEXT STEPS -->
+        <section class="slide" data-title="Next Steps & Future Work" data-tags="next steps future work roadmap phase 5c 5d 5e">
           <div class="slide-inner">
-            <div class="tag">Decision slide</div>
-            <h1>What we need to close the deal</h1>
+            <div class="tag">What's next</div>
+            <h1>Next steps & future work</h1>
             <div class="grid-2">
               <div class="card">
-                <h3>Decisions from leadership</h3>
+                <h3>Immediate actions</h3>
                 <ul>
-                  <li>Approve Browserless subscription (~1,000 free sessions/mo then paid)</li>
-                  <li>Confirm 3 sell colors per product (not 10) for launch catalog</li>
-                  <li>Sign off internal-test image policy (Photoroom + scrape reference)</li>
-                  <li>Pick 10 seed URLs per tier for Phase 5d parser sprint</li>
+                  <li>Re-import <code>ShopifyProductAdd.V2.json</code> + lookup sheets after PR #84/#85</li>
+                  <li>Set Browserless API credential (Query Auth · param <code>token</code>)</li>
+                  <li>Test Everlane (Mode A) + Mango (Mode B) with real URLs</li>
+                  <li>Use product page URLs only — not category pages</li>
                 </ul>
               </div>
               <div class="card">
-                <h3>What we deliver next sprint</h3>
+                <h3>Future build phases</h3>
                 <ul>
-                  <li>Expand BROWSER_DOMAINS + SHOPIFY_JSON_DOMAINS arrays</li>
-                  <li>ColorImageLibrary spec + first product with per-color images</li>
-                  <li>CEO demo script recorded (Everlane + Mango)</li>
-                  <li>Accuracy dashboard tab in Google Sheet</li>
+                  <li><strong>5c</strong> Levi's waist×length parser</li>
+                  <li><strong>5d</strong> Zara + Express embedded JSON extractors</li>
+                  <li><strong>5e</strong> Fashion Nova + Everlane color/length fixes</li>
+                  <li><strong>5f</strong> Category URL detection → clear sheet error</li>
+                  <li>ColorImageLibrary — multi-image per color on storefront</li>
                 </ul>
               </div>
             </div>
@@ -1080,10 +1300,10 @@
               <div class="card stat"><div class="num">80%</div><div class="lbl">URLs no browser needed</div></div>
               <div class="card stat"><div class="num">90+</div><div class="lbl">QA gate score</div></div>
               <div class="card stat"><div class="num">47</div><div class="lbl">Nodes production-ready</div></div>
-              <div class="card stat"><div class="num">4</div><div class="lbl">Sheet tabs live</div></div>
+              <div class="card stat"><div class="num">26</div><div class="lbl">Target brands mapped</div></div>
             </div>
             <div class="note note-ok" style="margin-top:1rem">
-              <strong>Bottom line for CEO:</strong> The pipeline works end-to-end today. We are optimizing coverage and per-color images — not building from zero.
+              <strong>Bottom line:</strong> The pipeline works end-to-end today. Phases 5a/5b are shipped. Next focus: site-specific parsers (5c–5e) and per-color images.
             </div>
           </div>
         </section>
