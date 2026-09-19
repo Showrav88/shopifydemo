@@ -74,8 +74,9 @@ All sheet update nodes match on **Product URL** from the Google Sheets trigger r
 | Column | Required? | Notes |
 |--------|-----------|-------|
 | **Product URL** | Yes | Only column you must fill to start |
-| **Sizes**, **Colors**, **Scraped variants** | Auto-filled by scrape | Lengths for jeans live inside **Scraped variants** JSON |
-| **Variant profile** | Optional | e.g. `clothing_numeric` for jeans (Waist + Length + Color) |
+| **Sizes**, **Scraped variants** | Auto-filled by scrape | Lengths for jeans live inside **Scraped variants** JSON |
+| **Colors** | Formula from LookupTables | `sell_colors_map` — edit how many colors you sell per profile. See [VARIANTS-AND-BROWSERLESS-GUIDE.md](./VARIANTS-AND-BROWSERLESS-GUIDE.md) |
+| **Variant profile** | Formula (column E) | Auto-detected — e.g. `clothing_numeric` for jeans (Waist + Length + Color) |
 | **Approve** | Optional | Not used in full-auto mode — safe to hide |
 
 Lookup rules are **inside** `sheet-master.csv` (columns AU–BH, hidden). No second tab needed.

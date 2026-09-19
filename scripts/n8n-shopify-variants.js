@@ -16,6 +16,20 @@ VARIANTS.PROFILES = {
   generic: { option1: 'Size', option2: 'Color', option3: null, sizePattern: 'any' },
 };
 
+// Used when scrape returns no sizes — profile is auto-detected from category (no lookup needed).
+VARIANTS.DEFAULT_SIZES = {
+  clothing_alpha: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+  clothing_numeric: ['30', '32', '34', '36', '38'],
+  footwear_uk: ['7', '8', '9', '10', '11'],
+  one_size: ['One Size'],
+  color_only: [],
+  generic: ['S', 'M', 'L', 'XL'],
+};
+
+VARIANTS.DEFAULT_LENGTHS = {
+  clothing_numeric: ['30', '32'],
+};
+
 VARIANTS.detectProfile = function detectProfile(category, explicitProfile) {
   const p = String(explicitProfile || '').trim().toLowerCase();
   if (p && VARIANTS.PROFILES[p]) return p;
@@ -32,6 +46,15 @@ VARIANTS.parseList = function parseList(val) {
   if (!val) return [];
   if (Array.isArray(val)) return val.map((x) => String(x).trim()).filter(Boolean);
   return String(val).split(/[,;|/]+/).map((x) => x.trim()).filter(Boolean);
+};
+
+// LookupTables sell_colors_map (sheet formula) first; scraped variant colors as fallback.
+VARIANTS.resolveColors = function resolveColors(row) {
+  const fromSheet = VARIANTS.parseList(row.Colors);
+  if (fromSheet.length > 0) return fromSheet;
+  const scraped = VARIANTS.parseScrapedVariants(row);
+  const fromVariants = [...new Set(scraped.map((v) => VARIANTS.norm(v.color)).filter(Boolean))];
+  return fromVariants;
 };
 
 VARIANTS.splitCombinedVariant = function splitCombinedVariant(sizeStr) {
@@ -94,7 +117,7 @@ VARIANTS.buildVariantRows = function buildVariantRows(row, profileKey) {
   const profile = VARIANTS.PROFILES[profileKey] || VARIANTS.PROFILES.generic;
   const scraped = VARIANTS.parseScrapedVariants(row);
   const sizes = VARIANTS.parseList(row.Sizes);
-  const colors = VARIANTS.parseList(row.Colors);
+  const colors = VARIANTS.resolveColors(row);
   const rows = [];
 
   if (scraped.length > 0) {
@@ -125,13 +148,44 @@ VARIANTS.buildVariantRows = function buildVariantRows(row, profileKey) {
     }
   }
 
-  if (rows.length === 0 && colors.length > 0) {
+  // Color-only products (bags, belts) — no size grid.
+  if (
+    rows.length === 0
+    && colors.length > 0
+    && (profile.sizePattern === 'one' || profileKey === 'color_only' || profileKey === 'one_size')
+  ) {
     for (const color of colors) {
-      rows.push({ size: profile.sizePattern === 'one' ? 'One Size' : '', color, price: '', sku: '', qty: null });
+      rows.push({ size: 'One Size', color, price: '', sku: '', qty: null });
     }
   }
 
-  return { profile, rows };
+  // Scrape missed sizes — apply generic grid for shirts, pants, shoes, etc.
+  if (rows.length === 0) {
+    const defaultSizes = VARIANTS.DEFAULT_SIZES[profileKey] || VARIANTS.DEFAULT_SIZES.generic;
+    const colorList = colors.length > 0 ? colors : [''];
+    if (profileKey === 'clothing_numeric') {
+      const lengths = VARIANTS.DEFAULT_LENGTHS.clothing_numeric || ['32'];
+      for (const size of defaultSizes) {
+        for (const length of lengths) {
+          for (const color of colorList) {
+            rows.push({ size, color, length, price: '', sku: '', qty: null });
+          }
+        }
+      }
+    } else if (profile.sizePattern === 'one') {
+      for (const color of colorList) {
+        rows.push({ size: 'One Size', color, length: '', price: '', sku: '', qty: null });
+      }
+    } else {
+      for (const size of defaultSizes) {
+        for (const color of colorList) {
+          rows.push({ size, color, length: '', price: '', sku: '', qty: null });
+        }
+      }
+    }
+  }
+
+  return { profile, rows, used_defaults: rows.length > 0 && scraped.length === 0 && sizes.length === 0 };
 };
 
 VARIANTS.variantSku = function variantSku(baseSku, size, color, index) {
@@ -169,7 +223,7 @@ VARIANTS.resolveInventory = function resolveInventory(row) {
 VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
   const category = row.validated_category || row['Product category'] || listing.collection || '';
   const profileKey = VARIANTS.detectProfile(category, row['Variant profile'] || row.variant_profile);
-  const { profile, rows } = VARIANTS.buildVariantRows(row, profileKey);
+  const { profile, rows, used_defaults } = VARIANTS.buildVariantRows(row, profileKey);
 
   const sellPrice = VARIANTS.resolvePrice(row);
   const totalInv = VARIANTS.resolveInventory(row);
@@ -295,6 +349,7 @@ VARIANTS.buildShopifyPayload = function buildShopifyPayload(row, listing) {
     multi_variant: shopifyVariants.length > 1,
     variant_count: shopifyVariants.length,
     variant_profile: profileKey,
+    used_default_sizes: Boolean(used_defaults),
     shopify_payload: { product },
     inventory_updates: inventoryUpdates,
   };
