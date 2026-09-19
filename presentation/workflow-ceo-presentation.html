@@ -502,9 +502,9 @@
         </section>
 
         <!-- 6 BROWSERLESS -->
-        <section class="slide" data-title="Phase 5a — Browserless" data-tags="browserless mango macys zara lululemon phase 5a">
+        <section class="slide" data-title="Browserless Routing" data-tags="browserless mango macys zara built phase4">
           <div class="slide-inner">
-            <div class="tag">Phase 5a · Browserless routing</div>
+            <div class="tag">Already built · Phase 4 patch (not “Phase 5a sprint”)</div>
             <h1>Browserless path (bot-protected sites)</h1>
             <div class="node-flow">
               <div class="node-row">
@@ -520,10 +520,11 @@
                 <div class="node-body"><div><div class="node-name">Wrap browser HTML → Normalize HTTP page</div><div class="node-desc">Same Prepare page path regardless of fetch method</div></div><span class="node-check">✓</span></div>
               </div>
             </div>
-            <h2>Auto-routed domains (built-in)</h2>
+            <h2>Auto-routed domains <span class="badge badge-live">In code today</span></h2>
             <p>Macy's · Mango · Express · Nordstrom · Zara · H&M · ASOS · Uniqlo · Gap · Old Navy</p>
-            <h2>Phase 5a — expand list (planned)</h2>
-            <p>Lululemon · Calvin Klein · Tommy Hilfiger · Abercrombie · Patagonia · more UK/US retailers</p>
+            <p style="font-size:0.78rem;margin-top:0.4rem">Source: <code>scripts/n8n-scrape-extractors.js</code> → <code>BROWSER_DOMAINS</code> · shipped via <code>patch-phase4-browserless.py</code></p>
+            <h2>Future expand list <span class="badge badge-plan">Not started</span></h2>
+            <p>Lululemon · Calvin Klein · Tommy Hilfiger · Abercrombie · Patagonia — add to same array when we start that work</p>
             <div class="note note-warn">
               <strong>Limitation:</strong> Browserless needs API credential (token). Without it → NEEDS_BROWSER status. ~10–30s per page · ~1 credit/session. Recommend <strong>production-lon.browserless.io</strong> for UK.
             </div>
@@ -531,19 +532,20 @@
         </section>
 
         <!-- 7 SHOPIFY JSON -->
-        <section class="slide" data-title="Phase 5b — Shopify JSON" data-tags="shopify json everlane skims doen phase 5b">
+        <section class="slide" data-title="Shopify JSON Fast Path" data-tags="shopify json everlane skims doen built scrape">
           <div class="slide-inner">
-            <div class="tag">Phase 5b · Shopify .json fast path</div>
+            <div class="tag">Already built · production scrape pipeline (not “Phase 5b sprint”)</div>
             <h1>Shopify stores — fastest scrape</h1>
             <p class="lead">For <code>/products/...</code> URLs on known Shopify stores, workflow tries <code>product.json</code> API first — ~1 second, no browser, highest accuracy.</p>
             <div class="grid-2">
               <div class="card">
-                <h3><span class="badge badge-live">Live</span> In SHOPIFY_JSON_DOMAINS</h3>
+                <h3><span class="badge badge-live">In code today</span> SHOPIFY_JSON_DOMAINS</h3>
                 <p>Everlane · MATE the Label · Gymshark · Allbirds · Colourpop · Brooklinen</p>
+                <p style="font-size:0.75rem;margin-top:0.4rem">Source: <code>n8n-scrape-extractors.js</code> · <code>pickFetchStrategy()</code></p>
               </div>
               <div class="card">
-                <h3><span class="badge badge-plan">Phase 5b</span> Add next</h3>
-                <p>Skims · Dôen · Los Angeles Apparel · Tecovas · Universal Standard · more from LookupTables vendor_map</p>
+                <h3><span class="badge badge-plan">Future</span> Add more domains</h3>
+                <p>Skims · Dôen · Los Angeles Apparel · Tecovas · Universal Standard — not in array yet</p>
               </div>
             </div>
             <table>
@@ -556,10 +558,11 @@
         </section>
 
         <!-- 8 LOOKUP -->
-        <section class="slide" data-title="Phase 5c — Lookup Sheets" data-tags="lookup variantlibrary promptlibrary phase 5c formulas">
+        <section class="slide" data-title="Lookup Sheets Wired" data-tags="lookup variantlibrary promptlibrary formulas pr74 pr82">
           <div class="slide-inner">
-            <div class="tag">Phase 5c · Lookup sheets wired</div>
+            <div class="tag">Already built · PRs #74–#82 (sheet + workflow alignment)</div>
             <h1>Sheet-driven intelligence <span class="badge badge-ok">Live</span></h1>
+            <p style="font-size:0.84rem;margin-bottom:0.75rem">This is real shipped work — but we never ran a formal sprint called “Phase 5c”. It landed as LookupTables + PromptLibrary + VariantLibrary + <code>overlaySheetFormulas()</code> in the n8n flow.</p>
             <table>
               <tr><th>Tab</th><th>Drives</th><th>Who edits</th><th>Status</th></tr>
               <tr><td>LookupTables</td><td>Vendor · Product category · Variant profile · Collection</td><td>Ops team</td><td><span class="badge badge-live">Live</span></td></tr>
@@ -704,7 +707,7 @@
               <tr><td><span class="badge badge-ok">A</span></td><td>Aarong · Magento/Woo HTML</td><td>HTTP + __NEXT_DATA__</td><td>85–92%</td><td>✅ Reliable image</td></tr>
               <tr><td><span class="badge badge-warn">B</span></td><td>Fashion Nova · Hydrogen</td><td>HTTP og:image</td><td>70–80%</td><td>⚠️ Partial variants</td></tr>
               <tr><td><span class="badge badge-warn">C</span></td><td>Mango · Macy's · Zara · Express</td><td>Browserless required</td><td>75–88%*</td><td>✅ If token set</td></tr>
-              <tr><td><span class="badge badge-plan">D Planned</span></td><td>Lululemon · CK · Tommy · Skims · Dôen</td><td>5a / 5b expand</td><td>TBD</td><td>🔜 Next sprint</td></tr>
+              <tr><td><span class="badge badge-plan">D Future</span></td><td>Lululemon · CK · Tommy · Skims · Dôen</td><td>Add to domain arrays</td><td>TBD</td><td>🔜 Not started</td></tr>
               <tr><td><span class="badge badge-err">Hard</span></td><td>Heavy CAPTCHA · login walls</td><td>Manual image paste</td><td>&lt;50%</td><td>❌ Avoid in demo</td></tr>
             </table>
             <p style="font-size:0.75rem">* Browserless with valid token on production-lon.browserless.io</p>
@@ -804,22 +807,27 @@
           </div>
         </section>
 
-        <!-- 17 ROADMAP 5a-5d -->
-        <section class="slide" data-title="Roadmap Phase 5" data-tags="roadmap phase 5a 5b 5c 5d future">
+        <!-- 17 ROADMAP honest -->
+        <section class="slide" data-title="Built vs Future Roadmap" data-tags="roadmap built future honest phase">
           <div class="slide-inner">
-            <div class="tag">Roadmap</div>
-            <h1>Phase 5 build plan</h1>
+            <div class="tag">Honest status — no “Phase 5” sprint was run</div>
+            <h1>What’s built vs what’s next</h1>
+            <div class="note note-warn" style="margin-bottom:1rem">
+              <strong>Clarification:</strong> Slides labeled “Phase 5a/5b/5c” were a <em>roadmap idea</em>, not completed sprint names. Below is what actually shipped in the repo vs what we still need to do.
+            </div>
             <table>
-              <tr><th>Phase</th><th>What</th><th>Impact</th><th>Status</th></tr>
-              <tr><td><strong>5a</strong></td><td>Browserless domains — Lululemon, CK, Tommy Hilfiger, Abercrombie, Patagonia</td><td>+15% site coverage</td><td><span class="badge badge-plan">Next</span></td></tr>
-              <tr><td><strong>5b</strong></td><td>Shopify .json list — Skims, Dôen, LA Apparel, Tecovas, Universal Standard</td><td>Fastest path, 98% accuracy</td><td><span class="badge badge-plan">Next</span></td></tr>
-              <tr><td><strong>5c</strong></td><td>Wire lookup sheets in workflow (LookupTables, VariantLibrary, PromptLibrary)</td><td>Ops edits without code</td><td><span class="badge badge-live">Done ✓</span></td></tr>
-              <tr><td><strong>5d+</strong></td><td>Site-specific parsers — Mango media JSON, Macy's variant API, Lululemon SPA</td><td>+20% variant/image accuracy</td><td><span class="badge badge-plan">Planned</span></td></tr>
-              <tr><td><strong>5e</strong></td><td>ColorImageLibrary — multi-image per color on Shopify</td><td>Storefront color click shows right gallery</td><td><span class="badge badge-plan">Planned</span></td></tr>
-              <tr><td><strong>5f</strong></td><td>Slack alerts · batch scheduler · FAIL dashboard</td><td>Ops at scale</td><td><span class="badge badge-plan">Planned</span></td></tr>
+              <tr><th>Area</th><th>What</th><th>Evidence</th><th>Status</th></tr>
+              <tr><td>Browserless routing</td><td>Mango, Macy's, Zara… auto-route + Browserless node</td><td>PR phase4 · <code>BROWSER_DOMAINS</code></td><td><span class="badge badge-live">Built</span></td></tr>
+              <tr><td>Shopify .json path</td><td>Everlane, Gymshark… fast API scrape</td><td><code>SHOPIFY_JSON_DOMAINS</code></td><td><span class="badge badge-live">Built</span></td></tr>
+              <tr><td>Lookup sheets in workflow</td><td>Re-read sheet · overlay formulas · PromptLibrary</td><td>PRs #74, #78</td><td><span class="badge badge-live">Built</span></td></tr>
+              <tr><td>VariantLibrary tab</td><td>UK/US presets · option columns</td><td>PR #82</td><td><span class="badge badge-live">Built</span></td></tr>
+              <tr><td>Expand browser domains</td><td>Lululemon, CK, Tommy, Abercrombie…</td><td>Not in <code>BROWSER_DOMAINS</code> yet</td><td><span class="badge badge-plan">Future</span></td></tr>
+              <tr><td>Expand Shopify .json list</td><td>Skims, Dôen, LA Apparel…</td><td>Not in array yet</td><td><span class="badge badge-plan">Future</span></td></tr>
+              <tr><td>Site-specific parsers</td><td>Mango media JSON, Macy's variants…</td><td>No dedicated parsers</td><td><span class="badge badge-plan">Future</span></td></tr>
+              <tr><td>Color images per variant</td><td>Multi-image gallery per color</td><td>One hero image only</td><td><span class="badge badge-plan">Future</span></td></tr>
             </table>
             <div class="note note-future">
-              <strong>Future vision:</strong> URL in → 3 sell colors with 3 images each → Shopify draft with correct variant galleries → human approves → publish. Target: 90%+ field accuracy across 80% of fashion URLs.
+              <strong>When we start “Phase 5” work:</strong> Pick one row — e.g. add <code>lululemon.com</code> to <code>BROWSER_DOMAINS</code> OR <code>skims.com</code> to <code>SHOPIFY_JSON_DOMAINS</code> — test one URL — commit. That is the real next step, not re-building what already exists.
             </div>
           </div>
         </section>
